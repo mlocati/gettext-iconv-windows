@@ -15,8 +15,7 @@ ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 #endif
 ChangesEnvironment=yes
-;Compression=lzma2/max
-Compression=lzma2/fast
+Compression=lzma2/max
 LicenseFile=setup-data\license.txt
 OutputDir=setup
 OutputBaseFilename=gettext{#MyGettextVer}-iconv{#MyIconvVer}-{#MyVersionCodeName}
