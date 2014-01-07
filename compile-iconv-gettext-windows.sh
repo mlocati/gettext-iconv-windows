@@ -34,7 +34,7 @@ if [ ! -z "$BLDGTXT_TMP" ]; then
 	BLDGTXT_VERS_ICONV=$BLDGTXT_TMP
 fi
 
-BLDGTXT_VERS_GETTEXT=0.18.3.1
+BLDGTXT_VERS_GETTEXT=0.18.3.2
 echo "gettext version [$BLDGTXT_VERS_GETTEXT]:"
 read BLDGTXT_TMP
 if [ ! -z "$BLDGTXT_TMP" ]; then
