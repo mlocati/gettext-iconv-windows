@@ -28,3 +28,7 @@ If you want to build a setup to install these executables and automatically add 
 - [take a copy](https://github.com/mlocati/gettext-iconv-windows/archive/master.zip) of the full repository gettext-iconv-windows
 - under the folder containing the repository content, create a folder `compiled` and copy under that directory the `out-…` folder that you have under Linux
 - With Inno Setup create the setup using the appropriate `setup-…-….iss` script you find in the repo folder
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/mlocati/gettext-iconv-windows/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
