@@ -22,30 +22,75 @@
 # 		apt-get install mingw-w64 mingw-w64-i686-dev mingw-w64-x86-64-dev
 
 ######################
-echo Setup
-
 BLDGTXT_ROOT=~/build-gettext-windows
 BLDGTXT_ARC=$BLDGTXT_ROOT/archives
 
-BLDGTXT_VERS_ICONV=1.14
-echo "libiconv version [$BLDGTXT_VERS_ICONV]:"
-read BLDGTXT_TMP
-if [ ! -z "$BLDGTXT_TMP" ]; then
-	BLDGTXT_VERS_ICONV=$BLDGTXT_TMP
+BLDGTXT_VERS_ICONV=
+BLDGTXT_VERS_GETTEXT=
+BLDGTXT_BITS=
+BLDGTXT_HOW=
+while [ ! -z "$1" ]; do
+	key="$1"
+	shift
+	case $key in
+		-i|--iconv)
+			BLDGTXT_VERS_ICONV=$1
+			shift
+			;;
+		-g|--gettext)
+			BLDGTXT_VERS_GETTEXT=$1
+			shift
+			;;
+		-b|--bits)
+			BLDGTXT_BITS=$1
+			shift
+			;;
+		-w|--how)
+			BLDGTXT_HOW=$1
+			shift
+			;;
+		-h|--help)
+			echo "Usage: $0 [-i|--iconv <iconv version>] [-g|--gettext <gettext version>] [-b|--bits <32|64>] [-w|--how <shared|static>]"
+			exit 0
+			;;
+		*)
+			echo "Unknown option: $key" >&2
+			echo "Type $0 -h for help" >&2
+			exit 1
+	esac
+done
+
+if [ -z "$BLDGTXT_VERS_ICONV" ]; then
+	BLDGTXT_VERS_ICONV=1.14
+	echo "libiconv version [$BLDGTXT_VERS_ICONV]:"
+	read BLDGTXT_TMP
+	if [ ! -z "$BLDGTXT_TMP" ]; then
+		BLDGTXT_VERS_ICONV=$BLDGTXT_TMP
+	fi
+else
+	echo "libiconv version: $BLDGTXT_VERS_ICONV"
 fi
 
-BLDGTXT_VERS_GETTEXT=0.18.3.2
-echo "gettext version [$BLDGTXT_VERS_GETTEXT]:"
-read BLDGTXT_TMP
-if [ ! -z "$BLDGTXT_TMP" ]; then
-	BLDGTXT_VERS_GETTEXT=$BLDGTXT_TMP
+if [ -z "$BLDGTXT_VERS_GETTEXT" ]; then
+	BLDGTXT_VERS_GETTEXT=0.18.3.2
+	echo "gettext version [$BLDGTXT_VERS_GETTEXT]:"
+	read BLDGTXT_TMP
+	if [ ! -z "$BLDGTXT_TMP" ]; then
+		BLDGTXT_VERS_GETTEXT=$BLDGTXT_TMP
+	fi
+else
+	echo "gettext version: $BLDGTXT_VERS_GETTEXT"
 fi
 
-BLDGTXT_BITS=32
-echo "Architecture (32 for 32bit, 64 for 64bit) [$BLDGTXT_BITS]:"
-read BLDGTXT_TMP
-if [ ! -z "$BLDGTXT_TMP" ]; then
-	BLDGTXT_BITS=$BLDGTXT_TMP
+if [ -z "$BLDGTXT_BITS" ]; then
+	BLDGTXT_BITS=32
+	echo "Architecture (32 for 32bit, 64 for 64bit) [$BLDGTXT_BITS]:"
+	read BLDGTXT_TMP
+	if [ ! -z "$BLDGTXT_TMP" ]; then
+		BLDGTXT_BITS=$BLDGTXT_TMP
+	fi
+else
+	echo "Architecture: $BLDGTXT_BITS bits"
 fi
 case $BLDGTXT_BITS in
 	"32")
@@ -57,7 +102,7 @@ case $BLDGTXT_BITS in
 				BLDGTXT_BASE=/usr/i586-mingw32msvc
 				BLDGTXT_HOST=i586-mingw32msvc
 			else
-				echo mingw 32 bit not found.
+				echo mingw 32 bit not found. >&2
 				exit 1
 			fi
 		fi
@@ -71,24 +116,28 @@ case $BLDGTXT_BITS in
 				BLDGTXT_BASE=/usr/x86_64-w64-mingw32
 				BLDGTXT_HOST=x86_64-w64-mingw32
 			else
-				echo mingw 64 bit not found.
+				echo mingw 64 bit not found. >&2
 				exit 1
 			fi
 		fi
 		;;
-   *)
-		echo "Unsupported bits: $BLDGTXT_BITS"
+	*)
+		echo "Unsupported bits: $BLDGTXT_BITS" >&2
 		exit 1
 		;;
 esac
 
-
-BLDGTXT_HOW=shared
-echo "Shared (smaller but with DLL) or static (no DLL but bigger) build ('shared' or 'static') [$BLDGTXT_HOW]:"
-read BLDGTXT_TMP
-if [ ! -z "$BLDGTXT_TMP" ]; then
-	BLDGTXT_HOW=$BLDGTXT_TMP
+if [ -z "$BLDGTXT_HOW" ]; then
+	BLDGTXT_HOW=shared
+	echo "Shared (smaller but with DLL) or static (no DLL but bigger) build ('shared' or 'static') [$BLDGTXT_HOW]:"
+	read BLDGTXT_TMP
+	if [ ! -z "$BLDGTXT_TMP" ]; then
+		BLDGTXT_HOW=$BLDGTXT_TMP
+	fi
+else
+	echo "Compile as: $BLDGTXT_HOW"
 fi
+
 case $BLDGTXT_HOW in
 	"shared")
 		BLDGTXT_HOW_EXPANDED=" --enable-shared --enable-static "
@@ -96,11 +145,12 @@ case $BLDGTXT_HOW in
 	"static")
 		BLDGTXT_HOW_EXPANDED=" --disable-shared --enable-static "
 		;;
-   *)
-		echo "Unsupported build type: $BLDGTXT_HOW"
+	*)
+		echo "Unsupported build type: $BLDGTXT_HOW" >&2
 		exit 1
 		;;
 esac
+
 ######################
 BLDGTXT_SRC=$BLDGTXT_ROOT/src-$BLDGTXT_HOW-$BLDGTXT_BITS
 BLDGTXT_DST=$BLDGTXT_ROOT/out-$BLDGTXT_HOW-$BLDGTXT_BITS
@@ -111,10 +161,18 @@ mkdir --parents $BLDGTXT_ARC
 
 if [ ! -f "$BLDGTXT_ARC/libiconv-$BLDGTXT_VERS_ICONV.tar.gz" ]; then
 	wget --output-document=$BLDGTXT_ARC/libiconv-$BLDGTXT_VERS_ICONV.tar.gz http://ftp.gnu.org/pub/gnu/libiconv/libiconv-$BLDGTXT_VERS_ICONV.tar.gz
+	if [ $? -ne 0 ]; then
+		echo "Error downloading libiconv $BLDGTXT_VERS_ICONV" >&2
+		exit 1
+	fi
 fi
 
 if [ ! -f "$BLDGTXT_ARC/gettext-$BLDGTXT_VERS_GETTEXT.tar.gz" ]; then
 	wget --output-document=$BLDGTXT_ARC/gettext-$BLDGTXT_VERS_GETTEXT.tar.gz http://ftp.gnu.org/pub/gnu/gettext/gettext-$BLDGTXT_VERS_GETTEXT.tar.gz
+	if [ $? -ne 0 ]; then
+		echo "Error downloading gettext $BLDGTXT_VERS_GETTEXT" >&2
+		exit 1
+	fi
 fi
 
 if [ $BLDGTXT_VERS_GETTEXT = "0.18.3" ]; then
@@ -164,33 +222,90 @@ mkdir --parents $BLDGTXT_DST
 echo Compile iconv
 cd $BLDGTXT_SRC
 tar zxvf $BLDGTXT_ARC/libiconv-$BLDGTXT_VERS_ICONV.tar.gz
+if [ $? -ne 0 ]; then
+	echo "Error extracting libiconv archive" >&2
+	exit 1
+fi
 cd libiconv-$BLDGTXT_VERS_ICONV
 ./configure --prefix=$BLDGTXT_DST --host=$BLDGTXT_HOST $BLDGTXT_HOW_EXPANDED CC="$BLDGTXT_HOST-gcc" CCX="$BLDGTXT_HOST-g++" CPPFLAGS="-Wall -I$BLDGTXT_BASE/include" LDFLAGS="-L$BLDGTXT_BASE/lib"
+if [ $? -ne 0 ]; then
+	echo "libiconv configure failed" >&2
+	exit 1
+fi
 make install
+if [ $? -ne 0 ]; then
+	echo "libiconv make install failed" >&2
+	exit 1
+fi
 
 
 ######################
 echo Compile gettext
 cd $BLDGTXT_SRC
 tar zxvf $BLDGTXT_ARC/gettext-$BLDGTXT_VERS_GETTEXT.tar.gz
+if [ $? -ne 0 ]; then
+	echo "Error extracting gettext archive" >&2
+	exit 1
+fi
 cd gettext-$BLDGTXT_VERS_GETTEXT
 if [ $BLDGTXT_VERS_GETTEXT = "0.18.3" ]; then
 	echo Compile gettext - Start patch
 	patch -p1 < "$BLDGTXT_ARC/0001-Fix-AC_CHECK_DECLS-usage.patch"
+	if [ $? -ne 0 ]; then
+		echo "Error patching gettext" >&2
+		exit 1
+	fi
 	echo Compile gettext - Regenerate build scripts
 	cd gettext-runtime
 	aclocal -I m4 -I ../m4 -I gnulib-m4
+	if [ $? -ne 0 ]; then
+		echo "aclocal failed on patched gettext-runtime" >&2
+		exit 1
+	fi
 	autoconf
+	if [ $? -ne 0 ]; then
+		echo "autoconf failed on patched gettext-runtime" >&2
+		exit 1
+	fi
 	autoheader
+	if [ $? -ne 0 ]; then
+		echo "autoheader failed on patched gettext-runtime" >&2
+		exit 1
+	fi
 	cd ..
 	cd gettext-tools
 	aclocal -I m4 -I ../gettext-runtime/m4 -I ../m4 -I gnulib-m4 -I libgrep/gnulib-m4 -I libgettextpo/gnulib-m4
+	if [ $? -ne 0 ]; then
+		echo "aclocal failed on patched gettext-tools" >&2
+		exit 1
+	fi
 	autoconf
+	if [ $? -ne 0 ]; then
+		echo "autoconf failed on patched gettext-tools" >&2
+		exit 1
+	fi
 	autoheader
+	if [ $? -ne 0 ]; then
+		echo "autoheader failed on patched gettext-tools" >&2
+		exit 1
+	fi
 	automake --add-missing --copy
+	if [ $? -ne 0 ]; then
+		echo "automake failed on patched gettext-tools" >&2
+		exit 1
+	fi
 	cd ..
 	echo Compile gettext - End patch
 fi
 ./configure --prefix=$BLDGTXT_DST --host=$BLDGTXT_HOST $BLDGTXT_HOW_EXPANDED CC="$BLDGTXT_HOST-gcc" CCX="$BLDGTXT_HOST-g++" CPPFLAGS="-Wall -I$BLDGTXT_BASE/include" LDFLAGS="-L$BLDGTXT_BASE/lib"
+if [ $? -ne 0 ]; then
+	echo "gettext configure failed" >&2
+	exit 1
+fi
 make install
+if [ $? -ne 0 ]; then
+	echo "gettext make install failed" >&2
+	exit 1
+fi
 echo All done. See $BLDGTXT_DST/bin
+exit 0
