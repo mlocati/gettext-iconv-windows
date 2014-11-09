@@ -94,13 +94,13 @@ else
 fi
 case $BLDGTXT_BITS in
 	"32")
-		if [ -d /usr/i686-pc-mingw32/sys-root/mingw ]; then
-			BLDGTXT_BASE=/usr/i686-pc-mingw32/sys-root/mingw
-			BLDGTXT_HOST=i686-pc-mingw32
+		if [ -d /usr/i586-mingw32msvc ]; then
+			BLDGTXT_BASE=/usr/i586-mingw32msvc
+			BLDGTXT_HOST=i586-mingw32msvc
 		else
-			if [ -d /usr/i586-mingw32msvc ]; then
-				BLDGTXT_BASE=/usr/i586-mingw32msvc
-				BLDGTXT_HOST=i586-mingw32msvc
+			if [ -d /usr/i686-pc-mingw32/sys-root/mingw ]; then
+				BLDGTXT_BASE=/usr/i686-pc-mingw32/sys-root/mingw
+				BLDGTXT_HOST=i686-pc-mingw32
 			else
 				echo mingw 32 bit not found. >&2
 				exit 1
