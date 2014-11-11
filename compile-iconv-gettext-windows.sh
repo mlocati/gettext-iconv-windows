@@ -307,5 +307,36 @@ if [ $? -ne 0 ]; then
 	echo "gettext make install failed" >&2
 	exit 1
 fi
+
+######################
+echo Final steps
+case $BLDGTXT_HOW$BLDGTXT_BITS in
+	"shared64")
+		if [ -f $BLDGTXT_BASE/lib/libwinpthread-1.dll ]; then
+			cp $BLDGTXT_BASE/lib/libwinpthread-1.dll $BLDGTXT_DST/bin
+		fi
+		if [ -f /usr/lib/gcc/$BLDGTXT_HOST/4.8/libgcc_s_sjlj-1.dll ]; then
+			cp /usr/lib/gcc/$BLDGTXT_HOST/4.8/libgcc_s_sjlj-1.dll $BLDGTXT_DST/bin
+		fi
+		if [ -f /usr/lib/gcc/$BLDGTXT_HOST/4.8/libgomp-1.dll ]; then
+			cp /usr/lib/gcc/$BLDGTXT_HOST/4.8/libgomp-1.dll $BLDGTXT_DST/bin
+		fi
+		if [ -f /usr/lib/gcc/$BLDGTXT_HOST/4.8/libstdc++-6.dll ]; then
+			cp /usr/lib/gcc/$BLDGTXT_HOST/4.8/libstdc++-6.dll $BLDGTXT_DST/bin
+		fi
+		;;
+	"static64")
+		if [ -f $BLDGTXT_BASE/lib/libwinpthread-1.dll ]; then
+			cp $BLDGTXT_BASE/lib/libwinpthread-1.dll $BLDGTXT_DST/bin
+		fi
+		if [ -f /usr/lib/gcc/$BLDGTXT_HOST/4.8/libgcc_s_sjlj-1.dll ]; then
+			cp /usr/lib/gcc/$BLDGTXT_HOST/4.8/libgcc_s_sjlj-1.dll $BLDGTXT_DST/bin
+		fi
+		if [ -f /usr/lib/gcc/$BLDGTXT_HOST/4.8/libgomp-1.dll ]; then
+			cp /usr/lib/gcc/$BLDGTXT_HOST/4.8/libgomp-1.dll $BLDGTXT_DST/bin
+		fi
+esac
+
+######################
 echo All done. See $BLDGTXT_DST/bin
 exit 0
