@@ -1,4 +1,4 @@
-#define MyGettextVer "0.19.3"
+#define MyGettextVer "0.19.4"
 #define MyIconvVer "1.14"
 
 [Setup]
