@@ -25,6 +25,7 @@
 BLDGTXT_ROOT=~/build-gettext-windows
 BLDGTXT_ARC=$BLDGTXT_ROOT/archives
 
+BLDGTXT_VERS_EXPAT=
 BLDGTXT_VERS_ICONV=
 BLDGTXT_VERS_GETTEXT=
 BLDGTXT_BITS=
@@ -33,6 +34,10 @@ while [ ! -z "$1" ]; do
 	key="$1"
 	shift
 	case $key in
+		-e|--expat)
+			BLDGTXT_VERS_EXPAT=$1
+			shift
+			;;
 		-i|--iconv)
 			BLDGTXT_VERS_ICONV=$1
 			shift
@@ -50,7 +55,7 @@ while [ ! -z "$1" ]; do
 			shift
 			;;
 		-h|--help)
-			echo "Usage: $0 [-i|--iconv <iconv version>] [-g|--gettext <gettext version>] [-b|--bits <32|64>] [-w|--how <shared|static>]"
+			echo "Usage: $0 [-e|--expat <expat version>]  [-i|--iconv <iconv version>] [-g|--gettext <gettext version>] [-b|--bits <32|64>] [-w|--how <shared|static>]"
 			exit 0
 			;;
 		*)
@@ -59,6 +64,17 @@ while [ ! -z "$1" ]; do
 			exit 1
 	esac
 done
+
+if [ -z "$BLDGTXT_VERS_EXPAT" ]; then
+	BLDGTXT_VERS_EXPAT=2.1.0
+	echo "libexpat version [$BLDGTXT_VERS_EXPAT]:"
+	read BLDGTXT_TMP
+	if [ ! -z "$BLDGTXT_TMP" ]; then
+		BLDGTXT_VERS_EXPAT=$BLDGTXT_TMP
+	fi
+else
+	echo "libexpat version: $BLDGTXT_VERS_EXPAT"
+fi
 
 if [ -z "$BLDGTXT_VERS_ICONV" ]; then
 	BLDGTXT_VERS_ICONV=1.14
@@ -159,6 +175,14 @@ echo Setup source archives
 
 mkdir --parents $BLDGTXT_ARC
 
+if [ ! -f "$BLDGTXT_ARC/expat-$BLDGTXT_VERS_EXPAT.tar.gz" ]; then
+	wget --output-document=$BLDGTXT_ARC/expat-$BLDGTXT_VERS_EXPAT.tar.gz http://sourceforge.net/projects/expat/files/expat/$BLDGTXT_VERS_EXPAT/expat-$BLDGTXT_VERS_EXPAT.tar.gz
+	if [ $? -ne 0 ]; then
+		echo "Error downloading expat $BLDGTXT_VERS_EXPAT" >&2
+		exit 1
+	fi
+fi
+
 if [ ! -f "$BLDGTXT_ARC/libiconv-$BLDGTXT_VERS_ICONV.tar.gz" ]; then
 	wget --output-document=$BLDGTXT_ARC/libiconv-$BLDGTXT_VERS_ICONV.tar.gz http://ftp.gnu.org/pub/gnu/libiconv/libiconv-$BLDGTXT_VERS_ICONV.tar.gz
 	if [ $? -ne 0 ]; then
@@ -219,9 +243,30 @@ mkdir --parents $BLDGTXT_DST
 
 
 ######################
+echo Compile expat
+cd $BLDGTXT_SRC
+tar zxf $BLDGTXT_ARC/expat-$BLDGTXT_VERS_EXPAT.tar.gz
+if [ $? -ne 0 ]; then
+	echo "Error extracting expat archive" >&2
+	exit 1
+fi
+cd expat-$BLDGTXT_VERS_EXPAT
+./configure --prefix=$BLDGTXT_DST --host=$BLDGTXT_HOST $BLDGTXT_HOW_EXPANDED CC="$BLDGTXT_HOST-gcc" CCX="$BLDGTXT_HOST-g++" CPPFLAGS="-Wall -I$BLDGTXT_BASE/include" LDFLAGS="-L$BLDGTXT_BASE/lib"
+if [ $? -ne 0 ]; then
+	echo "expat configure failed" >&2
+	exit 1
+fi
+make install
+if [ $? -ne 0 ]; then
+	echo "expat make install failed" >&2
+	exit 1
+fi
+
+
+######################
 echo Compile iconv
 cd $BLDGTXT_SRC
-tar zxvf $BLDGTXT_ARC/libiconv-$BLDGTXT_VERS_ICONV.tar.gz
+tar zxf $BLDGTXT_ARC/libiconv-$BLDGTXT_VERS_ICONV.tar.gz
 if [ $? -ne 0 ]; then
 	echo "Error extracting libiconv archive" >&2
 	exit 1
@@ -242,7 +287,7 @@ fi
 ######################
 echo Compile gettext
 cd $BLDGTXT_SRC
-tar zxvf $BLDGTXT_ARC/gettext-$BLDGTXT_VERS_GETTEXT.tar.gz
+tar zxf $BLDGTXT_ARC/gettext-$BLDGTXT_VERS_GETTEXT.tar.gz
 if [ $? -ne 0 ]; then
 	echo "Error extracting gettext archive" >&2
 	exit 1
