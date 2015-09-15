@@ -72,7 +72,7 @@ else
 fi
 
 if [ -z "$BLDGTXT_VERS_GETTEXT" ]; then
-	BLDGTXT_VERS_GETTEXT=0.19.4
+	BLDGTXT_VERS_GETTEXT=0.19.6
 	echo "gettext version [$BLDGTXT_VERS_GETTEXT]:"
 	read BLDGTXT_TMP
 	if [ ! -z "$BLDGTXT_TMP" ]; then
