@@ -15,7 +15,7 @@
 #	Basic packages
 # 		apt-get install binutils make wget
 #	If compiling gettext 0.18.3 you need also
-#		apt-get patch automake
+#		apt-get install patch automake
 # 	To compile for 32 bit:
 # 		apt-get install mingw32 mingw32-runtime mingw32-binutils
 # 	To compile for 64 bit:
