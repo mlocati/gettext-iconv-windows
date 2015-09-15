@@ -21,8 +21,7 @@ OutputDir=setup
 OutputBaseFilename=gettext{#MyGettextVer}-iconv{#MyIconvVer}-{#MyVersionCodeName}
 
 [Files]
-Source: "compiled\out-{#MyVersionCodeName}\bin\*.dll"; DestDir: "{app}"
-Source: "compiled\out-{#MyVersionCodeName}\bin\*.exe"; DestDir: "{app}"
+Source: "compiled\out-{#MyVersionCodeName}\bin\*.*"; Excludes: "*.sh,autopoint,gettextize,xmlwf"; DestDir: "{app}"
 Source: "compiled\out-{#MyVersionCodeName}\lib\gettext\*.exe"; DestDir: "{app}"
 Source: "cldr\*.*"; DestDir: "{app}"
 Source: setup-data\license.txt; DestDir: "{app}"
