@@ -293,7 +293,6 @@ $BLDGTXT_SOURCE/gettext-$BLDGTXT_V_GETTEXT/configure \
     --disable-native-java \
     --disable-csharp \
     --disable-rpath \
-    --disable-c++ \
     --disable-openmp \
     --disable-curses \
     --without-emacs \
