@@ -318,17 +318,14 @@ unzip -p $BLDGTXT_ARCHIVES/cldr.zip unicode-license.txt | perl -pe 's/\r\n|\n|\r
 
 mkdir $BLDGTXT_OUTPUT/bin
 cp $BLDGTXT_COMPILED/gettext/bin/*.exe $BLDGTXT_OUTPUT/bin/
-if [ -f $BLDGTXT_COMPILED/gettext/bin/*.dll ]; then
-    cp $BLDGTXT_COMPILED/gettext/bin/*.dll $BLDGTXT_OUTPUT/bin/
-fi
+cp $BLDGTXT_COMPILED/gettext/bin/*.dll $BLDGTXT_OUTPUT/bin/ 2>/dev/null || :
+
 
 mkdir $BLDGTXT_OUTPUT/lib
 cp $BLDGTXT_COMPILED/gettext/lib/charset.alias $BLDGTXT_OUTPUT/lib
 mkdir $BLDGTXT_OUTPUT/lib/gettext
 cp $BLDGTXT_COMPILED/gettext/lib/gettext/*.exe $BLDGTXT_OUTPUT/lib/gettext/
-if [ -f $BLDGTXT_COMPILED/gettext/lib/gettext/*.dll ]; then
-    cp $BLDGTXT_COMPILED/gettext/lib/gettext/*.dll $BLDGTXT_OUTPUT/lib/gettext/
-fi
+cp $BLDGTXT_COMPILED/gettext/lib/gettext/*.dll $BLDGTXT_OUTPUT/lib/gettext/ 2>/dev/null || :
 
 mkdir $BLDGTXT_OUTPUT/share
 mkdir $BLDGTXT_OUTPUT/share/doc
