@@ -322,10 +322,10 @@ cp $BLDGTXT_COMPILED/gettext/bin/*.dll $BLDGTXT_OUTPUT/bin/ 2>/dev/null || :
 
 
 mkdir $BLDGTXT_OUTPUT/lib
-cp $BLDGTXT_COMPILED/gettext/lib/charset.alias $BLDGTXT_OUTPUT/lib
+cp $BLDGTXT_COMPILED/gettext/lib/charset.alias $BLDGTXT_OUTPUT/lib/
 mkdir $BLDGTXT_OUTPUT/lib/gettext
-cp $BLDGTXT_COMPILED/gettext/lib/gettext/*.exe $BLDGTXT_OUTPUT/lib/gettext/
-cp $BLDGTXT_COMPILED/gettext/lib/gettext/*.dll $BLDGTXT_OUTPUT/lib/gettext/ 2>/dev/null || :
+cp $BLDGTXT_COMPILED/gettext/lib/gettext/cldr-plurals.exe $BLDGTXT_OUTPUT/bin/
+cp $BLDGTXT_COMPILED/gettext/lib/gettext/*.dll $BLDGTXT_OUTPUT/bin/ 2>/dev/null || :
 
 mkdir $BLDGTXT_OUTPUT/share
 mkdir $BLDGTXT_OUTPUT/share/doc
@@ -344,3 +344,10 @@ cp --recursive $BLDGTXT_COMPILED/gettext/share/gettext-*/its $BLDGTXT_OUTPUT/sha
 
 mkdir --parents $BLDGTXT_OUTPUT/lib/gettext/common/supplemental
 unzip -p $BLDGTXT_ARCHIVES/cldr.zip common/supplemental/plurals.xml > $BLDGTXT_OUTPUT/lib/gettext/common/supplemental/plurals.xml
+
+case $BLDGTXT_LINK in
+    shared)
+		cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll $BLDGTXT_OUTPUT/bin/
+		cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libgcc_s_seh-1.dll $BLDGTXT_OUTPUT/bin/
+        ;;
+esac
