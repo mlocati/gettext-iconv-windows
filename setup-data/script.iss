@@ -1,5 +1,9 @@
-#define MyGettextVer "0.19.8.1"
-#define MyIconvVer "1.14"
+// #define MyVersionShownName "%BLDGTX_LINK (BLDGTX_BITS bit)"
+// #define MyVersionCodeName "BLDGTX_LINK-BLDGTX_BITS"
+// #define MyIs64bit BLDGTX_IS64BITS
+// #define MyGettextVer "BLDGTX_V_GETTEXT"
+// #define MyIconvVer "BLDGTX_V_ICONV"
+// #define MyCompiledFolderPath "..."
 
 [Setup]
 AppId=gettext-iconv
@@ -21,7 +25,7 @@ OutputDir=setup
 OutputBaseFilename=gettext{#MyGettextVer}-iconv{#MyIconvVer}-{#MyVersionCodeName}
 
 [Files]
-Source: "compiled\{#MyVersionCodeName}\*.*"; DestDir: "{app}"
+Source: "{#MyCompiledFolderPath}\*.*"; DestDir: "{app}"; Flags: recursesubdirs
 
 [Tasks]
 Name: modifypath; Description: &Add application directory to your environmental &PATH
