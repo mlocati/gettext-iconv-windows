@@ -5,7 +5,7 @@ gettext and iconv binaries for Windows.
 
 ## Ready-to-use binaries ##
 If you don't want to waste your time or if you don't know much about compiling and virtual machines,  
-see [mlocati.github.com/gettext-iconv-windows](https://mlocati.github.com/gettext-iconv-windows).
+see [mlocati.github.io/articles/gettext-iconv-windows.html](http://mlocati.github.io/articles/gettext-iconv-windows.html).
 
 ## Do you want to build binaries on your own? ##
 
@@ -29,12 +29,12 @@ Steps to compile (to be done under Linux):
 
 ---
 
-Steps to compile (to be done under Linux):
+Steps to generate the setup files (to be done under Windows):
 
 If you want to build a setup to install these executables and automatically add them to the environmental path:
 - [take a copy](https://github.com/mlocati/gettext-iconv-windows/archive/master.zip) of the full repository gettext-iconv-windows
 - under the folder containing the repository content, create a folder `compiled` and copy under that directory the `out-…` folder that you have under Linux
-- With Inno Setup create the setup using the appropriate `setup-…-….iss` script you find in the repo folder
+- launch the `build-setup.vbs` script
 
 
 ## Credits
