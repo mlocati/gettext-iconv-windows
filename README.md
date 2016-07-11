@@ -1,3 +1,5 @@
+![Github All Releases](https://img.shields.io/github/downloads/mlocati/gettext-iconv-windows/total.svg?style=flat-square)
+
 gettext-iconv-windows
 =====================
 
