@@ -211,7 +211,7 @@ if [[ $BLDGTXT_QUIET == 1 ]]; then
     BLDGTXT_QUIET_CPPFLAGS='-Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Wno-attributes -Wno-write-strings'
     BLDGTXT_QUIET_MAKE=-silent
 else
-	BLDGTXT_MAKE_JOBS='--jobs=1'
+    BLDGTXT_MAKE_JOBS='--jobs=1'
 fi
 
 BLDGTXT_SCRIPTDIR=`bldgtxtGetSourceFolder`
@@ -356,9 +356,13 @@ cp --recursive $BLDGTXT_COMPILED/gettext/share/gettext/msgunfmt.tcl $BLDGTXT_OUT
 mkdir --parents $BLDGTXT_OUTPUT/lib/gettext/common/supplemental
 unzip -p $BLDGTXT_ARCHIVES/cldr.zip common/supplemental/plurals.xml > $BLDGTXT_OUTPUT/lib/gettext/common/supplemental/plurals.xml
 
-case $BLDGTXT_LINK in
-    shared)
+case $BLDGTXT_LINK$BLDGTXT_BITS in
+    shared32)
 		cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll $BLDGTXT_OUTPUT/bin/
-		cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libgcc_s_seh-1.dll $BLDGTXT_OUTPUT/bin/
+        cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libgcc_s_sjlj-1.dll $BLDGTXT_OUTPUT/bin/
+        ;;
+    shared64)
+        cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll $BLDGTXT_OUTPUT/bin/
+        cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libgcc_s_seh-1.dll $BLDGTXT_OUTPUT/bin/
         ;;
 esac
