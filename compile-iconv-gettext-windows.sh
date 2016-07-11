@@ -341,6 +341,7 @@ rename 's/\.1\.html$/\.html/' '.html' $BLDGTXT_OUTPUT/share/doc/libiconv/*.1.htm
 cp --recursive $BLDGTXT_COMPILED/gettext/share/locale $BLDGTXT_OUTPUT/share/
 mkdir $BLDGTXT_OUTPUT/share/gettext
 cp --recursive $BLDGTXT_COMPILED/gettext/share/gettext-*/its $BLDGTXT_OUTPUT/share/gettext
+cp --recursive $BLDGTXT_COMPILED/gettext/share/gettext/msgunfmt.tcl $BLDGTXT_OUTPUT/share/gettext
 
 mkdir --parents $BLDGTXT_OUTPUT/lib/gettext/common/supplemental
 unzip -p $BLDGTXT_ARCHIVES/cldr.zip common/supplemental/plurals.xml > $BLDGTXT_OUTPUT/lib/gettext/common/supplemental/plurals.xml
