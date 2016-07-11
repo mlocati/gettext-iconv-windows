@@ -149,6 +149,7 @@ BLDGTXT_BITS=
 BLDGTXT_LINK_DEFAULT=static
 BLDGTXT_LINK=
 BLDGTXT_QUIET=0
+BLDGTXT_MAKE_JOBS=
 bldgtxtReadCommandLine "$@"
 if [ -z "$BLDGTXT_V_ICONV" ]; then
     BLDGTXT_V_ICONV=$(bldgtxtAskVersion iconv $BLDGTXT_V_ICONV_DEFAULT)
@@ -209,6 +210,8 @@ if [[ $BLDGTXT_QUIET == 1 ]]; then
     BLDGTXT_QUIET_CONFIGURE='--quiet --enable-silent-rules'
     BLDGTXT_QUIET_CPPFLAGS='-Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Wno-attributes -Wno-write-strings'
     BLDGTXT_QUIET_MAKE=-silent
+else
+	BLDGTXT_MAKE_JOBS='--jobs=1'
 fi
 
 BLDGTXT_SCRIPTDIR=`bldgtxtGetSourceFolder`
@@ -217,6 +220,7 @@ BLDGTXT_ARCHIVES=$BLDGTXT_ROOT/archives
 BLDGTXT_PATCHES=$BLDGTXT_SCRIPTDIR/patches
 BLDGTXT_BASEDIR=$BLDGTXT_ROOT/$BLDGTXT_LINK-$BLDGTXT_BITS
 BLDGTXT_SOURCE=$BLDGTXT_BASEDIR/source
+BLDGTXT_CONFIGURED=$BLDGTXT_BASEDIR/configured
 BLDGTXT_COMPILED=$BLDGTXT_BASEDIR/compiled
 BLDGTXT_OUTPUT_DEFAULT=$BLDGTXT_BASEDIR/output
 BLDGTXT_RELOCPREFIXES='--enable-relocatable --prefix=/gettext'
@@ -235,9 +239,11 @@ bldgtxtDownload http://unicode.org/Public/cldr/latest/core.zip cldr.zip
 
 echo '### Resetting environment'
 rm --recursive --force $BLDGTXT_SOURCE
+rm --recursive --force $BLDGTXT_CONFIGURED
 rm --recursive --force $BLDGTXT_COMPILED
 rm --recursive --force $BLDGTXT_OUTPUT_DEFAULT
 mkdir --parents $BLDGTXT_SOURCE
+mkdir --parents $BLDGTXT_CONFIGURED
 mkdir --parents $BLDGTXT_COMPILED
 if [ -z "$BLDGTXT_OUTPUT_CUSTOM" ]; then
     BLDGTXT_OUTPUT=$BLDGTXT_OUTPUT_DEFAULT
@@ -259,6 +265,8 @@ cd $BLDGTXT_SOURCE
 tar --extract --gzip --file=$BLDGTXT_ARCHIVES/libiconv-$BLDGTXT_V_ICONV.tar.gz
 cd libiconv-$BLDGTXT_V_ICONV
 bldgtxtApplyPatches "$BLDGTXT_PATCHES/libiconv-$BLDGTXT_V_ICONV-configure"
+mkdir $BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV
+cd $BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV
 echo '### Configuring iconv'
 $BLDGTXT_SOURCE/libiconv-$BLDGTXT_V_ICONV/configure \
     --host=$MXE_TARGETS \
@@ -272,15 +280,17 @@ $BLDGTXT_SOURCE/libiconv-$BLDGTXT_V_ICONV/configure \
     CPPFLAGS="$BLDGTXT_QUIET_CPPFLAGS"
 bldgtxtApplyPatches "$BLDGTXT_PATCHES/libiconv-$BLDGTXT_V_ICONV-make"
 echo '### Making iconv'
-make --jobs=2 --no-keep-going $BLDGTXT_QUIET_MAKE
+make $BLDGTXT_MAKE_JOBS --no-keep-going $BLDGTXT_QUIET_MAKE
 echo '### Installing iconv'
-make --no-keep-going $BLDGTXT_QUIET_MAKE DESTDIR=$BLDGTXT_COMPILED install
+make $BLDGTXT_MAKE_JOBS --no-keep-going $BLDGTXT_QUIET_MAKE DESTDIR=$BLDGTXT_COMPILED install
 
 echo '### Setting up gettext'
 cd $BLDGTXT_SOURCE
 tar --extract --gzip --file=$BLDGTXT_ARCHIVES/gettext-$BLDGTXT_V_GETTEXT.tar.gz
 cd gettext-$BLDGTXT_V_GETTEXT
 bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-configure"
+mkdir $BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT
+cd $BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT
 echo '### Configuring gettext'
 $BLDGTXT_SOURCE/gettext-$BLDGTXT_V_GETTEXT/configure \
     --host=$MXE_TARGETS \
@@ -307,9 +317,9 @@ $BLDGTXT_SOURCE/gettext-$BLDGTXT_V_GETTEXT/configure \
     ac_cv_func__set_invalid_parameter_handler=no
 bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-make"
 echo '### Making gettext'
-make --directory=gettext-tools --jobs=2 --no-keep-going $BLDGTXT_QUIET_MAKE
+make $BLDGTXT_MAKE_JOBS --directory=gettext-tools --no-keep-going $BLDGTXT_QUIET_MAKE
 echo '### Installing gettext'
-make --directory=gettext-tools --no-keep-going $BLDGTXT_QUIET_MAKE DESTDIR=$BLDGTXT_COMPILED install
+make $BLDGTXT_MAKE_JOBS --directory=gettext-tools --no-keep-going $BLDGTXT_QUIET_MAKE DESTDIR=$BLDGTXT_COMPILED install
 
 echo '### Creating outut contents'
 perl -pe 's/\r\n|\n|\r/\r\n/g' < $BLDGTXT_SOURCE/libiconv-$BLDGTXT_V_ICONV/COPYING > $BLDGTXT_OUTPUT/iconv-license.txt
