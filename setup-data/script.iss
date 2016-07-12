@@ -41,9 +41,9 @@ Name: setenvcldr; Description: Set GETTEXTCLDRDIR environment variable (useful f
 const
 	TASK_MODPATH = 'modifypath';
 	TASK_SETENVCLDR = 'setenvcldr';
-	TASK_MODPATH_TYPE = 'user';
+	TASK_MODPATH_TYPE = 'system';
 	TASK_SETENVCLDR_NAME = 'GETTEXTCLDRDIR';
-	TASK_SETENVCLDR_TYPE = 'user';
+	TASK_SETENVCLDR_TYPE = 'system';
 
 function SetEnvironmentVariable(lpName: string; lpValue: string): BOOL;
 	external 'SetEnvironmentVariable{#AW}@kernel32.dll stdcall';
