@@ -7,7 +7,14 @@ Const ForReading = 1
 
 EnsureCScript
 
-Dim shell, fso, baseFolder, exe7Zip, exeInnoSetup, compiledFolders(), outputFolder
+Dim shell, fso, baseFolder, exe7Zip, exeInnoSetup, compiledFolders(), outputFolder, p, askKey
+
+askKey = False
+For p = 0 To WScript.Arguments.Count - 1
+	If StrComp(WScript.Arguments(p), "/AskKey", 1) = 0 Then
+		askKey = True
+	End If
+Next
 
 Set shell = CreateObject( "WScript.Shell" )
 Set fso = CreateObject("Scripting.FileSystemObject") 
@@ -18,6 +25,8 @@ Set outputFolder = fso.GetFolder(fso.BuildPath(GetBaseFolder(), "setup"))
 
 CreateZIPs
 CreateSetups
+
+Quit 0
 
 Function GetBaseFolder()
 	Dim s, p
@@ -114,11 +123,8 @@ Sub LookForApps()
 	Next
 	Err.Clear
 	On Error Goto 0
-	WScript.Echo "Failed to locale 7-zip or InnoSetup"
-	WScript.StdOut.WriteLine ""
-	WScript.StdOut.Write "Press RETURN"
-	WScript.StdIn.ReadLine()
-	WScript.Quit
+	WScript.Echo "Failed to locate 7-zip or InnoSetup"
+	Quit 1
 End Sub
 Sub CreateZIPs()
 	Dim i, zipName, origDir, rc
@@ -143,10 +149,7 @@ Sub CreateZIPs()
 			shell.CurrentDirectory = origDir
 			Err.Clear
 			On Error Goto 0
-			WScript.StdOut.WriteLine ""
-			WScript.StdOut.Write "Press RETURN"
-			WScript.StdIn.ReadLine()
-			WScript.Quit
+			Quit 1
 		End If
 	Next
 	On Error Goto 0
@@ -182,10 +185,7 @@ Sub CreateSetups()
 		fso.DeleteFile tempName
 		If rc <> 0 Then
 			WScript.Echo "ERROR! " & Err.Description
-			WScript.StdOut.WriteLine ""
-			WScript.StdOut.Write "Press RETURN"
-			WScript.StdIn.ReadLine()
-			WScript.Quit
+			Quit 1
 		End If
 	Next
 End Sub
@@ -223,10 +223,7 @@ Sub GetCompiledFolders()
 	Next
 	If numResult = 0 Then
 		WScript.Echo "No compiled folders found"
-		WScript.StdOut.WriteLine ""
-		WScript.StdOut.Write "Press RETURN"
-		WScript.StdIn.ReadLine()
-		WScript.Quit
+		Quit 1
 	End If
 End Sub
 
@@ -238,3 +235,11 @@ Class CompiledFolder
 		BaseName = "gettext" & GETTEXT_VERSION & "-iconv" & ICONV_VERSION & "-" & Me.Link & "-" & Me.Bits
 	End Property
 End Class
+Sub Quit(ByVal rc)
+	If askKey Then
+		WScript.StdOut.WriteLine ""
+		WScript.StdOut.Write "Press RETURN"
+		WScript.StdIn.ReadLine()
+	End If
+	WScript.Quit rc
+End Sub
