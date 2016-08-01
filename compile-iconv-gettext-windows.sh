@@ -358,7 +358,7 @@ unzip -p $BLDGTXT_ARCHIVES/cldr.zip common/supplemental/plurals.xml > $BLDGTXT_O
 
 case $BLDGTXT_LINK$BLDGTXT_BITS in
     shared32)
-		cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll $BLDGTXT_OUTPUT/bin/
+        cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll $BLDGTXT_OUTPUT/bin/
         cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libgcc_s_sjlj-1.dll $BLDGTXT_OUTPUT/bin/
         ;;
     shared64)
