@@ -249,15 +249,15 @@ if [ -z "$BLDGTXT_OUTPUT_CUSTOM" ]; then
     BLDGTXT_OUTPUT=$BLDGTXT_OUTPUT_DEFAULT
     mkdir --parents $BLDGTXT_OUTPUT
 else
-    BLDGTXT_OUTPUT=$BLDGTXT_OUTPUT_CUSTOM
-    if [ -d "$BLDGTXT_OUTPUT" ]; then
-        if [ "$(ls -A $BLDGTXT_OUTPUT)" ]; then
-            echo "Output directory not empty: $BLDGTXT_OUTPUT" >&2
+    if [ -d "$BLDGTXT_OUTPUT_CUSTOM" ]; then
+        if [ "$(ls -A $BLDGTXT_OUTPUT_CUSTOM)" ]; then
+            echo "Output directory not empty: $BLDGTXT_OUTPUT_CUSTOM" >&2
             exit 1
         fi
     else
-        mkdir --parents "$BLDGTXT_OUTPUT"
+        mkdir --parents "$BLDGTXT_OUTPUT_CUSTOM"
     fi
+	 BLDGTXT_OUTPUT=`realpath --no-symlinks $BLDGTXT_OUTPUT_CUSTOM`
 fi
 
 echo '### Setting up iconv'
