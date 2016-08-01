@@ -138,6 +138,9 @@ function bldgtxtApplyPatches {
         fi
     fi
 }
+function copyBinary {
+    ${BLDGTXT_BINUTILSPREFIX}strip --strip-unneeded "$1" -o $BLDGTXT_OUTPUT/bin/`basename $1`
+}
 echo '### Reading configuration'
 BLDGTXT_OUTPUT_CUSTOM=
 BLDGTXT_V_ICONV_DEFAULT=1.14
@@ -225,6 +228,7 @@ BLDGTXT_COMPILED=$BLDGTXT_BASEDIR/compiled
 BLDGTXT_OUTPUT_DEFAULT=$BLDGTXT_BASEDIR/output
 BLDGTXT_RELOCPREFIXES='--enable-relocatable --prefix=/gettext'
 BLDGTXT_PKG_CONFIG_PATH_NAME="PKG_CONFIG_PATH_${BLDGTXT_BITS2}_w64_mingw32_${BLDGTXT_LINK}"
+BLDGTXT_BINUTILSPREFIX=$BLDGTXT_BITS2-w64-mingw32.$BLDGTXT_LINK-
 
 export MXE_TARGETS="${BLDGTXT_BITS2}-w64-mingw32.${BLDGTXT_LINK}"
 export PKG_CONFIG_PATH=$BLDGTXT_COMPILED
@@ -257,7 +261,7 @@ else
     else
         mkdir --parents "$BLDGTXT_OUTPUT_CUSTOM"
     fi
-	 BLDGTXT_OUTPUT=`realpath --no-symlinks $BLDGTXT_OUTPUT_CUSTOM`
+    BLDGTXT_OUTPUT=`realpath --no-symlinks $BLDGTXT_OUTPUT_CUSTOM`
 fi
 
 echo '### Setting up iconv'
@@ -327,15 +331,17 @@ perl -pe 's/\r\n|\n|\r/\r\n/g' < $BLDGTXT_SOURCE/gettext-$BLDGTXT_V_GETTEXT/COPY
 unzip -p $BLDGTXT_ARCHIVES/cldr.zip unicode-license.txt | perl -pe 's/\r\n|\n|\r/\r\n/g' > $BLDGTXT_OUTPUT/cldr-license.txt
 
 mkdir $BLDGTXT_OUTPUT/bin
-cp $BLDGTXT_COMPILED/gettext/bin/*.exe $BLDGTXT_OUTPUT/bin/
-cp $BLDGTXT_COMPILED/gettext/bin/*.dll $BLDGTXT_OUTPUT/bin/ 2>/dev/null || :
-
+for i in $(find $BLDGTXT_COMPILED/gettext/bin/ -name '*.exe' -o -name '*.dll'); do
+    copyBinary $i
+done
 
 mkdir $BLDGTXT_OUTPUT/lib
 cp $BLDGTXT_COMPILED/gettext/lib/charset.alias $BLDGTXT_OUTPUT/lib/
 mkdir $BLDGTXT_OUTPUT/lib/gettext
-cp $BLDGTXT_COMPILED/gettext/lib/gettext/cldr-plurals.exe $BLDGTXT_OUTPUT/bin/
-cp $BLDGTXT_COMPILED/gettext/lib/gettext/*.dll $BLDGTXT_OUTPUT/bin/ 2>/dev/null || :
+copyBinary $BLDGTXT_COMPILED/gettext/lib/gettext/cldr-plurals.exe
+for i in $(find $BLDGTXT_COMPILED/gettext/lib/gettext/ -name '*.dll'); do
+    copyBinary $i
+done
 
 mkdir $BLDGTXT_OUTPUT/share
 mkdir $BLDGTXT_OUTPUT/share/doc
@@ -358,11 +364,11 @@ unzip -p $BLDGTXT_ARCHIVES/cldr.zip common/supplemental/plurals.xml > $BLDGTXT_O
 
 case $BLDGTXT_LINK$BLDGTXT_BITS in
     shared32)
-        cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll $BLDGTXT_OUTPUT/bin/
-        cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libgcc_s_sjlj-1.dll $BLDGTXT_OUTPUT/bin/
+        copyBinary $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll
+        copyBinary $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libgcc_s_sjlj-1.dll
         ;;
     shared64)
-        cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll $BLDGTXT_OUTPUT/bin/
-        cp $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libgcc_s_seh-1.dll $BLDGTXT_OUTPUT/bin/
+        copyBinary $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll
+        copyBinary $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libgcc_s_seh-1.dll
         ;;
 esac
