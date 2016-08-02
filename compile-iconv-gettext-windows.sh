@@ -212,7 +212,7 @@ BLDGTXT_QUIET_MAKE=
 if [[ $BLDGTXT_QUIET == 1 ]]; then
     BLDGTXT_QUIET_CONFIGURE='--quiet --enable-silent-rules'
     BLDGTXT_QUIET_CPPFLAGS='-Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Wno-attributes -Wno-write-strings'
-    BLDGTXT_QUIET_MAKE=-silent
+    BLDGTXT_QUIET_MAKE='-silent LIBTOOLFLAGS=--silent'
 else
     BLDGTXT_MAKE_JOBS='--jobs=1'
 fi
