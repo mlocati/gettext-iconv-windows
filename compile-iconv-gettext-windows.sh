@@ -325,7 +325,7 @@ make $BLDGTXT_MAKE_JOBS --directory=gettext-tools --no-keep-going $BLDGTXT_QUIET
 echo '### Installing gettext'
 make $BLDGTXT_MAKE_JOBS --directory=gettext-tools --no-keep-going $BLDGTXT_QUIET_MAKE DESTDIR=$BLDGTXT_COMPILED install
 
-echo '### Creating outut contents'
+echo '### Creating output contents'
 perl -pe 's/\r\n|\n|\r/\r\n/g' < $BLDGTXT_SOURCE/libiconv-$BLDGTXT_V_ICONV/COPYING > $BLDGTXT_OUTPUT/iconv-license.txt
 perl -pe 's/\r\n|\n|\r/\r\n/g' < $BLDGTXT_SOURCE/gettext-$BLDGTXT_V_GETTEXT/COPYING > $BLDGTXT_OUTPUT/gettext-license.txt
 unzip -p $BLDGTXT_ARCHIVES/cldr.zip unicode-license.txt | perl -pe 's/\r\n|\n|\r/\r\n/g' > $BLDGTXT_OUTPUT/cldr-license.txt
