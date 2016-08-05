@@ -20,7 +20,10 @@ if [ ! -d $BLDGTXT_MXE/usr/bin ]; then
         gperf intltool libffi-dev libgdk-pixbuf2.0-dev libtool libltdl-dev \
         libssl-dev libxml-parser-perl make openssl p7zip-full patch perl \
         pkg-config python ruby scons sed unzip wget xz-utils g++-multilib \
-        libc6-dev-i386 libtool-bin perl groff
+        libc6-dev-i386 libtool perl groff
+    set +o errexit
+    sudo apt-get install -y libtool-bin
+    set -o errexit
     rm -rf $BLDGTXT_MXE
     echo '### Downloading MXE'
     git clone https://github.com/mxe/mxe.git $BLDGTXT_MXE
