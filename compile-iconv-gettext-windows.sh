@@ -31,7 +31,7 @@ if [ ! -d $BLDGTXT_MXE/usr/bin ]; then
     pushd $BLDGTXT_MXE >/dev/null
     make \
         MXE_TARGETS='i686-w64-mingw32.static i686-w64-mingw32.shared x86_64-w64-mingw32.static x86_64-w64-mingw32.shared' \
-        gcc
+        cc
     popd >/dev/null
 fi
 
