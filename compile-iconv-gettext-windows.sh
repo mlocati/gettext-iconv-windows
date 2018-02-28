@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Script tested on a clean install of Ubuntu Server 16.04
+# Script tested on a clean install of Ubuntu Server 16.04.4 LTS
 #
 
 set -o errexit
@@ -16,14 +16,38 @@ if [ ! -d $BLDGTXT_MXE/usr/bin ]; then
     echo '### Installing required libraries'
     sudo apt-get update
     sudo apt-get install -y \
-        autoconf automake autopoint bash bison bzip2 flex gettext git g++ \
-        gperf intltool libffi-dev libgdk-pixbuf2.0-dev libtool libltdl-dev \
-        libssl-dev libxml-parser-perl make openssl p7zip-full patch perl \
-        pkg-config python ruby scons sed unzip wget xz-utils g++-multilib \
-        libc6-dev-i386 perl groff
-    set +o errexit
-    sudo apt-get install -y libtool-bin
-    set -o errexit
+        autoconf \
+        automake \
+        autopoint \
+        bash \
+        bison \
+        bzip2 \
+        flex \
+        g++ \
+        g++-multilib \
+        gettext \
+        git \
+        gperf \
+        intltool \
+        libc6-dev-i386 \
+        libgdk-pixbuf2.0-dev \
+        libltdl-dev \
+        libssl-dev \
+        libtool-bin \
+        libxml-parser-perl \
+        make \
+        openssl \
+        p7zip-full \
+        patch \
+        perl \
+        pkg-config \
+        python \
+        ruby \
+        scons \
+        sed \
+        unzip \
+        wget \
+        xz-utils
     rm -rf $BLDGTXT_MXE
     echo '### Downloading MXE'
     git clone https://github.com/mxe/mxe.git $BLDGTXT_MXE
@@ -146,7 +170,7 @@ function copyBinary {
 }
 echo '### Reading configuration'
 BLDGTXT_OUTPUT_CUSTOM=
-BLDGTXT_V_ICONV_DEFAULT=1.14
+BLDGTXT_V_ICONV_DEFAULT=1.15
 BLDGTXT_V_ICONV=
 BLDGTXT_V_GETTEXT_DEFAULT=0.19.8.1
 BLDGTXT_V_GETTEXT=
@@ -354,7 +378,7 @@ find $BLDGTXT_COMPILED/gettext/share/doc/gettext -maxdepth 1 -type f ! -iname '*
 rename 's/\.1\.html$/\.html/' '.html' $BLDGTXT_OUTPUT/share/doc/gettext/*.1.html
 
 mkdir $BLDGTXT_OUTPUT/share/doc/libiconv
-find $BLDGTXT_COMPILED/gettext/share/doc/libiconv -maxdepth 1 -type f ! -iname '*.3.html' | xargs cp --target-directory=$BLDGTXT_OUTPUT/share/doc/libiconv
+find $BLDGTXT_COMPILED/gettext/share/doc/iconv* -maxdepth 1 -type f ! -iname '*.3.html' | xargs cp --target-directory=$BLDGTXT_OUTPUT/share/doc/libiconv
 rename 's/\.1\.html$/\.html/' '.html' $BLDGTXT_OUTPUT/share/doc/libiconv/*.1.html
 
 cp --recursive $BLDGTXT_COMPILED/gettext/share/locale $BLDGTXT_OUTPUT/share/
