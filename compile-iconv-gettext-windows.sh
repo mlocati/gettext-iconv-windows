@@ -295,6 +295,7 @@ echo '### Setting up iconv'
 cd $BLDGTXT_SOURCE
 tar --extract --gzip --file=$BLDGTXT_ARCHIVES/libiconv-$BLDGTXT_V_ICONV.tar.gz
 cd libiconv-$BLDGTXT_V_ICONV
+bldgtxtApplyPatches "$BLDGTXT_PATCHES/libiconv-$BLDGTXT_V_ICONV-configure/$BLDGTXT_BITS-$BLDGTXT_LINK"
 bldgtxtApplyPatches "$BLDGTXT_PATCHES/libiconv-$BLDGTXT_V_ICONV-configure"
 mkdir $BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV
 cd $BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV
@@ -309,6 +310,7 @@ $BLDGTXT_SOURCE/libiconv-$BLDGTXT_V_ICONV/configure \
     --disable-nls \
     --disable-rpath \
     CPPFLAGS="$BLDGTXT_QUIET_CPPFLAGS"
+bldgtxtApplyPatches "$BLDGTXT_PATCHES/libiconv-$BLDGTXT_V_ICONV-make/$BLDGTXT_BITS-$BLDGTXT_LINK"
 bldgtxtApplyPatches "$BLDGTXT_PATCHES/libiconv-$BLDGTXT_V_ICONV-make"
 echo '### Making iconv'
 make $BLDGTXT_MAKE_JOBS --no-keep-going $BLDGTXT_QUIET_MAKE
@@ -319,6 +321,7 @@ echo '### Setting up gettext'
 cd $BLDGTXT_SOURCE
 tar --extract --gzip --file=$BLDGTXT_ARCHIVES/gettext-$BLDGTXT_V_GETTEXT.tar.gz
 cd gettext-$BLDGTXT_V_GETTEXT
+bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-configure/$BLDGTXT_BITS-$BLDGTXT_LINK"
 bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-configure"
 mkdir $BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT
 cd $BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT
@@ -346,6 +349,7 @@ $BLDGTXT_SOURCE/gettext-$BLDGTXT_V_GETTEXT/configure \
     CPPFLAGS="-I$BLDGTXT_COMPILED/gettext/include $BLDGTXT_QUIET_CPPFLAGS $BLDGTXT_CPPFLAGS" \
     LDFLAGS="-L$BLDGTXT_COMPILED/gettext/lib" \
     ac_cv_func__set_invalid_parameter_handler=no
+bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-make/$BLDGTXT_BITS-$BLDGTXT_LINK"
 bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-make"
 echo '### Making gettext'
 make $BLDGTXT_MAKE_JOBS --directory=gettext-tools --no-keep-going $BLDGTXT_QUIET_MAKE
