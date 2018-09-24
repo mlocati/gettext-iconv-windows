@@ -1,0 +1,25 @@
+From 950626c095ab1466353263787b65bd0b8c2016cf Mon Sep 17 00:00:00 2001
+From: "K.Takata" <kentkt@csc.jp>
+Date: Mon, 24 Sep 2018 09:33:45 +0200
+Subject: [PATCH] Remove dependency on libgcc from libintl
+
+---
+ gettext-runtime/intl/Makefile.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gettext-runtime/intl/Makefile.in b/gettext-runtime/intl/Makefile.in
+index 51632f693..a5df6c590 100644
+--- a/gettext-runtime/intl/Makefile.in
++++ b/gettext-runtime/intl/Makefile.in
+@@ -109,7 +109,7 @@ CFLAGS = @CFLAGS@ @CFLAG_VISIBILITY@
+ LDFLAGS = @LDFLAGS@ $(LDFLAGS_@WOE32DLL@)
+ LDFLAGS_yes = -Wl,--export-all-symbols
+ LDFLAGS_no =
+-LIBS = @LIBS@
++LIBS = @LIBS@ -XCClinker -static-libgcc
+ 
+ COMPILE = $(CC) -c $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS) $(XCFLAGS)
+ 
+-- 
+2.18.0.windows.1
+
