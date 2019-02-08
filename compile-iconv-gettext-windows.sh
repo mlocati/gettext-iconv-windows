@@ -35,6 +35,7 @@ if [ ! -d $BLDGTXT_MXE/usr/bin ]; then
         libssl-dev \
         libtool-bin \
         libxml-parser-perl \
+	lzip \
         make \
         openssl \
         p7zip-full \
@@ -42,6 +43,7 @@ if [ ! -d $BLDGTXT_MXE/usr/bin ]; then
         perl \
         pkg-config \
         python \
+	rename \
         ruby \
         scons \
         sed \
