@@ -19,6 +19,11 @@ Get the `compile-iconv-gettext-windows.sh` and the `patches` directory (they mus
 
 Run the `compile-iconv-gettext-windows.sh` script to build the Windows binary files.
 
+### Or build inside Docker container
+
+To build inside a Docker container, enter `docker` directory, run command `./run.sh`. The binaries will be put under folder `compiled`.
+
+
 ### Creating the setup files
 
 I used a Windows machine (a physical Windows 10 64 bit) with [Inno Setup](http://www.jrsoftware.org/isinfo.php) (I used version 5.5.9-unicode).
