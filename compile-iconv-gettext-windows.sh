@@ -11,11 +11,16 @@ set -o nounset
 
 unset `env | grep -vi '^EDITOR=\|^HOME=\|^LANG=\|MXE\|^PATH=' | grep -vi 'PKG_CONFIG\|PROXY\|^PS1=\|^TERM=' | cut -d '=' -f1 | tr '\n' ' '`
 
+if test "${UID:-}" == '0'; then
+    BLDGTXT_SUDO=''
+else
+    BLDGTXT_SUDO='sudo'
+fi
 BLDGTXT_MXE=$HOME/mxe
 if [ ! -d $BLDGTXT_MXE/usr/bin ]; then
     echo '### Installing required libraries'
-    sudo apt-get update
-    sudo apt-get install -y \
+    $BLDGTXT_SUDO apt-get update
+    $BLDGTXT_SUDO apt-get install -y \
         autoconf \
         automake \
         autopoint \
