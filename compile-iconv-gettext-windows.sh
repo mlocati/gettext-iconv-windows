@@ -1,11 +1,11 @@
 #!/bin/bash
 
 #
-# Script tested on a clean install of Ubuntu Server 16.04.4 LTS
+# Script tested on a clean install of Ubuntu Server 16.04.4 LTS + Ubuntu 18.04.2 LTS
 #
 
 set -o errexit
-set -o pipefail
+#set -o pipefail
 set -o nounset
 #set -o xtrace
 
@@ -40,6 +40,7 @@ if [ ! -d $BLDGTXT_MXE/usr/bin ]; then
         libssl-dev \
         libtool-bin \
         libxml-parser-perl \
+        lzip \
         make \
         openssl \
         p7zip-full \
@@ -144,7 +145,8 @@ function bldgtxtDownload {
         wget --quiet --tries=3 --output-document=$BLDGTXT_ARCHIVES/$2 -- $1 || {
             echo "Failed to download $1" >&2
             rm $BLDGTXT_ARCHIVES/$2 >/dev/null 2>&1
-            exit 1
+            set -o errexit
+            return 1
         }
         set -o errexit
     fi
@@ -177,7 +179,7 @@ echo '### Reading configuration'
 BLDGTXT_OUTPUT_CUSTOM=
 BLDGTXT_V_ICONV_DEFAULT=1.15
 BLDGTXT_V_ICONV=
-BLDGTXT_V_GETTEXT_DEFAULT=0.19.8.1
+BLDGTXT_V_GETTEXT_DEFAULT=0.20-rc1
 BLDGTXT_V_GETTEXT=
 BLDGTXT_BITS_DEFAULT=32
 BLDGTXT_BITS=
@@ -270,7 +272,7 @@ unset BLDGTXT_PKG_CONFIG_PATH_NAME
 echo '### Checking source archives'
 mkdir --parents $BLDGTXT_ARCHIVES
 bldgtxtDownload http://ftp.gnu.org/pub/gnu/libiconv/libiconv-$BLDGTXT_V_ICONV.tar.gz libiconv-$BLDGTXT_V_ICONV.tar.gz
-bldgtxtDownload http://ftp.gnu.org/pub/gnu/gettext/gettext-$BLDGTXT_V_GETTEXT.tar.gz gettext-$BLDGTXT_V_GETTEXT.tar.gz
+bldgtxtDownload http://ftp.gnu.org/pub/gnu/gettext/gettext-$BLDGTXT_V_GETTEXT.tar.gz gettext-$BLDGTXT_V_GETTEXT.tar.gz || bldgtxtDownload https://alpha.gnu.org/gnu/gettext/gettext-$BLDGTXT_V_GETTEXT.tar.gz gettext-$BLDGTXT_V_GETTEXT.tar.gz
 bldgtxtDownload http://unicode.org/Public/cldr/latest/core.zip cldr.zip
 
 echo '### Resetting environment'
@@ -357,6 +359,9 @@ $BLDGTXT_SOURCE/gettext-$BLDGTXT_V_GETTEXT/configure \
 bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-make/$BLDGTXT_BITS-$BLDGTXT_LINK"
 bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-make"
 echo '### Making gettext'
+if test -f "libtextstyle/Makefile"; then
+    make $BLDGTXT_MAKE_JOBS --directory=libtextstyle --no-keep-going $BLDGTXT_QUIET_MAKE
+fi
 make $BLDGTXT_MAKE_JOBS --directory=gettext-tools --no-keep-going $BLDGTXT_QUIET_MAKE
 echo '### Installing gettext'
 make $BLDGTXT_MAKE_JOBS --directory=gettext-tools --no-keep-going $BLDGTXT_QUIET_MAKE DESTDIR=$BLDGTXT_COMPILED install
