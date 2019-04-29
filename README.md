@@ -19,6 +19,29 @@ Get the `compile-iconv-gettext-windows.sh` and the `patches` directory (they mus
 
 Run the `compile-iconv-gettext-windows.sh` script to build the Windows binary files.
 
+### automake
+
+Building gettext 0.20+ requires automake 0.16+.
+If you have an older automake version, you can upgrade it with the following code:
+
+```sh
+# Remove previous automake versions installed via apt
+sudo apt-get remove --purge automake
+# Download automake source code archive
+wget ftp://ftp.gnu.org/gnu/automake/automake-1.16.1.tar.gz
+# Extract archive
+tar -xzf automake-1.16.1.tar.gz
+# Compiling and installing
+cd automake-1.16.1
+./configure
+make
+sudo make install
+# Cleanup
+cd ..
+rm automake-1.16.1.tar.gz
+rm -rf automake-1.16.1
+```
+
 ### Creating the setup files
 
 I used a Windows machine (a physical Windows 10 64 bit) with [Inno Setup](http://www.jrsoftware.org/isinfo.php) (I used version 5.5.9-unicode).
