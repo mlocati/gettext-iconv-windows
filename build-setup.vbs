@@ -2,7 +2,7 @@ Option Explicit
 On Error Goto 0
 
 Const GETTEXT_VERSION = "0.19.8.1"
-Const ICONV_VERSION = "1.15"
+Const ICONV_VERSION = "1.16"
 Const ForReading = 1
 
 EnsureCScript
