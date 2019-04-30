@@ -1,0 +1,16 @@
+From: Bruno Haible <bruno@clisp.org>
+Date: Fri, 26 Apr 2019 20:07:26 +0200
+Subject: [PATCH] build: Fix build failure on mingw with --disable-shared --enable-relocatable.
+
+--- a/gettext-runtime/intl/Makefile.am
++++ b/gettext-runtime/intl/Makefile.am
+@@ -57,6 +57,7 @@ AM_CPPFLAGS += \
+   -DENABLE_RELOCATABLE=1 -DIN_LIBRARY -DINSTALLDIR=\"$(libdir)\" -DNO_XMALLOC \
+   -Dset_relocation_prefix=libintl_set_relocation_prefix \
+   -Drelocate=libintl_relocate \
++  -Drelocate2=libintl_relocate2 \
+   -DDEPENDS_ON_LIBICONV=1
+ 
+ YACC = @INTLBISON@ -y -d
+-- 
+2.20.1.windows.1

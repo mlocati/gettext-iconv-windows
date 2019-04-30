@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Script tested on a clean install of Ubuntu Server 16.04.4 LTS + Ubuntu 18.04.2 LTS
+# Script tested on a clean install of Ubuntu Server 18.04.2 LTS
 #
 
 set -o errexit
@@ -48,6 +48,7 @@ if [ ! -d $BLDGTXT_MXE/usr/bin ]; then
         perl \
         pkg-config \
         python \
+        rename \
         ruby \
         scons \
         sed \
@@ -194,7 +195,6 @@ else
     if [ "$BLDGTXT_V_ICONV" = 'default' ]; then
         BLDGTXT_V_ICONV=$BLDGTXT_V_ICONV_DEFAULT
     fi
-    echo "iconv version: $BLDGTXT_V_ICONV"
 fi
 if [ -z "$BLDGTXT_V_GETTEXT" ]; then
     BLDGTXT_V_GETTEXT=$(bldgtxtAskVersion gettext $BLDGTXT_V_GETTEXT_DEFAULT)
@@ -202,17 +202,12 @@ else
     if [ "$BLDGTXT_V_GETTEXT" = 'default' ]; then
         BLDGTXT_V_GETTEXT=$BLDGTXT_V_GETTEXT_DEFAULT
     fi
-    echo "gettext version: $BLDGTXT_V_GETTEXT"
 fi
 if [ -z "$BLDGTXT_BITS" ]; then
     BLDGTXT_BITS=$(bldgtxtAskBits)
-else
-    echo "No. of bits: $BLDGTXT_BITS"
 fi
 if [ -z "$BLDGTXT_LINK" ]; then
     BLDGTXT_LINK=$(bldgtxtAskLink)
-else
-    echo "Link: $BLDGTXT_LINK"
 fi
 case $BLDGTXT_BITS in
     32)
@@ -240,6 +235,7 @@ case $BLDGTXT_LINK in
         exit 1
         ;;
 esac
+
 BLDGTXT_QUIET_CONFIGURE=
 BLDGTXT_QUIET_CPPFLAGS=
 BLDGTXT_QUIET_MAKE=
@@ -297,6 +293,12 @@ else
     fi
     BLDGTXT_OUTPUT=`realpath --no-symlinks $BLDGTXT_OUTPUT_CUSTOM`
 fi
+
+echo "iconv version   : $BLDGTXT_V_ICONV"
+echo "gettext version : $BLDGTXT_V_GETTEXT"
+echo "No. of bits     : $BLDGTXT_BITS"
+echo "Link            : $BLDGTXT_LINK"
+echo "Output directory: $BLDGTXT_OUTPUT"
 
 echo '### Setting up iconv'
 cd $BLDGTXT_SOURCE
@@ -377,10 +379,15 @@ for i in $(find $BLDGTXT_COMPILED/gettext/bin/ -name '*.exe' -o -name '*.dll'); 
 done
 
 mkdir $BLDGTXT_OUTPUT/lib
-cp $BLDGTXT_COMPILED/gettext/lib/charset.alias $BLDGTXT_OUTPUT/lib/
+if test -f $BLDGTXT_COMPILED/gettext/lib/charset.alias; then
+    cp $BLDGTXT_COMPILED/gettext/lib/charset.alias $BLDGTXT_OUTPUT/lib/
+fi
 mkdir $BLDGTXT_OUTPUT/lib/gettext
 copyBinary $BLDGTXT_COMPILED/gettext/lib/gettext/cldr-plurals.exe
 for i in $(find $BLDGTXT_COMPILED/gettext/lib/gettext/ -name '*.dll'); do
+    copyBinary $i
+done
+for i in $(find $BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT/libtextstyle/lib/.libs/ -name '*.dll'); do
     copyBinary $i
 done
 
@@ -407,6 +414,7 @@ case $BLDGTXT_LINK$BLDGTXT_BITS in
     shared32)
         copyBinary $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll
         copyBinary $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libgcc_s_sjlj-1.dll
+        copyBinary $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libwinpthread-1.dll
         ;;
     shared64)
         copyBinary $BLDGTXT_MXE/usr/${BLDGTXT_BITS2}-w64-mingw32.shared/bin/libstdc++-6.dll

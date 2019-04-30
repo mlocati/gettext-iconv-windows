@@ -1,23 +1,19 @@
 From: Michele Locati <michele@locati.it>
-Date: Mon, 15 Apr 2019 18:23:27 +0200
-Subject: [PATCH 3/5] Move cldr-plurals
-
----
- gettext-tools/src/msginit.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+Date: Mon, 29 Apr 2019 14:13:03 +0200
+Subject: [PATCH] Move cldr-plurals
 
 --- a/gettext-tools/src/msginit.c
 +++ b/gettext-tools/src/msginit.c
-@@ -1300,7 +1300,7 @@ plural_forms ()
+@@ -1350,7 +1350,7 @@ plural_forms ()
    gettextcldrdir = getenv ("GETTEXTCLDRDIR");
    if (gettextcldrdir != NULL && gettextcldrdir[0] != '\0')
      {
 -      const char *gettextlibdir;
-+      char *gettextlibdir;
++      char *gettextbindir;
        char *dirs[3], *last_dir;
        char *argv[4];
        pid_t child;
-@@ -1311,11 +1311,18 @@ plural_forms ()
+@@ -1361,11 +1361,18 @@ plural_forms ()
        size_t linelen;
        int exitstatus;
  
@@ -42,4 +38,3 @@ Subject: [PATCH 3/5] Move cldr-plurals
        dirs[0] = "common";
 -- 
 2.20.1.windows.1
-
