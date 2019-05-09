@@ -16,19 +16,14 @@ SCRIPT_PATH="`pwd`";
 popd > /dev/null
 
 BLDGTXT_ALL_ICONV_V=1.16
-BLDGTXT_ALL_GETTEXT_V=0.20-rc1
+BLDGTXT_ALL_GETTEXT_V=0.20
 
-rm -rf "${SCRIPT_PATH}/compiled/static-32"
-rm -rf "${SCRIPT_PATH}/compiled/shared-32"
-rm -rf "${SCRIPT_PATH}/compiled/static-64"
-rm -rf "${SCRIPT_PATH}/compiled/shared-64"
+function doCompile {
+    rm -rf "${SCRIPT_PATH}/compiled/$1-$2" || rm -rf "${SCRIPT_PATH}/compiled/$1-$2" || rm -rf "${SCRIPT_PATH}/compiled/$1-$2"
+    "${SCRIPT_PATH}/compile-iconv-gettext-windows.sh" --link $1 --bits $2 --iconv "$BLDGTXT_ALL_ICONV_V" --gettext "$BLDGTXT_ALL_GETTEXT_V" --output "${SCRIPT_PATH}/compiled/$1-$2" --quiet
+}
 
-mkdir "${SCRIPT_PATH}/compiled/static-32"
-mkdir "${SCRIPT_PATH}/compiled/shared-32"
-mkdir "${SCRIPT_PATH}/compiled/static-64"
-mkdir "${SCRIPT_PATH}/compiled/shared-64"
-
-"${SCRIPT_PATH}/compile-iconv-gettext-windows.sh" --bits 32 --link static --iconv "$BLDGTXT_ALL_ICONV_V" --gettext "$BLDGTXT_ALL_GETTEXT_V" --output "${SCRIPT_PATH}/compiled/static-32"
-"${SCRIPT_PATH}/compile-iconv-gettext-windows.sh" --bits 32 --link shared --iconv "$BLDGTXT_ALL_ICONV_V" --gettext "$BLDGTXT_ALL_GETTEXT_V" --output "${SCRIPT_PATH}/compiled/shared-32"
-"${SCRIPT_PATH}/compile-iconv-gettext-windows.sh" --bits 64 --link static --iconv "$BLDGTXT_ALL_ICONV_V" --gettext "$BLDGTXT_ALL_GETTEXT_V" --output "${SCRIPT_PATH}/compiled/static-64"
-"${SCRIPT_PATH}/compile-iconv-gettext-windows.sh" --bits 64 --link shared --iconv "$BLDGTXT_ALL_ICONV_V" --gettext "$BLDGTXT_ALL_GETTEXT_V" --output "${SCRIPT_PATH}/compiled/shared-64"
+doCompile shared 32
+doCompile static 32
+doCompile shared 64
+doCompile static 64

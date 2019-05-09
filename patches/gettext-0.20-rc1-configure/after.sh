@@ -1,7 +1,0 @@
-#!/bin/bash
-
-set -o errexit
-set -o pipefail
-set -o nounset
-
-autoreconf --force --install --warnings=none
