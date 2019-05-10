@@ -63,11 +63,6 @@ bldgtxtSetupEnvVars () {
     BLDGTXT_ARCHIVES="$BLDGTXT_ROOT/archives"
     BLDGTXT_PATCHES="$BLDGTXT_SCRIPTDIR/patches"
     BLDGTXT_RELOCPREFIXES='--enable-relocatable --prefix=/gettext'
-    if test "${UID:-}" == '0'; then
-        BLDGTXT_SUDO=''
-    else
-        BLDGTXT_SUDO='sudo'
-    fi
     export PATH=$BLDGTXT_MXE/usr/bin:$PATH
 }
 
@@ -184,56 +179,7 @@ bldgtxtPrintConfiguration () {
 # Install required apt packages and prepares MXE (if not already present)
 #
 bldgtxtRequirements () {
-    if test -d "$BLDGTXT_MXE/usr/bin" ; then
-        echo '### Requirements already installed'
-        return 0
-    fi
-    echo '### Installing required libraries'
-    $BLDGTXT_SUDO apt-get update
-    $BLDGTXT_SUDO apt-get install -y \
-        autoconf \
-        automake \
-        autopoint \
-        bash \
-        bison \
-        bzip2 \
-        flex \
-        g++ \
-        g++-multilib \
-        gettext \
-        git \
-        gperf \
-        intltool \
-        libc6-dev-i386 \
-        libgdk-pixbuf2.0-dev \
-        libltdl-dev \
-        libssl-dev \
-        libtool-bin \
-        libxml-parser-perl \
-        lzip \
-        make \
-        openssl \
-        p7zip-full \
-        patch \
-        perl \
-        pkg-config \
-        python \
-        rename \
-        ruby \
-        scons \
-        sed \
-        unzip \
-        wget \
-        xz-utils
-    rm -rf "$BLDGTXT_MXE"
-    echo '### Downloading MXE'
-    git clone https://github.com/mxe/mxe.git "$BLDGTXT_MXE"
-    echo '### Building MXE (IT WILL TAKE UP TO ONE HOUR)'
-    pushd "$BLDGTXT_MXE" >/dev/null
-    make \
-        MXE_TARGETS='i686-w64-mingw32.static i686-w64-mingw32.shared x86_64-w64-mingw32.static x86_64-w64-mingw32.shared' \
-        cc
-    popd >/dev/null
+    "$BLDGTXT_SCRIPTDIR/compile-iconv-gettext-windows-deps.sh"
 }
 
 #
@@ -679,6 +625,7 @@ bldgtxtCopyToOutput () {
 
 bldgtxtSetupEnvVars
 bldgtxtReadCommandLine "$@"
+bldgtxtRequirements
 bldgtxtSetupEnvVarsPostConfig
 bldgtxtPrintConfiguration
 bldgtxtDownloadArchives
