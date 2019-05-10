@@ -121,6 +121,7 @@ Sub RunTests(folder)
 	batStart = batStart & ")" & vbCrLf
 	batStart = batStart & "set GETTEXTIOENCODING=UTF-8" & vbCrLf
 	batStart = batStart & "set GETTEXTCLDRDIR=" & fso.BuildPath(fso.BuildPath(folder.Path, "lib"), "gettext") & vbCrLf
+	batStart = batStart & "set PATH=" & folder.Path & "\bin" & vbCrLf
 	batEnd = ""
 	batEnd = batEnd & "if errorlevel 1 (" & vbCrLf
 	batEnd = batEnd & "	endlocal" & vbCrLf
