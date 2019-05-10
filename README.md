@@ -58,7 +58,7 @@ Steps to generate the setup files (to be done under Windows):
 
 If you want to build a setup to install these executables and automatically add them to the environmental path:
 - [take a copy](https://github.com/mlocati/gettext-iconv-windows/archive/master.zip) of the full repository gettext-iconv-windows
-- under the folder containing the repository content, create a folder `compiled` and copy under that directory the `out-…` folder that you have under Linux
+- copy in the `compiled` directory the `<shared|static>-<32|64>` folder that you have under Linux
 - launch the `build-setup.vbs` script
 
 
