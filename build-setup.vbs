@@ -1,8 +1,6 @@
 Option Explicit
 On Error Goto 0
 
-Const GETTEXT_VERSION = "0.19.8.1"
-Const ICONV_VERSION = "1.16"
 Const ForReading = 1
 
 EnsureCScript
@@ -37,6 +35,7 @@ Function GetBaseFolder()
 	End If
 	GetBaseFolder = s
 End Function
+
 Sub EnsureCScript()
 	Dim s, p, shell, cmdLine
 	s = WScript.FullName
@@ -56,6 +55,7 @@ Sub EnsureCScript()
 		WScript.Quit
 	End If
 End Sub
+
 Function Quote(value)
 	Dim doQuote, s
 	s = "" & value
@@ -74,6 +74,7 @@ Function Quote(value)
 		Quote = s
 	End If
 End Function
+
 Sub LookForApps()
 	Dim drive, programsFolder, appsFolder, appFolder
 	exe7Zip = ""
@@ -126,6 +127,7 @@ Sub LookForApps()
 	WScript.Echo "Failed to locate 7-zip or InnoSetup"
 	Quit 1
 End Sub
+
 Sub CreateZIPs()
 	Dim i, zipName, origDir, rc
 	WScript.Echo "Creating zip files"
@@ -175,8 +177,8 @@ Sub CreateSetups()
 		Else
 			file.Write "#define MyIs64bit false" & vbCrLf
 		End If
-		file.Write "#define MyGettextVer """ & GETTEXT_VERSION & """" & vbCrLf
-		file.Write "#define MyIconvVer """ & ICONV_VERSION & """" & vbCrLf
+		file.Write "#define MyGettextVer """ & compiledFolders(i).GettextVersion & """" & vbCrLf
+		file.Write "#define MyIconvVer """ & compiledFolders(i).IconvVersion & """" & vbCrLf
 		file.Write "#define MyCompiledFolderPath """ & compiledFolders(i).Folder.Path & """"
 		file.Write vbCrLf & vbCrLf & vbCrLf & scriptText
 		file.Close
@@ -218,6 +220,8 @@ Sub GetCompiledFolders()
 			Set compiledFolders(numResult).Folder = folder
 			compiledFolders(numResult).Link = link
 			compiledFolders(numResult).Bits = bits
+			compiledFolders(numResult).IconvVersion = GetIconvVersion(folder)
+			compiledFolders(numResult).GettextVersion = GetGettextVersion(folder)
 			numResult = numResult + 1
 		End If
 	Next
@@ -231,10 +235,13 @@ Class CompiledFolder
 	Public Folder
 	Public Link
 	Public Bits
+	Public IconvVersion
+	Public GettextVersion
 	Public Property Get BaseName
-		BaseName = "gettext" & GETTEXT_VERSION & "-iconv" & ICONV_VERSION & "-" & Me.Link & "-" & Me.Bits
+		BaseName = "gettext" & Me.GettextVersion & "-iconv" & Me.IconvVersion & "-" & Me.Link & "-" & Me.Bits
 	End Property
 End Class
+
 Sub Quit(ByVal rc)
 	If askKey Then
 		WScript.StdOut.WriteLine ""
@@ -243,3 +250,57 @@ Sub Quit(ByVal rc)
 	End If
 	WScript.Quit rc
 End Sub
+
+Function GetIconvVersion(folder)
+	Dim exePath, exeOutput, rx, matches
+	exePath = fso.BuildPath(fso.BuildPath(folder.Path, "bin"), "iconv.exe")
+	exeOutput = RunCommandLine(Quote(exePath) & " --version")
+	Set rx  = CreateObject("VBScript.RegExp")
+	rx.Pattern = "GNU libiconv (\d[\w\d\.\-]*)"
+	Set matches = rx.Execute(exeOutput)
+	If matches.Count <> 1 Then
+		Err.Raise 1, "Unable to extract the iconv version from" & vbNewLine & exeOutput
+	End If
+	GetIconvVersion = matches.Item(0).SubMatches(0)
+End Function
+
+Function GetGettextVersion(folder)
+	Dim exePath, exeOutput, rx, matches
+	exePath = fso.BuildPath(fso.BuildPath(folder.Path, "bin"), "xgettext.exe")
+	exeOutput = RunCommandLine(Quote(exePath) & " --version")
+	Set rx  = CreateObject("VBScript.RegExp")
+	rx.Pattern = "xgettext(?:.exe)? \(GNU gettext-tools\) (\d[\w\d\.\-]*)"
+	Set matches = rx.Execute(exeOutput)
+	If matches.Count <> 1 Then
+		Err.Raise 1, "Unable to extract the iconv version from" & vbNewLine & exeOutput
+	End If
+	GetGettextVersion = matches.Item(0).SubMatches(0)
+End Function
+
+Function RunCommandLine(ByVal commandLine)
+	Dim process, s
+	Set process = shell.Exec(commandLine)
+	Do While process.Status = 0
+		WScript.Sleep 100
+	Loop
+	If process.ExitCode <> 0 Then
+		If Not process.StdErr.AtEndOfStream Then
+			s = Trim(process.StdErr.ReadAll)
+		End If
+		If s = "" And Not process.StdOut.AtEndOfStream Then
+			s = Trim(process.StdOut.ReadAll)
+		End If
+		If s <> "" Then
+			s = "Error: " & s
+		Else
+			s = "Unknown error (code: " & process & ")"
+		End If
+		WScript.StdErr.WriteLine s
+		Quit 1
+	End If
+	If process.StdOut.AtEndOfStream Then
+		RunCommandLine = ""
+	Else
+		RunCommandLine = Trim(process.StdOut.ReadAll)
+	End If
+End Function
