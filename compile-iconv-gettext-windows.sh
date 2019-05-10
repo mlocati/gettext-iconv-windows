@@ -152,7 +152,7 @@ bldgtxtSetupEnvVarsPostConfig () {
 
     if test $BLDGTXT_QUIET -eq 1; then
         BLDGTXT_QUIET_CONFIGURE='--quiet --enable-silent-rules'
-        BLDGTXT_QUIET_CPPFLAGS='-Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Wno-attributes -Wno-write-strings'
+        BLDGTXT_QUIET_CPPFLAGS='-Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Wno-attributes -Wno-write-strings -Wno-incompatible-pointer-types'
         BLDGTXT_QUIET_MAKE='-silent LIBTOOLFLAGS=--silent'
         BLDGTXT_MAKE_JOBS=
     else
@@ -436,7 +436,7 @@ bldgtxtApplyPatches () {
         local PATCHES_PATTERN="$PATCH_DIR/*.patch"
         local PATCH_FILE
         for PATCH_FILE in $PATCHES_PATTERN; do
-            printf ' - patching (%s)\n', "$(basename "$PATCH_FILE"))"
+            printf ' - patching (%s)\n' "$(basename "$PATCH_FILE"))"
             patch --strip=1 --input="$PATCH_FILE" --silent
         done
         local PATCH_AFTER="$PATCH_DIR/after.sh"
