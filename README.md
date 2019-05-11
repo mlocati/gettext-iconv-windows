@@ -1,48 +1,40 @@
 ![Github All Releases](https://img.shields.io/github/downloads/mlocati/gettext-iconv-windows/total.svg?style=flat-square)
 
-gettext-iconv-windows
-=====================
+# gettext-iconv-windows
 
-gettext and iconv binaries for Windows.
+gettext tools and iconv binaries for Windows.
 
-## Ready-to-use binaries ##
-If you don't want to waste your time or if you don't know much about compiling and virtual machines,  
-see [mlocati.github.io/articles/gettext-iconv-windows.html](http://mlocati.github.io/articles/gettext-iconv-windows.html).
 
-## Do you want to build binaries on your own? ##
+## Ready-to-use binaries
 
-### Compilation
+If you don't want to waste your time or if you don't know much about compiling and virtual machines, see [mlocati.github.io/articles/gettext-iconv-windows.html](http://mlocati.github.io/articles/gettext-iconv-windows.html).
 
-I used [Ubuntu](http://www.ubuntu.com/) 16.04 LTS under [VirtualBox](https://www.virtualbox.org/)).
 
-Get the `compile-iconv-gettext-windows.sh` and the `patches` directory (they must reside in the same directory).
+## Building with Docker
+
+You can build the gettext/iconv binaries with [Docker](https://www.docker.com/).
+
+Simply clone this repository, open a terminal and run this command:
+
+- Linux/Mac:
+    ```sh
+    docker run --rm -it -v "$PWD:/app mlocati/gettext-iconv-windows:latest" /app/compile-iconv-gettext-windows.sh
+    ```
+- Windows
+    ```bat
+    docker run --rm -it -v "%CD%:/app" mlocati/gettext-iconv-windows:latest /app/compile-iconv-gettext-windows.sh
+    ```
+
+## Building with Virtual Machine or your Ubuntu
+
+The build script has been written for [Ubuntu](http://www.ubuntu.com/) 18.04 LTS.
+
+Get the `*.sh` files and the `patches` directory (they must reside in the same directory).
 
 Run the `compile-iconv-gettext-windows.sh` script to build the Windows binary files.
 
-### automake
 
-Building gettext 0.20+ requires automake 0.16+.
-If you have an older automake version, you can upgrade it with the following code:
-
-```sh
-# Remove previous automake versions installed via apt
-sudo apt-get remove --purge automake
-# Download automake source code archive
-wget ftp://ftp.gnu.org/gnu/automake/automake-1.16.1.tar.gz
-# Extract archive
-tar -xzf automake-1.16.1.tar.gz
-# Compiling and installing
-cd automake-1.16.1
-./configure
-make
-sudo make install
-# Cleanup
-cd ..
-rm automake-1.16.1.tar.gz
-rm -rf automake-1.16.1
-```
-
-### Creating the setup files
+## Creating the setup files
 
 I used a Windows machine (a physical Windows 10 64 bit) with [Inno Setup](http://www.jrsoftware.org/isinfo.php) (I used version 5.5.9-unicode).
 
