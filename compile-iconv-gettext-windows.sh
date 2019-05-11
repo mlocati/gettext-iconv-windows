@@ -605,6 +605,9 @@ bldgtxtCopyToOutput () {
     mkdir -p "$BLDGTXT_OUTPUT/share/"
     cp -r "$BLDGTXT_COMPILED/gettext/share/locale" "$BLDGTXT_OUTPUT/share/"
     mkdir -p "$BLDGTXT_OUTPUT/share/gettext"
+    if test -d "$BLDGTXT_COMPILED/gettext/share/gettext/styles"; then
+        cp -r "$BLDGTXT_COMPILED/gettext/share/gettext/styles" "$BLDGTXT_OUTPUT/share/gettext/"
+    fi
     cp -r $BLDGTXT_COMPILED/gettext/share/gettext-*/its $BLDGTXT_OUTPUT/share/gettext
     copyFileToOutput "$BLDGTXT_COMPILED/gettext/share/gettext/msgunfmt.tcl"
     copyFileToOutput "$BLDGTXT_ARCHIVES/cldr-plurals.xml" '' lib/gettext/common/supplemental/plurals.xml
