@@ -60,7 +60,7 @@ bldgtxtSetupEnvVars () {
     BLDGTXT_MXE=$HOME/mxe
     BLDGTXT_QUIET=0
     BLDGTXT_KEEPDEBUG=0
-    BLDGTXT_ARCHIVES="$BLDGTXT_ROOT/archives"
+    BLDGTXT_ARCHIVES="$BLDGTXT_SCRIPTDIR/archives"
     BLDGTXT_PATCHES="$BLDGTXT_SCRIPTDIR/patches"
     BLDGTXT_RELOCPREFIXES='--enable-relocatable --prefix=/gettext'
     export PATH=$BLDGTXT_MXE/usr/bin:$PATH
@@ -596,7 +596,7 @@ bldgtxtCopyToOutput () {
     fi
     if test -d "$BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT/libtextstyle/lib/.libs/"; then
         for i in $(find "$BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT/libtextstyle/lib/.libs/" -name '*.dll'); do
-            copyFileToOutput "$i" binary  "bin/$(basename $i)"
+            copyFileToOutput "$i" binary "bin/$(basename $i)"
         done
     fi
     for i in $(find "$BLDGTXT_COMPILED/gettext/share/doc" -maxdepth 2 -type f ! -iname '*.3.html'); do
