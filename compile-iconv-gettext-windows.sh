@@ -599,7 +599,7 @@ bldgtxtCopyToOutput () {
             copyFileToOutput "$i" binary "bin/$(basename $i)"
         done
     fi
-    for i in $(find "$BLDGTXT_COMPILED/gettext/share/doc" -maxdepth 2 -type f ! -iname '*.3.html'); do
+    for i in $(find "$BLDGTXT_COMPILED/gettext/share/doc" -maxdepth 2 -type f ! -iname '*.3.html' ! -iname 'autopoint.1.html' ! -iname 'gettextize.1.html'); do
         copyFileToOutput "$i" doc
     done
     mkdir -p "$BLDGTXT_OUTPUT/share/"
