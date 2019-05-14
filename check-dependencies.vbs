@@ -108,7 +108,7 @@ Function FindDumpBin()
 End Function
 
 Sub CheckDependencies(folder)
-	Dim depList, i, dep, j
+	Dim depList, i, dep, j, importedFunctions
 	WScript.StdOut.WriteLine "### Checking dependencies for " & folder.Name
 	Set depList = new DepencencyList
 	depList.CheckFolder folder, folder
@@ -117,13 +117,11 @@ Sub CheckDependencies(folder)
 	Else
 		For i = 0 To depList.Count - 1
 			Set dep = depList.Item(i)
-			WScript.StdOut.WriteLine "> " & dep.DLLName
-			WScript.StdOut.WriteLine "  required by"
+			WScript.StdOut.WriteLine "- " & dep.DLLName & " required by"
 			For j = 0 To dep.Count - 1
-				If dep.Item(j).IsSystemDLL Then
-					WScript.StdOut.WriteLine "  - " & dep.Item(j).DisplayName
-				Else
-					WScript.StdOut.WriteLine "  - " & dep.Item(j).DisplayName & " (" & dep.Item(j).GetImportedFunctions() & ")"
+			    WScript.StdOut.WriteLine "  - " & dep.Item(j).DisplayName
+				If Not dep.Item(j).IsSystemDLL Then
+					WScript.StdOut.WriteLine "    imported functions: " & dep.Item(j).GetImportedFunctions()
 				End If
 			Next 
 		Next
@@ -165,6 +163,7 @@ Class DepencencyList
 		For Each subFolder in folder.SubFolders
 			CheckFolder baseFolder, subFolder
 		Next
+		SortDependencies
 	End Sub
 	Private Sub CheckFile(baseFolder, file)
 		Dim p, summary, line, status, rx, dep
@@ -213,6 +212,22 @@ Class DepencencyList
 			Err.Raise 1, "Unable to extract dependencies (" & status & ") from:" & vbNewLine & summary
 		End If
 	End Sub
+	Public Sub SortDependencies
+	   Dim i, j, n, tmp
+	   n = Me.Count
+	   For i = 0 To n - 1
+	       For j = i + 1 To n - 1
+	           If StrComp(lDependencies(i).DLLName, lDependencies(j).DLLName, 1) > 0 Then
+	               Set tmp = lDependencies(j)
+	               Set lDependencies(j) = lDependencies(i)
+	               Set lDependencies(i) = tmp
+	           End If
+	       Next
+	   Next
+	   For i = 0 To n - 1
+	       lDependencies(i).SortDependentFiles
+	   Next
+	End Sub
 End Class
 
 Class Dependency
@@ -238,6 +253,19 @@ Class Dependency
     Public Function Item(index)
     	Set Item = lDependentFiles(index)
     End Function
+    Public Sub SortDependentFiles()
+       Dim i, j, n, tmp
+       n = Me.Count
+       For i = 0 To n - 1
+           For j = i + 1 To n - 1
+               If StrComp(lDependentFiles(i).DisplayName, lDependentFiles(j).DisplayName, 1) > 0 Then
+                   Set tmp = lDependentFiles(j)
+                   Set lDependentFiles(j) = lDependentFiles(i)
+                   Set lDependentFiles(i) = tmp
+               End If
+           Next
+       Next
+    End Sub
 End Class
 Class DependentFile
 	Private myDependency
