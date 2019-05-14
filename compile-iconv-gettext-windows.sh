@@ -4,15 +4,14 @@
 # Script tested on a clean install of Ubuntu Server 18.04.2 LTS
 #
 
-set -o errexit
-#set -o pipefail
-set -o nounset
+set -ue # u: nounset, e: errexit
 #set -o xtrace
 
 #
 # Cleanup stuff after an error occurred
 #
 bldgtxtCleanupForError () {
+    set -ue
     if test -n "${BLDGTXT_OUTPUT_RM_ON_ERROR:-}"; then
         if test $BLDGTXT_OUTPUT_RM_ON_ERROR -eq 1; then
             rm -rf "$BLDGTXT_OUTPUT" || true
@@ -27,6 +26,7 @@ bldgtxtCleanupForError () {
 #   full path to the directory containing this script
 #
 bldgtxtGetSourceFolder () {
+    set -ue
     pushd . >/dev/null
     local DIR="${BASH_SOURCE[0]}";
     while (test -h "$DIR" ) do
@@ -42,6 +42,7 @@ bldgtxtGetSourceFolder () {
 # Unset unneeded environment variables and set the default values
 #
 bldgtxtSetupEnvVars () {
+    set -ue
     unset `env | grep -vi '^EDITOR=\|^HOME=\|^LANG=\|MXE\|^PATH=' | grep -vi 'PKG_CONFIG\|PROXY\|^PS1=\|^TERM=' | cut -d '=' -f1 | tr '\n' ' '`
     BLDGTXT_SCRIPTDIR="$(bldgtxtGetSourceFolder)"
     BLDGTXT_ROOT="$HOME/build-gettext-windows"
@@ -70,6 +71,7 @@ bldgtxtSetupEnvVars () {
 # Set the environment variables that are configuration specific
 #
 bldgtxtSetupEnvVarsPostConfig () {
+    set -ue
     if test -z "$BLDGTXT_V_ICONV"; then
         read -p "iconv version [$BLDGTXT_V_ICONV_DEFAULT]: " BLDGTXT_V_ICONV
         if test -z "$BLDGTXT_V_ICONV"; then
@@ -167,6 +169,7 @@ bldgtxtSetupEnvVarsPostConfig () {
 # Prints out the build configuration
 #
 bldgtxtPrintConfiguration () {
+    set -ue
     echo '### Configuration'
     printf 'iconv version   : %s\n' "$BLDGTXT_V_ICONV"
     printf 'gettext version : %s\n' "$BLDGTXT_V_GETTEXT"
@@ -179,6 +182,7 @@ bldgtxtPrintConfiguration () {
 # Install required apt packages and prepares MXE (if not already present)
 #
 bldgtxtRequirements () {
+    set -ue
     "$BLDGTXT_SCRIPTDIR/compile-iconv-gettext-windows-deps.sh"
 }
 
@@ -189,6 +193,7 @@ bldgtxtRequirements () {
 #     $1: error message
 #
 bldgtxtShowInvalidArgument () {
+    set -ue
     printf '%s\n\n%s\n' "${1}" "Type $0 --help to get help" >&2
 }
 
@@ -196,6 +201,7 @@ bldgtxtShowInvalidArgument () {
 # Output the command syntax
 #
 bldgtxtShowUsage () {
+    set -ue
     printf 'Usage: %s [-i|--iconv <-|iconv version>] [-g|--gettext <-|gettext version>] [-b|--bits <-|32|64>] [-l|--link <-|shared|static>] [-o|--output <-|dir>] [-f|--force] [-q|--quiet] [d|--debug]\n' "$0"
     printf 'Default iconv version: %s\n' "$BLDGTXT_V_ICONV_DEFAULT"
     printf 'Default gettext version: %s\n' "$BLDGTXT_V_GETTEXT_DEFAULT"
@@ -213,6 +219,7 @@ bldgtxtShowUsage () {
 #     $@: all the command line parameters
 #
 bldgtxtReadCommandLine () {
+    set -ue
     local CURRENT_ARGUMENT
     local NEXT_ARGUMENT
     while test $# -gt 0 ; do
@@ -328,6 +335,7 @@ bldgtxtReadCommandLine () {
 #     1: failure
 #
 bldgtxtDownloadArchive () {
+    set -ue
     if test ! -f "$BLDGTXT_ARCHIVES/$2"; then
         printf 'Downloading %s\n' "$2"
         set +o errexit
@@ -346,6 +354,7 @@ bldgtxtDownloadArchive () {
 # Ensures that we have a local copy of all the required remote archives
 #
 bldgtxtDownloadArchives () {
+    set -ue
     echo '### Checking source archives'
     mkdir -p "$BLDGTXT_ARCHIVES"
     bldgtxtDownloadArchive "http://ftp.gnu.org/pub/gnu/libiconv/libiconv-$BLDGTXT_V_ICONV.tar.gz" "libiconv-$BLDGTXT_V_ICONV.tar.gz"
@@ -362,6 +371,7 @@ bldgtxtDownloadArchives () {
 # Deletes the temporary compiled directory
 #
 bldgtxtDeleteCompiled () {
+    set -ue
     rm -rf "$BLDGTXT_COMPILED"
 }
 
@@ -372,6 +382,7 @@ bldgtxtDeleteCompiled () {
 #     $1 The source of the patch files
 #
 bldgtxtApplyPatches () {
+    set -ue
     local PATCH_DIR=$1
     if test -d "$PATCH_DIR"; then
         local PATCH_BEFORE="$PATCH_DIR/before.sh"
@@ -397,6 +408,7 @@ bldgtxtApplyPatches () {
 # Prepare the source code of iconv
 #
 bldgtxtPrepareIconv () {
+    set -ue
     echo '### Preparing iconv'
     mkdir -p "$BLDGTXT_SOURCE"
     rm -rf "$BLDGTXT_SOURCE/libiconv-$BLDGTXT_V_ICONV"
@@ -414,6 +426,7 @@ bldgtxtPrepareIconv () {
 # Configure the source code of iconv
 #
 bldgtxtConfigureIconv () {
+    set -ue
     echo '### Configuring iconv'
     rm -rf "$BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV"
     mkdir -p "$BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV"
@@ -439,6 +452,7 @@ bldgtxtConfigureIconv () {
 # Compile the source code of iconv
 #
 bldgtxtCompileIconv () {
+    set -ue
     echo '### Making iconv'
     pushd "$BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV" >/dev/null
     make $BLDGTXT_MAKE_JOBS --no-keep-going $BLDGTXT_QUIET_MAKE
@@ -449,6 +463,7 @@ bldgtxtCompileIconv () {
 # Install iconv to the temporary compiled directory
 #
 bldgtxtInstallIconv () {
+    set -ue
     echo '### Installing iconv'
     pushd "$BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV" >/dev/null
     make $BLDGTXT_MAKE_JOBS --no-keep-going $BLDGTXT_QUIET_MAKE DESTDIR=$BLDGTXT_COMPILED install
@@ -459,6 +474,7 @@ bldgtxtInstallIconv () {
 # Prepare the source code of gettext
 #
 bldgtxtPrepareGettext () {
+    set -ue
     echo '### Preparing gettext'
     mkdir -p "$BLDGTXT_SOURCE"
     rm -rf "$BLDGTXT_SOURCE/gettext-$BLDGTXT_V_GETTEXT"
@@ -476,6 +492,7 @@ bldgtxtPrepareGettext () {
 # Configure the source code of gettext
 #
 bldgtxtConfigureGettext () {
+    set -ue
     echo '### Configuring gettext'
     rm -rf "$BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT"
     mkdir -p "$BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT"
@@ -514,6 +531,7 @@ bldgtxtConfigureGettext () {
 # Compile the source code of gettext
 #
 bldgtxtCompileGettext () {
+    set -ue
     echo '### Making gettext'
     pushd "$BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT" >/dev/null
     if test -f "libtextstyle/Makefile"; then
@@ -527,6 +545,7 @@ bldgtxtCompileGettext () {
 # Install gettext to the temporary compiled directory
 #
 bldgtxtInstallGettext () {
+    set -ue
     echo '### Installing gettext'
     pushd "$BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT" >/dev/null
     if test -f "libtextstyle/Makefile"; then
@@ -545,6 +564,7 @@ bldgtxtInstallGettext () {
 #  $3: the relative path of the destination file (if omitted we'll calculate it)
 #
 copyFileToOutput () {
+    set -ue
     local SOURCE_PATH="$1"
     local COPY_TYPE="${2:-}"
     local RELATIVE_NAME="${3:-}"
@@ -582,6 +602,7 @@ copyFileToOutput () {
 # Copy the files from the temporary compiled directory to the output directory
 #
 bldgtxtCopyToOutput () {
+    set -ue
     echo '### Creating output contents'
     local i
     copyFileToOutput "$BLDGTXT_SOURCE/libiconv-$BLDGTXT_V_ICONV/COPYING" text iconv-license.txt
