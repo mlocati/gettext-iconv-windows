@@ -324,6 +324,27 @@ bldgtxtReadCommandLine () {
 }
 
 #
+# Remove initial/final spaces from a string
+#
+# Arguments:
+#     $1: the string to be trimmed
+#
+# Output:
+#     The trimmed string
+#
+bldgtxtTrim () {
+    set -ue
+    local result="${1# }"
+    while test "$result" != "${result# }"; do
+        result="${result# }"
+    done
+    while test "$result" != "${result% }"; do
+        result="${result% }"
+    done
+    printf '%s' "$result"
+}
+
+#
 # Download a file (if it's not in the archives directory)
 #
 # Arguments:
