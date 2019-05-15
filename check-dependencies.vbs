@@ -96,7 +96,7 @@ Sub Quit(ByVal rc)
 End Sub
 
 Function FindDumpBin()
-    Dim db, rc
+    Dim db, rc, env, rx, matches, dbFolder
     db = "dumpbin.exe"
     On Error Resume Next
     Err.Clear
@@ -109,6 +109,25 @@ Function FindDumpBin()
     End If
     Err.Clear
     On Error Goto 0
+    Set rx = CreateObject("VBScript.RegExp")
+    rx.IgnoreCase = False
+    rx.Pattern = "^VS(\d+)COMNTOOLS=(.*)$"
+    For Each env in shell.Environment("SYSTEM")
+        Set matches = rx.Execute(env)
+        If matches.Count = 1 Then
+            If matches(0).SubMatches(0) <> "110" Then
+                dbFolder = matches(0).SubMatches(1)
+                If Right(dbFolder, 1) <> "\" Then
+                    dbFolder = dbFolder & "\"
+                End If
+                db = dbFolder & "..\..\VC\bin\dumpbin.exe"
+                If fso.FileExists(db) Then
+                    FindDumpBin = db
+                    Exit Function
+                End If
+            End If
+        End If
+    Next
     WScript.StdErr.WriteLine "Unable to find dumpbin." & vbNewLine & "Install Visual Studio and add its VC\bin directory to the PATH environment variable"
     Quit 1
 End Function
