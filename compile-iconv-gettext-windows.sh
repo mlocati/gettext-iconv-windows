@@ -8,18 +8,6 @@ set -ue # u: nounset, e: errexit
 #set -o xtrace
 
 #
-# Cleanup stuff after an error occurred
-#
-bldgtxtCleanupForError () {
-    set -ue
-    if test -n "${BLDGTXT_OUTPUT_RM_ON_ERROR:-}"; then
-        if test $BLDGTXT_OUTPUT_RM_ON_ERROR -eq 1; then
-            rm -rf "$BLDGTXT_OUTPUT" || true
-        fi
-    fi
-}
-
-#
 # Get the directory where this script resides
 #
 # Output:
@@ -57,7 +45,6 @@ bldgtxtSetupEnvVars () {
     BLDGTXT_OUTPUT_DEFAULT_TEMPLATE="$BLDGTXT_SCRIPTDIR/compiled/<link>-<bits>"
     BLDGTXT_OUTPUT=
     BLDGTXT_OUTPUT_FORCE=0
-    BLDGTXT_OUTPUT_RM_ON_ERROR=0
     BLDGTXT_MXE=$HOME/mxe
     BLDGTXT_QUIET=0
     BLDGTXT_DEBUGBUILD=0
@@ -154,15 +141,11 @@ bldgtxtSetupEnvVarsPostConfig () {
     fi
     if test -z "$BLDGTXT_OUTPUT"; then
         BLDGTXT_OUTPUT="$BLDGTXT_OUTPUT_DEFAULT"
-    else
-        if test -d "$BLDGTXT_OUTPUT"; then
-            if test $BLDGTXT_OUTPUT_FORCE -ne 1; then
-                printf 'The output directory "%s" already exists.\nSpecify the --force option to use it anyway\n' "$BLDGTXT_OUTPUT" >&2
-                exit 1
-            fi
-        else
-            mkdir -p "$BLDGTXT_OUTPUT"
-            BLDGTXT_OUTPUT_RM_ON_ERROR=1
+    fi
+    if test -d "$BLDGTXT_OUTPUT"; then
+        if test $BLDGTXT_OUTPUT_FORCE -ne 1; then
+            printf 'The output directory "%s" already exists.\nSpecify the --force option to use it anyway\n' "$BLDGTXT_OUTPUT" >&2
+            exit 1
         fi
     fi
     BLDGTXT_BASEDIR="$BLDGTXT_ROOT/$BLDGTXT_LINK-$BLDGTXT_BITS"
