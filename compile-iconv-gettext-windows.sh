@@ -451,8 +451,10 @@ bldgtxtApplyPatches () {
         local PATCHES_PATTERN="$PATCH_DIR/*.patch"
         local PATCH_FILE
         for PATCH_FILE in $PATCHES_PATTERN; do
-            printf ' - patching (%s)\n' "$(basename "$PATCH_FILE")"
-            patch --strip=1 --input="$PATCH_FILE" --silent
+            if test -f "$PATCH_FILE"; then
+                printf ' - patching (%s)\n' "$(basename "$PATCH_FILE")"
+                patch --strip=1 --input="$PATCH_FILE" --silent
+            fi
         done
         local PATCH_AFTER="$PATCH_DIR/after.sh"
         if test -f "$PATCH_AFTER"; then
