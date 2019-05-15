@@ -683,7 +683,6 @@ bldgtxtCopyToOutput () {
             copyFileToOutput "$BLDGTXT_MXE/usr/$MXE_TARGETS/bin/libwinpthread-1.dll" '' bin/libwinpthread-1.dll
             copyFileToOutput "$BLDGTXT_MXE/usr/$MXE_TARGETS/bin/libstdc++-6.dll" '' bin/libstdc++-6.dll
             copyFileToOutput "$BLDGTXT_MXE/usr/$MXE_TARGETS/bin/libgcc_s_seh-1.dll" '' bin/libgcc_s_seh-1.dll
-            echo 1
             ;;
     esac
 }
