@@ -60,11 +60,36 @@ bldgtxtSetupEnvVars () {
     BLDGTXT_OUTPUT_RM_ON_ERROR=0
     BLDGTXT_MXE=$HOME/mxe
     BLDGTXT_QUIET=0
-    BLDGTXT_KEEPDEBUG=0
+    BLDGTXT_DEBUGBUILD=0
     BLDGTXT_ARCHIVES="$BLDGTXT_SCRIPTDIR/archives"
     BLDGTXT_PATCHES="$BLDGTXT_SCRIPTDIR/patches"
-    BLDGTXT_RELOCPREFIXES='--enable-relocatable --prefix=/gettext'
     export PATH=$BLDGTXT_MXE/usr/bin:$PATH
+    BLDGTXT_CONFIGURE_OPTIONS='--enable-relocatable --prefix=/gettext'
+    BLDGTXT_CONFIGURE_OPTIONS_ICONV='--config-cache --disable-dependency-tracking --disable-nls --disable-rpath'
+    BLDGTXT_CONFIGURE_OPTIONS_GETTEXT='--config-cache --disable-dependency-tracking --disable-java --disable-native-java --disable-csharp --disable-rpath --disable-openmp --disable-curses --without-emacs --disable-acl --enable-threads=windows --with-included-libxml --without-bzip2 --without-xz ac_cv_func__set_invalid_parameter_handler=no'
+    BLDGTXT_MAKE_OPTIONS='--no-keep-going'
+    BLDGTXT_MAKE_OPTIONS_ICONV=
+    BLDGTXT_MAKE_OPTIONS_GETTEXT=
+    # CPPFLAGS
+    BLDGTXT_FLAGS_PREPROCESSOR=
+    BLDGTXT_FLAGS_PREPROCESSOR_ICONV=
+    BLDGTXT_FLAGS_PREPROCESSOR_GETTEXT=
+    # CFLAGS
+    BLDGTXT_FLAGS_C=
+    BLDGTXT_FLAGS_C_ICONV=
+    BLDGTXT_FLAGS_C_GETTEXT=
+    # CXXFLAGS
+    BLDGTXT_FLAGS_CPP=
+    BLDGTXT_FLAGS_CPP_ICONV=
+    BLDGTXT_FLAGS_CPP_GETTEXT=
+    # LDFLAGS
+    BLDGTXT_FLAGS_LINKER=
+    BLDGTXT_FLAGS_LINKER_ICONV=
+    BLDGTXT_FLAGS_LINKER_GETTEXT=
+    # LIBTOOLFLAGS
+    BLDGTXT_FLAGS_LIBTOOL=
+    BLDGTXT_FLAGS_LIBTOOL_ICONV=
+    BLDGTXT_FLAGS_LIBTOOL_GETTEXT=
 }
 
 #
@@ -92,12 +117,11 @@ bldgtxtSetupEnvVarsPostConfig () {
     fi
     case "$BLDGTXT_LINK" in
         shared )
-            BLDGTXT_LINK_EXPANDED=' --enable-shared --disable-static '
-            BLDGTXT_CPPFLAGS=
+            BLDGTXT_CONFIGURE_OPTIONS="$BLDGTXT_CONFIGURE_OPTIONS --enable-shared --disable-static"
             ;;
         static )
-            BLDGTXT_LINK_EXPANDED=' --disable-shared --enable-static '
-            BLDGTXT_CPPFLAGS=' -DLIBXML_STATIC'
+            BLDGTXT_CONFIGURE_OPTIONS="$BLDGTXT_CONFIGURE_OPTIONS --disable-shared --enable-static"
+            BLDGTXT_FLAGS_PREPROCESSOR_GETTEXT="$BLDGTXT_FLAGS_PREPROCESSOR_GETTEXT -DLIBXML_STATIC"
             ;;
         * )
             printf "Invalid link specified (%s)\nValid values are: shared, static\n" "$BLDGTXT_LINK" >&2
@@ -148,21 +172,27 @@ bldgtxtSetupEnvVarsPostConfig () {
     BLDGTXT_BINUTILSPREFIX="$BLDGTXT_BITS2-w64-mingw32.$BLDGTXT_LINK-"
 
     if test $BLDGTXT_QUIET -eq 1; then
-        BLDGTXT_QUIET_CONFIGURE='--quiet --enable-silent-rules'
-        BLDGTXT_QUIET_CPPFLAGS='-Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -Wno-attributes -Wno-write-strings -Wno-incompatible-pointer-types'
-        BLDGTXT_QUIET_MAKE='-silent LIBTOOLFLAGS=--silent'
-        BLDGTXT_MAKE_JOBS=
+        BLDGTXT_CONFIGURE_OPTIONS="$BLDGTXT_CONFIGURE_OPTIONS --quiet --enable-silent-rules"
+        BLDGTXT_FLAGS_PREPROCESSOR="$BLDGTXT_FLAGS_PREPROCESSOR -Wno-int-to-pointer-cast -Wno-attributes -Wno-write-strings"
+        BLDGTXT_FLAGS_C="$BLDGTXT_FLAGS_C -Wno-pointer-to-int-cast -Wno-incompatible-pointer-types"
+        BLDGTXT_MAKE_OPTIONS="$BLDGTXT_MAKE_OPTIONS -silent --jobs=$(nproc)"
+        BLDGTXT_FLAGS_LIBTOOL="$BLDGTXT_FLAGS_LIBTOOL --silent" 
     else
-        BLDGTXT_QUIET_CONFIGURE=
-        BLDGTXT_QUIET_CPPFLAGS=
-        BLDGTXT_QUIET_MAKE=
-        BLDGTXT_MAKE_JOBS=' --jobs=1 '
+        BLDGTXT_MAKE_OPTIONS="$BLDGTXT_MAKE_OPTIONS --jobs=1"
     fi
     export MXE_TARGETS="${BLDGTXT_BITS2}-w64-mingw32.${BLDGTXT_LINK}"
     export PKG_CONFIG_PATH="$BLDGTXT_COMPILED"
     BLDGTXT_PKG_CONFIG_PATH_NAME="PKG_CONFIG_PATH_${BLDGTXT_BITS2}_w64_mingw32_${BLDGTXT_LINK}"
     export $BLDGTXT_PKG_CONFIG_PATH_NAME=$PKG_CONFIG_PATH
     unset BLDGTXT_PKG_CONFIG_PATH_NAME
+    BLDGTXT_CONFIGURE_OPTIONS="$BLDGTXT_CONFIGURE_OPTIONS --host=$MXE_TARGETS"
+    BLDGTXT_FLAGS_PREPROCESSOR_GETTEXT="$BLDGTXT_FLAGS_PREPROCESSOR_GETTEXT -I$BLDGTXT_COMPILED/gettext/include"
+    BLDGTXT_FLAGS_LINKER_GETTEXT="$BLDGTXT_FLAGS_LINKER_GETTEXT -L$BLDGTXT_COMPILED/gettext/lib"
+    if test $BLDGTXT_DEBUGBUILD -eq 1; then
+        BLDGTXT_FLAGS_PREPROCESSOR="$BLDGTXT_FLAGS_PREPROCESSOR -g3"
+    else
+        BLDGTXT_FLAGS_PREPROCESSOR="$BLDGTXT_FLAGS_PREPROCESSOR -g0 -O2"
+    fi
 }
 
 #
@@ -171,11 +201,35 @@ bldgtxtSetupEnvVarsPostConfig () {
 bldgtxtPrintConfiguration () {
     set -ue
     echo '### Configuration'
-    printf 'iconv version   : %s\n' "$BLDGTXT_V_ICONV"
-    printf 'gettext version : %s\n' "$BLDGTXT_V_GETTEXT"
-    printf 'No. of bits     : %s\n' "$BLDGTXT_BITS"
-    printf 'Link            : %s\n' "$BLDGTXT_LINK"
-    printf 'Output directory: %s\n' "$BLDGTXT_OUTPUT"
+    printf 'iconv version     : %s\n' "$BLDGTXT_V_ICONV"
+    printf 'gettext version   : %s\n' "$BLDGTXT_V_GETTEXT"
+    printf 'No. of bits       : %s\n' "$BLDGTXT_BITS"
+    printf 'Link              : %s\n' "$BLDGTXT_LINK"
+    printf 'Output directory  : %s\n' "$BLDGTXT_OUTPUT"
+    echo '### Shared options'
+    printf 'configure         : %s\n' "${BLDGTXT_CONFIGURE_OPTIONS# }"
+    printf 'make              : %s\n' "${BLDGTXT_MAKE_OPTIONS# }"
+    printf 'Preprocessor flags: %s\n' "${BLDGTXT_FLAGS_PREPROCESSOR# }"
+    printf 'C flags           : %s\n' "${BLDGTXT_FLAGS_C# }"
+    printf 'C++ flags         : %s\n' "${BLDGTXT_FLAGS_CPP# }"
+    printf 'Linker flags      : %s\n' "${BLDGTXT_FLAGS_LINKER# }"
+    printf 'libtool flags     : %s\n' "${BLDGTXT_FLAGS_LIBTOOL# }"
+    echo '### iconv-specific options'
+    printf 'configure         : %s\n' "${BLDGTXT_CONFIGURE_OPTIONS_ICONV# }"
+    printf 'make              : %s\n' "${BLDGTXT_MAKE_OPTIONS_ICONV# }"
+    printf 'Preprocessor flags: %s\n' "${BLDGTXT_FLAGS_PREPROCESSOR_ICONV# }"
+    printf 'C flags           : %s\n' "${BLDGTXT_FLAGS_C_ICONV# }"
+    printf 'C++ flags         : %s\n' "${BLDGTXT_FLAGS_CPP_ICONV# }"
+    printf 'Linker flags      : %s\n' "${BLDGTXT_FLAGS_LINKER_ICONV# }"
+    printf 'libtool flags     : %s\n' "${BLDGTXT_FLAGS_LIBTOOL_ICONV# }"
+    echo '### gettext-specific options'
+    printf 'configure         : %s\n' "${BLDGTXT_CONFIGURE_OPTIONS_GETTEXT# }"
+    printf 'make              : %s\n' "${BLDGTXT_MAKE_OPTIONS_GETTEXT# }"
+    printf 'Preprocessor flags: %s\n' "${BLDGTXT_FLAGS_PREPROCESSOR_GETTEXT# }"
+    printf 'C flags           : %s\n' "${BLDGTXT_FLAGS_C_GETTEXT# }"
+    printf 'C++ flags         : %s\n' "${BLDGTXT_FLAGS_CPP_GETTEXT# }"
+    printf 'Linker flags      : %s\n' "${BLDGTXT_FLAGS_LINKER_GETTEXT# }"
+    printf 'libtool flags     : %s\n' "${BLDGTXT_FLAGS_LIBTOOL_GETTEXT# }"
 }
 
 #
@@ -314,7 +368,7 @@ bldgtxtReadCommandLine () {
                 BLDGTXT_QUIET=1
                 ;;
             -d | --debug )
-                BLDGTXT_KEEPDEBUG=1
+                BLDGTXT_DEBUGBUILD=1
                 ;;
             * )
                 bldgtxtShowInvalidArgument "Unrecognized option: $CURRENT_ARGUMENT"
@@ -414,7 +468,7 @@ bldgtxtApplyPatches () {
         local PATCHES_PATTERN="$PATCH_DIR/*.patch"
         local PATCH_FILE
         for PATCH_FILE in $PATCHES_PATTERN; do
-            printf ' - patching (%s)\n' "$(basename "$PATCH_FILE"))"
+            printf ' - patching (%s)\n' "$(basename "$PATCH_FILE")"
             patch --strip=1 --input="$PATCH_FILE" --silent
         done
         local PATCH_AFTER="$PATCH_DIR/after.sh"
@@ -453,15 +507,13 @@ bldgtxtConfigureIconv () {
     mkdir -p "$BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV"
     pushd "$BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV" >/dev/null
     "$BLDGTXT_SOURCE/libiconv-$BLDGTXT_V_ICONV/configure" \
-        --host=$MXE_TARGETS \
-        $BLDGTXT_LINK_EXPANDED \
-        $BLDGTXT_RELOCPREFIXES \
-        $BLDGTXT_QUIET_CONFIGURE \
-        --config-cache \
-        --disable-dependency-tracking \
-        --disable-nls \
-        --disable-rpath \
-        CPPFLAGS="$BLDGTXT_QUIET_CPPFLAGS"
+        $BLDGTXT_CONFIGURE_OPTIONS \
+        $BLDGTXT_CONFIGURE_OPTIONS_ICONV \
+        CPPFLAGS="$(bldgtxtTrim "$BLDGTXT_FLAGS_PREPROCESSOR $BLDGTXT_FLAGS_PREPROCESSOR_ICONV")" \
+        CFLAGS="$(bldgtxtTrim "$BLDGTXT_FLAGS_C $BLDGTXT_FLAGS_C_ICONV")" \
+        CXXFLAGS="$(bldgtxtTrim "$BLDGTXT_FLAGS_CPP $BLDGTXT_FLAGS_CPP_ICONV")" \
+        LDFLAGS="$(bldgtxtTrim "$BLDGTXT_FLAGS_LINKER $BLDGTXT_FLAGS_LINKER_ICONV")" \
+        LIBTOOLFLAGS="$(bldgtxtTrim "$BLDGTXT_FLAGS_LIBTOOL $BLDGTXT_FLAGS_LIBTOOL_ICONV")"
     bldgtxtApplyPatches "$BLDGTXT_PATCHES/libiconv-$BLDGTXT_V_ICONV-make"
     bldgtxtApplyPatches "$BLDGTXT_PATCHES/libiconv-$BLDGTXT_V_ICONV-make/$BLDGTXT_LINK"
     bldgtxtApplyPatches "$BLDGTXT_PATCHES/libiconv-$BLDGTXT_V_ICONV-make/$BLDGTXT_BITS"
@@ -476,7 +528,7 @@ bldgtxtCompileIconv () {
     set -ue
     echo '### Making iconv'
     pushd "$BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV" >/dev/null
-    make $BLDGTXT_MAKE_JOBS --no-keep-going $BLDGTXT_QUIET_MAKE
+    make $BLDGTXT_MAKE_OPTIONS $BLDGTXT_MAKE_OPTIONS_ICONV
     popd >/dev/null
 }
 
@@ -487,7 +539,7 @@ bldgtxtInstallIconv () {
     set -ue
     echo '### Installing iconv'
     pushd "$BLDGTXT_CONFIGURED/libiconv-$BLDGTXT_V_ICONV" >/dev/null
-    make $BLDGTXT_MAKE_JOBS --no-keep-going $BLDGTXT_QUIET_MAKE DESTDIR=$BLDGTXT_COMPILED install
+    make $BLDGTXT_MAKE_OPTIONS $BLDGTXT_MAKE_OPTIONS_ICONV DESTDIR=$BLDGTXT_COMPILED install
     popd >/dev/null
 }
 
@@ -519,28 +571,13 @@ bldgtxtConfigureGettext () {
     mkdir -p "$BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT"
     pushd "$BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT" >/dev/null
     "$BLDGTXT_SOURCE/gettext-$BLDGTXT_V_GETTEXT/configure" \
-        --host=$MXE_TARGETS \
-        $BLDGTXT_LINK_EXPANDED \
-        $BLDGTXT_RELOCPREFIXES \
-        $BLDGTXT_QUIET_CONFIGURE \
-        --config-cache \
-        --disable-dependency-tracking \
-        --disable-java \
-        --disable-native-java \
-        --disable-csharp \
-        --disable-rpath \
-        --disable-openmp \
-        --disable-curses \
-        --without-emacs \
-        --disable-acl \
-        --enable-threads=windows \
-        --with-included-libxml \
-        --without-bzip2 \
-        --without-xz \
-        --with-included-libxml \
-        CPPFLAGS="-I$BLDGTXT_COMPILED/gettext/include $BLDGTXT_QUIET_CPPFLAGS $BLDGTXT_CPPFLAGS" \
-        LDFLAGS="-L$BLDGTXT_COMPILED/gettext/lib" \
-        ac_cv_func__set_invalid_parameter_handler=no
+        $BLDGTXT_CONFIGURE_OPTIONS \
+        $BLDGTXT_CONFIGURE_OPTIONS_GETTEXT \
+        CPPFLAGS="$(bldgtxtTrim "$BLDGTXT_FLAGS_PREPROCESSOR $BLDGTXT_FLAGS_PREPROCESSOR_GETTEXT")" \
+        CFLAGS="$(bldgtxtTrim "$BLDGTXT_FLAGS_C $BLDGTXT_FLAGS_C_GETTEXT")" \
+        CXXFLAGS="$(bldgtxtTrim "$BLDGTXT_FLAGS_CPP $BLDGTXT_FLAGS_CPP_GETTEXT")" \
+        LDFLAGS="$(bldgtxtTrim "$BLDGTXT_FLAGS_LINKER $BLDGTXT_FLAGS_LINKER_GETTEXT")" \
+        LIBTOOLFLAGS="$(bldgtxtTrim "$BLDGTXT_FLAGS_LIBTOOL $BLDGTXT_FLAGS_LIBTOOL_GETTEXT")"
     bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-make"
     bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-make/$BLDGTXT_LINK"
     bldgtxtApplyPatches "$BLDGTXT_PATCHES/gettext-$BLDGTXT_V_GETTEXT-make/$BLDGTXT_BITS"
@@ -556,9 +593,9 @@ bldgtxtCompileGettext () {
     echo '### Making gettext'
     pushd "$BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT" >/dev/null
     if test -f "libtextstyle/Makefile"; then
-        make $BLDGTXT_MAKE_JOBS --directory=libtextstyle --no-keep-going $BLDGTXT_QUIET_MAKE
+        make $BLDGTXT_MAKE_OPTIONS $BLDGTXT_MAKE_OPTIONS_GETTEXT --directory=libtextstyle
     fi
-    make $BLDGTXT_MAKE_JOBS --directory=gettext-tools --no-keep-going $BLDGTXT_QUIET_MAKE
+    make $BLDGTXT_MAKE_OPTIONS $BLDGTXT_MAKE_OPTIONS_GETTEXT --directory=gettext-tools
     popd >/dev/null
 }
 
@@ -570,9 +607,9 @@ bldgtxtInstallGettext () {
     echo '### Installing gettext'
     pushd "$BLDGTXT_CONFIGURED/gettext-$BLDGTXT_V_GETTEXT" >/dev/null
     if test -f "libtextstyle/Makefile"; then
-        make $BLDGTXT_MAKE_JOBS --directory=libtextstyle --no-keep-going $BLDGTXT_QUIET_MAKE DESTDIR=$BLDGTXT_COMPILED install
+        make $BLDGTXT_MAKE_OPTIONS $BLDGTXT_MAKE_OPTIONS_GETTEXT --directory=libtextstyle DESTDIR=$BLDGTXT_COMPILED install
     fi
-    make $BLDGTXT_MAKE_JOBS --directory=gettext-tools --no-keep-going $BLDGTXT_QUIET_MAKE DESTDIR=$BLDGTXT_COMPILED install
+    make $BLDGTXT_MAKE_OPTIONS $BLDGTXT_MAKE_OPTIONS_GETTEXT --directory=gettext-tools DESTDIR=$BLDGTXT_COMPILED install
     popd >/dev/null
 }
 
@@ -604,7 +641,7 @@ copyFileToOutput () {
     mkdir -p "$(dirname "$DESTINATION_PATH")"
     case "$COPY_TYPE" in
         binary )
-            if test $BLDGTXT_KEEPDEBUG -eq 1; then
+            if test $BLDGTXT_DEBUGBUILD -eq 1; then
                 cp "$SOURCE_PATH" "$DESTINATION_PATH"
             else
                 "${BLDGTXT_BINUTILSPREFIX}strip" --strip-unneeded "$SOURCE_PATH" -o "$DESTINATION_PATH"

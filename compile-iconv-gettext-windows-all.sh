@@ -21,6 +21,6 @@ function doCompile {
 }
 
 doCompile shared 32
-doCompile static 32
 doCompile shared 64
+doCompile static 32
 doCompile static 64
