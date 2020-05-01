@@ -40,7 +40,7 @@ This requires a Windows PC.
 
 - make sure the compiled files are in the directory `compiled\<shared|static>-<32|64>`
 - launch the `check-dependencies.vbs` script (`cscript //Nologo check-dependencies.vbs`) 
-- launch the `build-setup.vbs` script (`cscript //Nologo check-dependencies.vbs`)
+- launch the `build-setup.vbs` script (`cscript //Nologo build-setup.vbs`)
 
 
 ## Creating the setup files
