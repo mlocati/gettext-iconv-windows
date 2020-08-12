@@ -96,7 +96,7 @@ Sub Quit(ByVal rc)
 End Sub
 
 Function FindDumpBin()
-    Dim db, rc, env, rx, matches, dbFolder
+    Dim db, rc, env, rx, matches, dbFolder, oShell, value, p, oFolder
     db = "dumpbin.exe"
     On Error Resume Next
     Err.Clear
@@ -128,6 +128,45 @@ Function FindDumpBin()
             End If
         End If
     Next
+    Set oShell = CreateObject("WScript.Shell")
+    On Error Resume Next
+    Err.Clear
+    value = oShell.RegRead("HKEY_CLASSES_ROOT\VisualStudio.Solution\CLSID\")
+    If Err.Number <> 0 Then
+        value = ""
+        Err.Clear
+    End If
+    If ("" & value) <> "" Then
+        value = oShell.RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WOW6432Node\CLSID\" & value & "\LocalServer32\")
+        If Err.Number <> 0 Then
+            value = ""
+            Err.Clear
+        End If
+    End If
+    On Error Goto 0
+    If ("" & value) <> "" Then
+        p = InStr(value, """")
+        If p = 1 Then
+            value = Mid(value, 2)
+        End If
+        Set rx = CreateObject("VBScript.RegExp")
+        rx.IgnoreCase = True
+        rx.Pattern = "^(.*)\\common\d*\\ide\\devenv\.exe"
+        Set matches = rx.Execute(value)
+        If matches.Count = 1 Then
+            value = matches(0).SubMatches(0) & "\VC\Tools\MSVC"
+            If fso.FolderExists(value) Then
+                For Each oFolder In fso.GetFolder(value).SubFolders
+                    value = oFolder.Path & "\bin\Hostx64\x64\dumpbin.exe"
+                    rem value = oFolder.Path & "\bin\Hostx86\x86\dumpbin.exe"
+                    If fso.FileExists(value) Then
+                        FindDumpBin = value
+                        Exit Function
+                    End If
+                Next
+            End If
+        End If
+    End If
     WScript.StdErr.WriteLine "Unable to find dumpbin." & vbNewLine & "Install Visual Studio and add its VC\bin directory to the PATH environment variable"
     Quit 1
 End Function
