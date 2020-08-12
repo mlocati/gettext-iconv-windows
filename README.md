@@ -4,11 +4,9 @@
 
 gettext tools and iconv binaries for Windows.
 
-
 ## Ready-to-use binaries
 
 If you don't want to waste your time or if you don't know much about compiling and virtual machines, see [mlocati.github.io/articles/gettext-iconv-windows.html](http://mlocati.github.io/articles/gettext-iconv-windows.html).
-
 
 ## Building with Docker
 
@@ -39,7 +37,6 @@ Get the `*.sh` files and the `patches` directory (they must reside in the same d
 
 Run the `compile-iconv-gettext-windows.sh` script to build the Windows binary files.
 
-
 ## Checking the compiled files
 
 This requires a Windows PC.
@@ -47,7 +44,6 @@ This requires a Windows PC.
 - make sure the compiled files are in the directory `compiled\<shared|static>-<32|64>`
 - launch the `check-dependencies.vbs` script (`cscript //Nologo check-dependencies.vbs`) 
 - launch the `build-setup.vbs` script (`cscript //Nologo build-setup.vbs`)
-
 
 ## Creating the setup files
 
@@ -57,7 +53,10 @@ If you want to build a setup to install these executables and automatically add 
 - make sure the compiled files are in the directory `compiled\<shared|static>-<32|64>`
 - launch the `build-setup.vbs` script
 
-
 ## Credits
 
 The patch that adds support to the `GETTEXTIOENCODING` environmental variable was created by [Václav Slavík](https://github.com/vslavik/).
+
+## Do you want to really say thank you?
+
+You can offer me a [monthly coffee](https://github.com/sponsors/mlocati) or a [one-time coffee](https://paypal.me/mlocati) :wink:
