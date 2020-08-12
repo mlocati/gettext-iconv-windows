@@ -20,9 +20,13 @@ Simply clone this repository, open a terminal and run this command:
     ```sh
     docker run --rm -it -v "$PWD:/app mlocati/gettext-iconv-windows:latest" /app/compile-iconv-gettext-windows.sh
     ```
-- Windows
+- Windows (cmd)
     ```bat
     docker run --rm -it -v "%CD%:/app" mlocati/gettext-iconv-windows:latest /app/compile-iconv-gettext-windows.sh
+    ```
+- Windows (PowerShell)
+    ```PowerShell
+    docker run --rm -it -v "$((Get-Location).Path):/app" mlocati/gettext-iconv-windows:latest /app/compile-iconv-gettext-windows.sh
     ```
 
 ## Building with a virtual machine or Ubuntu
