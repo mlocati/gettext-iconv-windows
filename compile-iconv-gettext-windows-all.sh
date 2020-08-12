@@ -17,7 +17,7 @@ popd > /dev/null
 
 function doCompile {
     rm -rf "${SCRIPT_PATH}/compiled/$1-$2" || rm -rf "${SCRIPT_PATH}/compiled/$1-$2" || rm -rf "${SCRIPT_PATH}/compiled/$1-$2"
-    "${SCRIPT_PATH}/compile-iconv-gettext-windows.sh" --link $1 --bits $2 --iconv - --gettext - --output "${SCRIPT_PATH}/compiled/$1-$2" --quiet
+    "${SCRIPT_PATH}/compile-iconv-gettext-windows.sh" --link $1 --bits $2 --iconv - --gettext - --output - --quiet
 }
 
 doCompile shared 32
