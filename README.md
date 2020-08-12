@@ -29,6 +29,8 @@ Simply clone this repository, open a terminal and run this command:
     docker run --rm -it -v "$((Get-Location).Path):/app" mlocati/gettext-iconv-windows:latest /app/compile-iconv-gettext-windows.sh
     ```
 
+To compile all the versions (shared and static, 32 and 64 bits), you can use the `compile-iconv-gettext-windows-all.sh` script.
+
 ## Building with a virtual machine or Ubuntu
 
 The build script has been written for [Ubuntu](http://www.ubuntu.com/) 18.04 LTS.
