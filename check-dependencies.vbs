@@ -503,7 +503,7 @@ Function GetFileType(ByVal binName)
         GetFileType = FILETYPE_MINGW_DLL
         Exit Function
     End If
-    rx.Pattern = "^(advapi32|kernel32|msvcrt|user32)\.dll"
+    rx.Pattern = "^(advapi32|kernel32|msvcrt|user32|ws2_32)\.dll"
     If rx.Test(binName) Then
         GetFileType = FILETYPE_WINDOWS_DLL
         Exit Function
