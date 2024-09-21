@@ -204,21 +204,17 @@ jobs:
           --without-xz
           ${{ steps.setup.outputs.configure-options }}
       -
+        name: Ignore gettext C tests
+        if: steps.setup.outputs.gettext-ignore-tests-c
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}
+        run: for f in ${{ steps.setup.outputs.gettext-ignore-tests-c }}; do echo 'int main() { return 0; }' >$f; done
+      -
         name: Compile gettext
         working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build
         run: make --jobs=$(nproc)
       -
-        name: Ignore gettext C tests
-        if: steps.setup.outputs.gettext-ignore-tests-c
-        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}
-        run: >-
-          for f ${{ steps.setup.outputs.gettext-ignore-tests-c }}; do
-            echo 'int main() { return 0; }' >$f ;
-          done
-      -
         name: Check gettext
         working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build
-        # See https://savannah.gnu.org/bugs/?66232 for XFAIL_TESTS
         run: XFAIL_TESTS='${{ steps.setup.outputs.gettext-xfail-tests }}' make check --jobs=$(nproc)
       -
         name: Install gettext

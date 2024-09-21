@@ -41,6 +41,7 @@ switch ($link) {
 "mingw-host=$mingwHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "configure-options=$configureOptions" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "gettext-cppflags=$gettextCppFlags" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+<# See https://savannah.gnu.org/bugs/?66232 #>
 "gettext-ignore-tests-c=$gettextIgnoreTestsC" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 <# See https://savannah.gnu.org/bugs/?66232 #>
 "gettext-xfail-tests=msgexec-1 msgexec-3 msgexec-4 msgexec-5 msgexec-6 msgfilter-6 msgfilter-7 msginit-3" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
