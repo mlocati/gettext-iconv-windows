@@ -47,7 +47,7 @@ jobs:
         id: restore-cache
         uses: actions/cache/restore@v4
         with:
-          key: cache-${{ matrix.bits }}
+          key: ${{ matrix.link }}-${{ matrix.bits }}
           path: |
             C:\cygwin-packages
             C:\cygwin\src\downloads
