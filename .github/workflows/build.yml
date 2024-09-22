@@ -127,8 +127,8 @@ jobs:
           CC='${{ steps.setup.outputs.mingw-host }}-gcc'
           CXX='${{ steps.setup.outputs.mingw-host }}-g++'
           LD='${{ steps.setup.outputs.mingw-host }}-ld'
-          CPPFLAGS='-I${{ steps.setup.outputs.mingw-path }}/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2'
-          LDFLAGS='-L${{ steps.setup.outputs.mingw-path }}/sys-root/mingw/lib'
+          CPPFLAGS='-I/usr/${{ steps.setup.outputs.mingw-host }}/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2'
+          LDFLAGS='-L/usr/${{ steps.setup.outputs.mingw-host }}/sys-root/mingw/lib'
           ac_cv_func__set_invalid_parameter_handler=no
           gl_cv_header_working_stdint_h=no
           --host=${{ steps.setup.outputs.mingw-host }}
@@ -180,8 +180,8 @@ jobs:
           CC='${{ steps.setup.outputs.mingw-host }}-gcc'
           CXX='${{ steps.setup.outputs.mingw-host }}-g++'
           LD='${{ steps.setup.outputs.mingw-host }}-ld'
-          CPPFLAGS='-I/installed/include -I${{ steps.setup.outputs.mingw-path }}/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2 ${{ steps.setup.outputs.gettext-cppflags }}'
-          LDFLAGS='-L/installed/lib -L${{ steps.setup.outputs.mingw-path }}/sys-root/mingw/lib'
+          CPPFLAGS='-I/installed/include -I/usr/${{ steps.setup.outputs.mingw-host }}/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2 ${{ steps.setup.outputs.gettext-cppflags }}'
+          LDFLAGS='-L/installed/lib -L/usr/${{ steps.setup.outputs.mingw-host }}/sys-root/mingw/lib'
           ac_cv_func__set_invalid_parameter_handler=no
           gl_cv_header_working_stdint_h=no
           --host=${{ steps.setup.outputs.mingw-host }}
@@ -222,7 +222,11 @@ jobs:
         run: make install && cp ../COPYING /installed/gettext-license.txt
       -
         name: Copy built assets
-        run: ./.github/workflows/build-exe-create-output /installed /output ${{ matrix.link }} ${{ matrix.bits}}
+        run: ./.github/workflows/build-exe-create-output /installed /output '${{ steps.setup.outputs.mingw-host }}'
+      -
+        name: Check dependencies
+        shell: pwsh
+        run: ./.github/workflows/build-exe-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output C:\cygwin\usr\${{ steps.setup.outputs.mingw-host }}
       -
         name: Upload artifact
         uses: actions/upload-artifact@v4

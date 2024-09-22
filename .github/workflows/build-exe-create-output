@@ -30,7 +30,7 @@ copyFile () {
     mkdir -p "$(dirname "$destinationPath")"
     case "$fileType" in
         binary)
-            strip --strip-unneeded "$sourcePath" -o "$destinationPath"
+            "$MINGW_HOST-strip" --strip-unneeded "$sourcePath" -o "$destinationPath"
             ;;
         text)
             perl -pe 's/\r\n|\n|\r/\r\n/g' <"$sourcePath" >"$destinationPath"
@@ -61,32 +61,11 @@ if [ ! -d "$DESTINATION" ]; then
     printf 'Destination directory (%s) not found\n' "$DESTINATION"
     exit 1
 fi
-LINK="${3:-}"
-case "$LINK" in
-    shared | static)
-        ;;
-    '')
-        echo 'Missing 3rd argument (link)'
-        exit 1
-        ;;
-    *)
-        printf 'Missing/wrong link (%s)\n' "$LINK"
-        exit 1
-        ;;
-esac
-BITS="${4:-}"
-case "$BITS" in
-    32 | 64)
-        ;;
-    '')
-        echo 'Missing 4rd argument (bits)'
-        exit 1
-        ;;
-    *)
-        printf 'Missing/wrong bits (%s)\n' "$BITS"
-        exit 1
-        ;;
-esac
+MINGW_HOST="${3:-}"
+if [ -z "$MINGW_HOST" ]; then
+    echo 'Missing 3nd argument (MinGW host)'
+    exit 1
+fi
 
 mkdir -p "$DESTINATION/share/gettext"
 
@@ -108,15 +87,3 @@ cp -r "$SOURCE/share/gettext/styles" "$DESTINATION/share/gettext/"
 cp -r $SOURCE/share/gettext-*/its "$DESTINATION/share/gettext"
 copyFile "$SOURCE/share/gettext/msgunfmt.tcl"
 copyFile "$SOURCE/cldr-plurals.xml" '' lib/gettext/common/supplemental/plurals.xml
-case "$LINK$BITS" in
-    shared32)
-        copyFile /usr/i686-w64-mingw32/sys-root/mingw/bin/libgcc_s_sjlj-1.dll '' bin/libgcc_s_sjlj-1.dll
-        copyFile /usr/i686-w64-mingw32/sys-root/mingw/bin/libstdc++-6.dll '' bin/libstdc++-6.dll
-        copyFile /usr/i686-w64-mingw32/sys-root/mingw/bin/libwinpthread-1.dll '' bin/libwinpthread-1.dll
-        ;;
-    shared64)
-        copyFile /usr/x86_64-w64-mingw32/sys-root/mingw/bin/libwinpthread-1.dll '' bin/libwinpthread-1.dll
-        copyFile /usr/x86_64-w64-mingw32/sys-root/mingw/bin/libstdc++-6.dll '' bin/libstdc++-6.dll
-        copyFile /usr/x86_64-w64-mingw32/sys-root/mingw/bin/libgcc_s_seh-1.dll '' bin/libgcc_s_seh-1.dll
-        ;;
-esac
