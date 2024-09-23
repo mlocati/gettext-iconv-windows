@@ -249,7 +249,7 @@ jobs:
         name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-installer
+          name: ${{ matrix.link }}-${{ matrix.bits }}-exe
           path: C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           if-no-files-found: error
           compression-level: 0
