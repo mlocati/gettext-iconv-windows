@@ -71,7 +71,7 @@ function Get-Dependencies()
             $started = $true
         }
     }
-    $dependencies
+    $dependencies | Sort-Object
 }
 
 class Binary
@@ -130,8 +130,8 @@ class Binaries
                         break
                     }
                 }
-                if ($unused) { 
-                    Write-Host "$($binary.File.Name) is never used: deleting it"
+                if ($unused) {
+                    Write-Host -Object "$($binary.File.Name) is never used: deleting it"
                     $binary.File.Delete()
                     $this.Items = $this.Items | Where-Object { $_ -ne $binary }
                     $repeat = $true
@@ -168,6 +168,21 @@ class Binaries
             }
         }
     }
+
+    [void] Dump()
+    {
+        $binaries = $this.Items | Sort-Object -Property {  $_.File.Name }
+        foreach ($binary in $binaries) {
+            Write-Host -Object "Dependencies of $($binary.File.Name)"
+            if ($binary.Dependencies) {
+                foreach ($dependency in $binary.Dependencies) {
+                    Write-Host -Object "  - $dependency"
+                }
+            } else {
+                Write-Host -Object '  (none)'
+            }
+        }
+    }
 }
 
 $dumpbin = Find-Dumpbin
@@ -184,5 +199,10 @@ foreach ($file in Get-ChildItem -LiteralPath $outputBinPath -Recurse -File) {
 $binaries.RemoveUnusedDlls()
 $binaries.AddMingwDlls($mingwBinPath)
 if ($binaries.MinGWFilesAdded) {
-    # todo
+    Write-Host -Object "Adding MinGW-w64 license"
+    $mingwLicenseFile = Join-Path -Path $outputPath -ChildPath 'mingw-license.txt'
+    $mingwLicense = $(Invoke-WebRequest -Uri 'https://sourceforge.net/p/mingw-w64/mingw-w64/ci/master/tree/COPYING.MinGW-w64-runtime/COPYING.MinGW-w64-runtime.txt?format=raw').ToString()
+    $mingwLicense -ireplace "`r`n","`n" -ireplace "`n","`r`n" | Set-Content -LiteralPath $mingwLicenseFile -NoNewline -Encoding utf8
 }
+
+$binaries.Dump()

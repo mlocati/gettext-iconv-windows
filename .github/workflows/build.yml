@@ -224,7 +224,7 @@ jobs:
         name: Copy built assets
         run: ./.github/workflows/build-exe-create-output /installed /output '${{ steps.setup.outputs.mingw-host }}'
       -
-        name: Check dependencies
+        name: Process dependencies
         shell: pwsh
         run: ./.github/workflows/build-exe-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output C:\cygwin\usr\${{ steps.setup.outputs.mingw-host }}
       -
