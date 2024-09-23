@@ -79,10 +79,11 @@ jobs:
         working-directory: C:\cygwin
         run: >-
           printf '\nPATH=${{ steps.setup.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
-          && mkdir -p "$HOME"
-          && mkdir -p /src/downloads
-          && mkdir -p /installed
-          && mkdir -p /output
+          && /bin/mkdir -p "$HOME"
+          && /bin/mkdir -p /src/downloads
+          && /bin/mkdir -p /installed
+          && /bin/mkdir -p /output
+          && /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < "$(/bin/cygpath "$GITHUB_WORKSPACE/.github/workflows/build-exe-license.txt")" > /output/license.txt
       -
         name: Download CLDR
         working-directory: C:\cygwin\src\downloads
@@ -228,12 +229,30 @@ jobs:
         shell: pwsh
         run: ./.github/workflows/build-exe-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output C:\cygwin\usr\${{ steps.setup.outputs.mingw-host }}
       -
-        name: Upload artifact
+        name: Create zip
+        working-directory: C:\cygwin\output
+        shell: cmd
+        run: 7z.exe a -bd -bt -r -sse -tzip C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
+      -
+        name: Upload zip
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}
-          path: C:\cygwin\output
+          name: ${{ matrix.link }}-${{ matrix.bits }}-zip
+          path: C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
           if-no-files-found: error
+          compression-level: 0
+      -
+        name: Create installer
+        shell: pwsh
+        run: ./.github/workflows/build-exe-installer.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output
+      -
+        name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.link }}-${{ matrix.bits }}-installer
+          path: C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          if-no-files-found: error
+          compression-level: 0
       -
         name: Prepare failure log
         id: prepare-failure-log

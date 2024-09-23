@@ -7,8 +7,6 @@ param (
     [string] $link
 )
 
-$ignoreGLibGetOptTests = '1'
-
 $cygwinPackages = 'make,unzip,perl'
 
 $gettextIgnoreTestsC = 'gettext-tools/gnulib-tests/test-asyncsafe-spin2.c gettext-tools/gnulib-tests/test-getopt-gnu.c gettext-tools/gnulib-tests/test-getopt-posix.c'
