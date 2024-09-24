@@ -125,11 +125,8 @@ jobs:
           mkdir build
           && cd build
           && ../configure
-          CC='${{ steps.vars.outputs.mingw-host }}-gcc'
-          CXX='${{ steps.vars.outputs.mingw-host }}-g++'
-          LD='${{ steps.vars.outputs.mingw-host }}-ld'
-          CPPFLAGS='-I/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2'
-          LDFLAGS='-L/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/lib'
+          CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}'
+          LDFLAGS='${{ steps.vars.outputs.ld-flags }}'
           ${{ steps.vars.outputs.configure-args }}
           --prefix=/installed
       -
@@ -168,11 +165,8 @@ jobs:
           mkdir build
           && cd build
           && ../configure
-          CC='${{ steps.vars.outputs.mingw-host }}-gcc'
-          CXX='${{ steps.vars.outputs.mingw-host }}-g++'
-          LD='${{ steps.vars.outputs.mingw-host }}-ld'
-          CPPFLAGS='-I/installed/include -I/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2'
-          LDFLAGS='-L/installed/lib -L/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/lib'
+          CPPFLAGS='-I/installed/include ${{ steps.vars.outputs.cpp-flags }}'
+          LDFLAGS='-L/installed/lib ${{ steps.vars.outputs.ld-flags }}'
           ${{ steps.vars.outputs.configure-args }}
           --prefix=/installed
           --disable-java

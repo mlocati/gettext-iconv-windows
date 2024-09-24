@@ -27,6 +27,9 @@ switch ($bits) {
 }
 
 $configureArgs = @(
+    "CC=$mingwHost-gcc",
+    "CXX=$mingwHost-g++",
+    "LD=$mingwHost-ld",
     'ac_cv_func__set_invalid_parameter_handler=no',
     'gl_cv_header_working_stdint_h=no',
     "--host=$mingwHost",
@@ -59,6 +62,8 @@ if ([Version]$env:GETTEXT_VERSION -le [Version]'0.22.5') {
 "cygwin-path=/installed/bin:/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/system32:/cygdrive/c/Windows" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "mingw-host=$mingwHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "configure-args=$configureArgs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+"cpp-flags=-I/usr/$mingwHost/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+"ld-flags=-L/usr/$mingwHost/sys-root/mingw/lib" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 <# See https://savannah.gnu.org/bugs/?66232 #>
 "gettext-ignore-tests-c=$gettextIgnoreTestsC" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "gettext-xfail-tests=$gettextXFailTests" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
