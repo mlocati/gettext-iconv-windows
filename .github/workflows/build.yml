@@ -130,18 +130,8 @@ jobs:
           LD='${{ steps.vars.outputs.mingw-host }}-ld'
           CPPFLAGS='-I/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2'
           LDFLAGS='-L/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/lib'
-          ac_cv_func__set_invalid_parameter_handler=no
-          gl_cv_header_working_stdint_h=no
-          --host=${{ steps.vars.outputs.mingw-host }}
+          ${{ steps.vars.outputs.configure-args }}
           --prefix=/installed
-          --enable-relocatable
-          --config-cache
-          --disable-dependency-tracking
-          --disable-nls
-          --disable-rpath
-          --disable-acl
-          --enable-threads=windows
-          ${{ steps.vars.outputs.configure-options }}
       -
         name: Compile iconv
         working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}\build
@@ -183,17 +173,8 @@ jobs:
           LD='${{ steps.vars.outputs.mingw-host }}-ld'
           CPPFLAGS='-I/installed/include -I/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2 ${{ steps.vars.outputs.gettext-cppflags }}'
           LDFLAGS='-L/installed/lib -L/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/lib'
-          ac_cv_func__set_invalid_parameter_handler=no
-          gl_cv_header_working_stdint_h=no
-          --host=${{ steps.vars.outputs.mingw-host }}
+          ${{ steps.vars.outputs.configure-args }}
           --prefix=/installed
-          --enable-relocatable
-          --config-cache
-          --disable-dependency-tracking
-          --enable-nls
-          --disable-rpath
-          --disable-acl
-          --enable-threads=windows
           --disable-java
           --disable-native-java
           --disable-csharp
@@ -203,7 +184,6 @@ jobs:
           --with-included-libxml
           --without-bzip2
           --without-xz
-          ${{ steps.vars.outputs.configure-options }}
       -
         name: Ignore gettext C tests
         if: steps.vars.outputs.gettext-ignore-tests-c

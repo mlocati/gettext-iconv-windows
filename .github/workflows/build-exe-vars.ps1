@@ -21,20 +21,34 @@ switch ($bits) {
         $mingwHost = 'x86_64-w64-mingw32'
     }
 }
+
+$configureArgs = @(
+    'ac_cv_func__set_invalid_parameter_handler=no',
+    'gl_cv_header_working_stdint_h=no',
+    "--host=$mingwHost",
+    '--enable-relocatable',
+    '--config-cache',
+    '--disable-dependency-tracking',
+    '--enable-nls',
+    '--disable-rpath',
+    '--disable-acl',
+    '--enable-threads=windows'
+)
+
 switch ($link) {
     'shared' {
-        $configureOptions = '--enable-shared --disable-static'
+        $configureArgs += '--enable-shared --disable-static'
         $gettextCppFlags = ''
     }
     'static' {
-        $configureOptions = '--disable-shared --enable-static'
+        $configureArgs += '--disable-shared --enable-static'
         $gettextCppFlags = '-DLIBXML_STATIC'
     }
 }
 "cygwin-packages=$cygwinPackages" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "cygwin-path=/installed/bin:/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/system32:/cygdrive/c/Windows" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "mingw-host=$mingwHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"configure-options=$configureOptions" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+"configure-args=$configureArgs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "gettext-cppflags=$gettextCppFlags" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 <# See https://savannah.gnu.org/bugs/?66232 #>
 "gettext-ignore-tests-c=$gettextIgnoreTestsC" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
