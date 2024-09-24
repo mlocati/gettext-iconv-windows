@@ -171,7 +171,7 @@ jobs:
           CC='${{ steps.vars.outputs.mingw-host }}-gcc'
           CXX='${{ steps.vars.outputs.mingw-host }}-g++'
           LD='${{ steps.vars.outputs.mingw-host }}-ld'
-          CPPFLAGS='-I/installed/include -I/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2 ${{ steps.vars.outputs.gettext-cppflags }}'
+          CPPFLAGS='-I/installed/include -I/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/include -D__USE_MINGW_ANSI_STDIO=0 -g0 -O2'
           LDFLAGS='-L/installed/lib -L/usr/${{ steps.vars.outputs.mingw-host }}/sys-root/mingw/lib'
           ${{ steps.vars.outputs.configure-args }}
           --prefix=/installed

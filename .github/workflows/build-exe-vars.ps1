@@ -42,11 +42,9 @@ $configureArgs = @(
 switch ($link) {
     'shared' {
         $configureArgs += '--enable-shared --disable-static'
-        $gettextCppFlags = ''
     }
     'static' {
         $configureArgs += '--disable-shared --enable-static'
-        $gettextCppFlags = '-DLIBXML_STATIC'
     }
 }
 
@@ -61,7 +59,6 @@ if ([Version]$env:GETTEXT_VERSION -le [Version]'0.22.5') {
 "cygwin-path=/installed/bin:/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/system32:/cygdrive/c/Windows" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "mingw-host=$mingwHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "configure-args=$configureArgs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"gettext-cppflags=$gettextCppFlags" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 <# See https://savannah.gnu.org/bugs/?66232 #>
 "gettext-ignore-tests-c=$gettextIgnoreTestsC" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "gettext-xfail-tests=$gettextXFailTests" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
