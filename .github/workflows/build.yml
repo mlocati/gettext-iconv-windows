@@ -228,26 +228,26 @@ jobs:
           if-no-files-found: error
           compression-level: 0
       -
-        name: Prepare failure log
-        id: prepare-failure-log
-        if: failure() && steps.vars-cygwin.outcome == 'success'
+        name: Prepare build log
+        id: prepare-build-log
+        if: always() && (steps.iconv-configure.outcome == 'success' || steps.iconv-configure.outcome == 'failure')
         run: >-
-          mkdir /failure-log
-          && if [ -d /src/libiconv-$ICONV_VERSION/build ]; then tar c -J -f /failure-log/iconv.tar.xz /src/libiconv-$ICONV_VERSION/build; fi
-          && if [ -d /src/gettext-$GETTEXT_VERSION/build ]; then tar c -J -f /failure-log/gettext.tar.xz /src/gettext-$GETTEXT_VERSION/build; fi
-          && if [ -d /installed ]; then tar c -J -f /failure-log/installed.tar.xz /installed; fi
-          && ls -al /failure-log
+          mkdir /build-log
+          && if [ -d /src/libiconv-$ICONV_VERSION/build ]; then tar c -J -f /build-log/iconv.tar.xz /src/libiconv-$ICONV_VERSION/build; fi
+          && if [ -d /src/gettext-$GETTEXT_VERSION/build ]; then tar c -J -f /build-log/gettext.tar.xz /src/gettext-$GETTEXT_VERSION/build; fi
+          && if [ -d /installed ]; then tar c -J -f /build-log/installed.tar.xz /installed; fi
+          && ls -al /build-log
       -
-        name: Upload failure log
-        if: always() && steps.prepare-failure-log.outcome == 'success'
+        name: Upload build log
+        if: always() && steps.prepare-build-log.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: failure-log-${{ matrix.link }}-${{ matrix.bits }}
+          name: build-log-${{ matrix.link }}-${{ matrix.bits }}
           if-no-files-found: ignore
           retention-days: 1
           include-hidden-files: true
           compression-level: 0
-          path: C:\cygwin\failure-log
+          path: C:\cygwin\build-log
       -
         name: Persist cache
         if: always() && steps.restore-cache.outputs.cache-hit != 'true'
