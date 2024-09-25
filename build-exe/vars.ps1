@@ -51,11 +51,21 @@ switch ($Link) {
     }
 }
 
-if ([Version]$env:GETTEXT_VERSION -le [Version]'0.22.5') {
-    <# See https://savannah.gnu.org/bugs/?66232 #>
+if ([Version]($env:GETTEXT_VERSION -replace '[a.z]+$','') -le [Version]'0.22.5') {
+    # See https://savannah.gnu.org/bugs/?66232
     $gettextXFailTests='msgexec-1 msgexec-3 msgexec-4 msgexec-5 msgexec-6 msgfilter-6 msgfilter-7 msginit-3'
 } else {
     $gettextXFailTests=''
+}
+
+switch ($env:GETTEXT_VERSION) {
+    '0.22.5a' {
+        # see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00039.html
+        $gettextSourceUrl="https://alpha.gnu.org/gnu/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
+    }
+    default {
+        $gettextSourceUrl="https://ftp.gnu.org/pub/gnu/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
+    }
 }
 
 "cygwin-packages=$cygwinPackages" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -65,7 +75,8 @@ if ([Version]$env:GETTEXT_VERSION -le [Version]'0.22.5') {
 "cpp-flags=-I/usr/$mingwHost/sys-root/mingw/include -g0 -O2" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "ld-flags=-L/usr/$mingwHost/sys-root/mingw/lib" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 <# See https://savannah.gnu.org/bugs/?66232 #>
+"gettext-source-url=$gettextSourceUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "gettext-ignore-tests-c=$gettextIgnoreTestsC" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"gettext-xfail-tests=$gettextXFailTests" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+"gettext-xfail-gettext-tools=$gettextXFailTests" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 Write-Output '## Outputs'
 Get-Content $env:GITHUB_OUTPUT
