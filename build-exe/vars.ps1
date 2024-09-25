@@ -15,7 +15,7 @@ if (-not($env:GETTEXT_VERSION)) {
 
 $cygwinPackages = 'make,unzip,perl'
 
-$gettextIgnoreTestsC = 'gettext-tools/gnulib-tests/test-getopt-gnu.c gettext-tools/gnulib-tests/test-getopt-posix.c'
+$gettextIgnoreTestsC = 'gettext-tools/gnulib-tests/test-getopt-gnu.c gettext-tools/gnulib-tests/test-getopt-posix.c gettext-tools/gnulib-tests/test-asyncsafe-spin2.c'
 
 switch ($Bits) {
     32 {
