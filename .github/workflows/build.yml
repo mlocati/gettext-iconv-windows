@@ -57,7 +57,7 @@ jobs:
         name: Set variables
         id: vars
         shell: pwsh
-        run: ./build-exe/vars.ps1 ${{ matrix.bits }} ${{ matrix.link }}
+        run: ./build-exe/vars.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }}
       -
         name: Download Cygwin installer
         shell: pwsh
@@ -220,7 +220,7 @@ jobs:
       -
         name: Create installer
         shell: pwsh
-        run: ./.github/workflows/create-installer.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output
+        run: ./.github/workflows/create-installer.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -SourceDirectory C:\cygwin\output -OutputDirectory C:\
       -
         name: Upload installer
         uses: actions/upload-artifact@v4

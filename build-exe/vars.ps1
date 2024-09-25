@@ -3,10 +3,10 @@
 param (
     [Parameter(Mandatory = $true)]
     [ValidateSet(32, 64)]
-    [int] $bits,
+    [int] $Bits,
     [Parameter(Mandatory = $true)]
     [ValidateSet('shared', 'static')]
-    [string] $link
+    [string] $Link
 )
 
 if (-not($env:GETTEXT_VERSION)) {
@@ -17,7 +17,7 @@ $cygwinPackages = 'make,unzip,perl'
 
 $gettextIgnoreTestsC = 'gettext-tools/gnulib-tests/test-getopt-gnu.c gettext-tools/gnulib-tests/test-getopt-posix.c'
 
-switch ($bits) {
+switch ($Bits) {
     32 {
         $cygwinPackages = "$cygwinPackages,mingw64-i686-gcc-core,mingw64-i686-gcc-g++,mingw64-i686-headers,mingw64-i686-runtime"
         $mingwHost = 'i686-w64-mingw32'
@@ -42,7 +42,7 @@ $configureArgs = @(
     '--enable-threads=windows'
 )
 
-switch ($link) {
+switch ($Link) {
     'shared' {
         $configureArgs += '--enable-shared --disable-static'
     }
