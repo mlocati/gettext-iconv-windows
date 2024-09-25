@@ -232,16 +232,16 @@ jobs:
       -
         name: Prepare build log
         id: prepare-build-log
-        if: always() && (steps.iconv-configure.outcome == 'success' || steps.iconv-configure.outcome == 'failure')
+        if: (success() || failure()) && steps.iconv-configure.outcome == 'success'
         run: >-
-          mkdir /build-log
-          && if [ -d /src/libiconv-$ICONV_VERSION/build ]; then tar c -J -f /build-log/iconv.tar.xz /src/libiconv-$ICONV_VERSION/build; fi
-          && if [ -d /src/gettext-$GETTEXT_VERSION/build ]; then tar c -J -f /build-log/gettext.tar.xz /src/gettext-$GETTEXT_VERSION/build; fi
-          && if [ -d /installed ]; then tar c -J -f /build-log/installed.tar.xz /installed; fi
-          && ls -al /build-log
+          mkdir /build-log;
+          if [ -d /src/libiconv-$ICONV_VERSION/build ]; then tar c -J -f /build-log/iconv.tar.xz /src/libiconv-$ICONV_VERSION/build; fi;
+          if [ -d /src/gettext-$GETTEXT_VERSION/build ]; then tar c -J -f /build-log/gettext.tar.xz /src/gettext-$GETTEXT_VERSION/build; fi;
+          if [ -d /installed ]; then tar c -J -f /build-log/installed.tar.xz /installed; fi;
+          ls -al /build-log
       -
         name: Upload build log
-        if: (success() || failure()) && steps.prepare-build-log.outcome == 'success'
+        if: always() && steps.prepare-build-log.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-log
