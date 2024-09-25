@@ -238,12 +238,39 @@ jobs:
         working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\gettext-tools
         run: make --jobs=$(nproc) install
       -
+        name: Prepare build log
+        id: prepare-build-log
+        if: (success() || failure()) && steps.iconv-configure.outcome == 'success'
+        run: >-
+          mkdir /build-log;
+          if [ -d /src/libiconv-$ICONV_VERSION/build ]; then tar c -J -f /build-log/iconv.tar.xz /src/libiconv-$ICONV_VERSION/build; fi;
+          if [ -d /src/gettext-$GETTEXT_VERSION/build ]; then tar c -J -f /build-log/gettext.tar.xz /src/gettext-$GETTEXT_VERSION/build; fi;
+          if [ -d /installed ]; then tar c -J -f /build-log/installed.tar.xz /installed; fi;
+          ls -al /build-log
+      -
         name: Copy built assets
         run: ./build-exe/create-output.sh /installed /output '${{ steps.vars.outputs.mingw-host }}'
       -
         name: Process dependencies
         shell: pwsh
         run: ./build-exe/process-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
+      -
+        name: Delete install directory
+        run: rm -rf /installed
+      -
+        name: Check if programs load translations correctly
+        shell: pwsh
+        run: |
+          $env:LANGUAGE = 'it'
+          $stdout = & C:\cygwin\output\bin\xgettext.exe --help
+          if (-not($?)) {
+            throw "xgettext.exe failed"
+          }
+          $stdout = $stdout -join "`n"
+          if (!$stdout.Contains('impostazione predefinita')) {
+            throw "xgettext.exe didn't load the translations.`nIts output is:`n$stdout"
+          }
+          Write-Host "xgettext.exe correctly loaded the translations when LANGUAGE=$env:LANGUAGE`nIts localized output is`n$stdout"
       -
         name: Create zip
         working-directory: C:\cygwin\output
@@ -269,16 +296,6 @@ jobs:
           path: C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           if-no-files-found: error
           compression-level: 0
-      -
-        name: Prepare build log
-        id: prepare-build-log
-        if: (success() || failure()) && steps.iconv-configure.outcome == 'success'
-        run: >-
-          mkdir /build-log;
-          if [ -d /src/libiconv-$ICONV_VERSION/build ]; then tar c -J -f /build-log/iconv.tar.xz /src/libiconv-$ICONV_VERSION/build; fi;
-          if [ -d /src/gettext-$GETTEXT_VERSION/build ]; then tar c -J -f /build-log/gettext.tar.xz /src/gettext-$GETTEXT_VERSION/build; fi;
-          if [ -d /installed ]; then tar c -J -f /build-log/installed.tar.xz /installed; fi;
-          ls -al /build-log
       -
         name: Upload build log
         if: always() && steps.prepare-build-log.outcome == 'success'
