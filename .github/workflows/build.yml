@@ -241,7 +241,7 @@ jobs:
           && ls -al /build-log
       -
         name: Upload build log
-        if: always() && steps.prepare-build-log.outcome == 'success'
+        if: (success() || failure()) && steps.prepare-build-log.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-log
