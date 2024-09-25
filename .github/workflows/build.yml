@@ -3,19 +3,21 @@ name: Build
 on:
   pull_request:
     paths:
-      - .github/workflows/build*
+      - .github/workflows/build.yml
+      - build-exe/**
   push:
     branches:
       - main
     tags-ignore:
       - "**"
     paths:
-      - .github/workflows/build*
+      - .github/workflows/build.yml
+      - build-exe/**
   workflow_dispatch:
 
 jobs:
-  build-exe:
-    name: Build ${{ matrix.link }} ${{ matrix.bits}} bits
+  exe:
+    name: Build executables ${{ matrix.link }} ${{ matrix.bits}} bits
     runs-on: windows-2022
     strategy:
       matrix:
@@ -55,7 +57,7 @@ jobs:
         name: Set variables
         id: vars
         shell: pwsh
-        run: ./.github/workflows/build-exe-vars.ps1 ${{ matrix.bits }} ${{ matrix.link }}
+        run: ./build-exe/vars.ps1 ${{ matrix.bits }} ${{ matrix.link }}
       -
         name: Download Cygwin installer
         shell: pwsh
@@ -83,7 +85,7 @@ jobs:
           && /bin/mkdir -p /src/downloads
           && /bin/mkdir -p /installed
           && /bin/mkdir -p /output
-          && /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < "$(/bin/cygpath "$GITHUB_WORKSPACE/.github/workflows/build-exe-license.txt")" > /output/license.txt
+          && /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < "$(/bin/cygpath "$GITHUB_WORKSPACE/build-exe/license-for-distribution.txt")" > /output/license.txt
       -
         name: Download CLDR
         working-directory: C:\cygwin\src\downloads
@@ -197,11 +199,11 @@ jobs:
         run: make install && cp ../COPYING /installed/gettext-license.txt
       -
         name: Copy built assets
-        run: ./.github/workflows/build-exe-create-output /installed /output '${{ steps.vars.outputs.mingw-host }}'
+        run: ./build-exe/create-output.sh /installed /output '${{ steps.vars.outputs.mingw-host }}'
       -
         name: Process dependencies
         shell: pwsh
-        run: ./.github/workflows/build-exe-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
+        run: ./build-exe/process-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
       -
         name: Create zip
         working-directory: C:\cygwin\output
@@ -218,7 +220,7 @@ jobs:
       -
         name: Create installer
         shell: pwsh
-        run: ./.github/workflows/build-exe-installer.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output
+        run: ./.github/workflows/create-installer.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output
       -
         name: Upload installer
         uses: actions/upload-artifact@v4

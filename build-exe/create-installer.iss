@@ -1,3 +1,5 @@
+// Template file used by the create-installer.ps1 script
+
 // #define MyVersionShownName "<shared|static> (<32|64> bit)"
 // #define MyVersionCodeName "<shared|static>-<32|64>"
 // #define MyIs64bit <true|false>

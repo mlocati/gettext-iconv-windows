@@ -1,3 +1,5 @@
+# Script that creates the installer
+
 param (
     [Parameter(Mandatory = $true)]
     [ValidateSet(32, 64)]

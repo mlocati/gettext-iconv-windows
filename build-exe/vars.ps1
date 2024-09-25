@@ -1,3 +1,5 @@
+# Script that sets some variables used in the GitHub Action steps
+
 param (
     [Parameter(Mandatory = $true)]
     [ValidateSet(32, 64)]

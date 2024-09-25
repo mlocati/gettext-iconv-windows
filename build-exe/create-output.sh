@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Script that creates the "output" directory starting from the directory created by
+# "make install" calls
+
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -63,7 +66,7 @@ if [ ! -d "$DESTINATION" ]; then
 fi
 MINGW_HOST="${3:-}"
 if [ -z "$MINGW_HOST" ]; then
-    echo 'Missing 3nd argument (MinGW host)'
+    echo 'Missing 3nd argument (MinGW-w64 host)'
     exit 1
 fi
 

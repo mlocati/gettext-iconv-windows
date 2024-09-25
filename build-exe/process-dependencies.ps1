@@ -1,3 +1,7 @@
+# Script that process the "output directory, so that:
+# - there are no unused DLLs
+# - the required MinGW-w64 DLLs are included
+
 param (
     [Parameter(Mandatory = $true)]
     [ValidateSet(32, 64)]
@@ -154,7 +158,7 @@ class Binaries
                 if (-not(Test-Path -LiteralPath $mingwDllPath -PathType Leaf)) {
                     continue
                 }
-                Write-Host -Object "Adding MinGW DLL $dependency"
+                Write-Host -Object "Adding MinGW-w64 DLL $dependency"
                 Copy-Item -LiteralPath $mingwDllPath -Destination $binary.File.Directory
                 $newFilePath = Join-Path -Path $binary.File.Directory -ChildPath $dependency
                 $newFile = Get-ChildItem -LiteralPath $newFilePath -File
