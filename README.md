@@ -1,3 +1,4 @@
+[![Build](https://github.com/mlocati/gettext-iconv-windows/actions/workflows/build.yml/badge.svg)](https://github.com/mlocati/gettext-iconv-windows/actions/workflows/build.yml)
 [![GitHub Releases](https://img.shields.io/github/downloads/mlocati/gettext-iconv-windows/total.svg?style=flat-square)](https://github.com/mlocati/gettext-iconv-windows/releases)
 
 # iconv and gettext binaries for Windows
