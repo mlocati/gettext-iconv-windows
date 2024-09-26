@@ -1,15 +1,17 @@
-// #define MyVersionShownName "%BLDGTX_LINK (BLDGTX_BITS bit)"
-// #define MyVersionCodeName "BLDGTX_LINK-BLDGTX_BITS"
-// #define MyIs64bit BLDGTX_IS64BITS
-// #define MyGettextVer "BLDGTX_V_GETTEXT"
-// #define MyIconvVer "BLDGTX_V_ICONV"
-// #define MyCompiledFolderPath "..."
+// Template file used by the create-installer.ps1 script
+
+// #define MyVersionShownName "<shared|static> (<32|64> bit)"
+// #define MyVersionCodeName "<shared|static>-<32|64>"
+// #define MyIs64bit <true|false>
+// #define MyGettextVer "<gettext version>"
+// #define MyIconvVer "<iconv version>"
+// #define MyCompiledFolderPath "<path>"
 
 [Setup]
 AppId=gettext-iconv
 AppName="gettext + iconv - {#MyVersionShownName}"
 AppVerName="gettext {#MyGettextVer} + iconv {#MyIconvVer} - {#MyVersionShownName}"
-DefaultDirName={pf}\gettext-iconv
+DefaultDirName={commonpf}\gettext-iconv
 AppPublisher=Michele Locati
 AppPublisherURL=https://github.com/mlocati
 AppSupportURL=https://github.com/mlocati/gettext-iconv-windows
@@ -20,7 +22,7 @@ ArchitecturesInstallIn64BitMode=x64
 #endif
 ChangesEnvironment=yes
 Compression=lzma2/max
-LicenseFile=setup-data\license.txt
+LicenseFile={#MyCompiledFolderPath}\license.txt
 OutputDir=setup
 OutputBaseFilename=gettext{#MyGettextVer}-iconv{#MyIconvVer}-{#MyVersionCodeName}
 
@@ -215,9 +217,9 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
 	if CurStep = ssPostInstall then begin
-		if IsTaskSelected(TASK_MODPATH) then
+		if WizardIsTaskSelected(TASK_MODPATH) then
 			ModPath();
-		if IsTaskSelected(TASK_SETENVCLDR) then
+		if WizardIsTaskSelected(TASK_SETENVCLDR) then
 			SetEnvCLDR();
 	end;
 end;
@@ -256,7 +258,7 @@ end;
 
 function NeedRestart(): Boolean;
 begin
-	if (IsTaskSelected(TASK_MODPATH) or IsTaskSelected(TASK_SETENVCLDR)) and not UsingWinNT() then begin
+	if (WizardIsTaskSelected(TASK_MODPATH) or WizardIsTaskSelected(TASK_SETENVCLDR)) and not UsingWinNT() then begin
 		Result := True;
 	end else begin
 		Result := False;
