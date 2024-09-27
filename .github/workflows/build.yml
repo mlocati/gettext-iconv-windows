@@ -271,6 +271,9 @@ jobs:
           -OutputPath C:\cygwin\output
           -MinGWPath C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
       -
+        name: Check bitness
+        run: ./build-exe/check-bits.sh ${{ matrix.bits }} /output
+      -
         name: Delete install directory
         run: rm -rf /installed
       -
@@ -309,6 +312,9 @@ jobs:
           -Link ${{ matrix.link }}
           -SourceDirectory C:\cygwin\output
           -OutputDirectory C:\
+      -
+        name: Check bitness
+        run: ./build-exe/check-bits.sh 32 /cygdrive/c/gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
       -
         name: Upload installer
         uses: actions/upload-artifact@v4

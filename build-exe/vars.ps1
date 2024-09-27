@@ -23,7 +23,7 @@ switch ($Bits) {
     }
 }
 
-$cygwinPackages = "make,unzip,perl,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
+$cygwinPackages = "file,make,unzip,perl,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
 
 $mingwHost = "$architecture-w64-mingw32"
 
