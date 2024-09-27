@@ -35,7 +35,7 @@ jobs:
       CHERE_INVOKING: 1
     defaults:
       run:
-        shell: C:\cygwin\bin\bash.exe --login -e {0}
+        shell: C:\cygwin\bin\bash.exe --login -o igncr -o errexit -o pipefail {0}
     steps:
       -
         name: Configure git
@@ -79,13 +79,13 @@ jobs:
         name: Setup Cygwin environment
         id: setup-cygwin
         working-directory: C:\cygwin
-        run: >-
+        run: |
           printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
-          && /bin/mkdir -p "$HOME"
-          && /bin/mkdir -p /src/downloads
-          && /bin/mkdir -p /installed
-          && /bin/mkdir -p /output
-          && /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < "$(/bin/cygpath "$GITHUB_WORKSPACE/build-exe/license-for-distribution.txt")" > /output/license.txt
+          /bin/mkdir -p "$HOME"
+          /bin/mkdir -p /src/downloads
+          /bin/mkdir -p /installed
+          /bin/mkdir -p /output
+          /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < "$(/bin/cygpath "$GITHUB_WORKSPACE/build-exe/license-for-distribution.txt")" > /output/license.txt
       -
         name: Download CLDR
         working-directory: C:\cygwin\src\downloads
@@ -100,10 +100,9 @@ jobs:
       -
         name: Extract CLDR
         working-directory: C:\cygwin\installed
-        run: >-
-          true
-          && unzip -p /src/downloads/cldr-$CLDR_VERSION.zip LICENSE >cldr-license.txt
-          && unzip -p /src/downloads/cldr-$CLDR_VERSION.zip common/supplemental/plurals.xml >cldr-plurals.xml
+        run: |
+          unzip -p /src/downloads/cldr-$CLDR_VERSION.zip LICENSE >cldr-license.txt
+          unzip -p /src/downloads/cldr-$CLDR_VERSION.zip common/supplemental/plurals.xml >cldr-plurals.xml
       -
         name: Download iconv
         working-directory: C:\cygwin\src\downloads
@@ -123,14 +122,14 @@ jobs:
         name: Configure iconv
         id: iconv-configure
         working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}
-        run: >-
+        run: |
           mkdir build
-          && cd build
-          && ../configure
-          CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}'
-          LDFLAGS='${{ steps.vars.outputs.ld-flags }}'
-          ${{ steps.vars.outputs.configure-args }}
-          --prefix=/installed
+          cd build
+          ../configure \
+            CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}' \
+            LDFLAGS='${{ steps.vars.outputs.ld-flags }}' \
+            ${{ steps.vars.outputs.configure-args }} \
+            --prefix=/installed
       -
         name: Compile iconv
         working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}\build
@@ -163,23 +162,23 @@ jobs:
         id: gettext-configure
         working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}
         # See https://savannah.gnu.org/bugs/?66232 for gl_cv_header_working_stdint_h=no
-        run: >-
+        run: |
           mkdir build
-          && cd build
-          && ../configure
-          CPPFLAGS='-I/installed/include ${{ steps.vars.outputs.cpp-flags }}'
-          LDFLAGS='-L/installed/lib ${{ steps.vars.outputs.ld-flags }}'
-          ${{ steps.vars.outputs.configure-args }}
-          --prefix=/installed
-          --disable-java
-          --disable-native-java
-          --disable-csharp
-          --disable-openmp
-          --disable-curses
-          --without-emacs
-          --with-included-libxml
-          --without-bzip2
-          --without-xz
+          cd build
+          ../configure \
+            CPPFLAGS='-I/installed/include ${{ steps.vars.outputs.cpp-flags }}' \
+            LDFLAGS='-L/installed/lib ${{ steps.vars.outputs.ld-flags }}' \
+            ${{ steps.vars.outputs.configure-args }} \
+            --prefix=/installed \
+            --disable-java \
+            --disable-native-java \
+            --disable-csharp \
+            --disable-openmp \
+            --disable-curses \
+            --without-emacs \
+            --with-included-libxml \
+            --without-bzip2 \
+            --without-xz
       -
         name: Ignore gettext C tests
         if: steps.vars.outputs.gettext-ignore-tests-c
@@ -241,11 +240,17 @@ jobs:
         name: Prepare build log
         id: prepare-build-log
         if: (success() || failure()) && steps.iconv-configure.outcome == 'success'
-        run: >-
-          mkdir /build-log;
-          if [ -d /src/libiconv-$ICONV_VERSION/build ]; then tar c -J -f /build-log/iconv.tar.xz /src/libiconv-$ICONV_VERSION/build; fi;
-          if [ -d /src/gettext-$GETTEXT_VERSION/build ]; then tar c -J -f /build-log/gettext.tar.xz /src/gettext-$GETTEXT_VERSION/build; fi;
-          if [ -d /installed ]; then tar c -J -f /build-log/installed.tar.xz /installed; fi;
+        run: |
+          mkdir /build-log
+          if [ -d /src/libiconv-$ICONV_VERSION/build ]; then
+            tar c -J -f /build-log/iconv.tar.xz /src/libiconv-$ICONV_VERSION/build
+          fi
+          if [ -d /src/gettext-$GETTEXT_VERSION/build ]; then
+            tar c -J -f /build-log/gettext.tar.xz /src/gettext-$GETTEXT_VERSION/build
+          fi
+          if [ -d /installed ]; then
+            tar c -J -f /build-log/installed.tar.xz /installed
+          fi
           ls -al /build-log
       -
         name: Copy built assets
