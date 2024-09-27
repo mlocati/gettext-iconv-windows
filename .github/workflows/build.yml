@@ -253,7 +253,12 @@ jobs:
       -
         name: Process dependencies
         shell: pwsh
-        run: ./build-exe/process-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
+        run: >
+          ./build-exe/process-dependencies.ps1
+          -Bits ${{ matrix.bits }}
+          -Link ${{ matrix.link }}
+          -OutputPath C:\cygwin\output
+          -MinGWPath C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
       -
         name: Delete install directory
         run: rm -rf /installed
@@ -287,7 +292,12 @@ jobs:
       -
         name: Create installer
         shell: pwsh
-        run: ./build-exe/create-installer.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -SourceDirectory C:\cygwin\output -OutputDirectory C:\
+        run: >
+          ./build-exe/create-installer.ps1
+          -Bits ${{ matrix.bits }}
+          -Link ${{ matrix.link }}
+          -SourceDirectory C:\cygwin\output
+          -OutputDirectory C:\
       -
         name: Upload installer
         uses: actions/upload-artifact@v4

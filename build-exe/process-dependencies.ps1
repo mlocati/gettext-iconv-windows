@@ -5,18 +5,18 @@
 param (
     [Parameter(Mandatory = $true)]
     [ValidateSet(32, 64)]
-    [int] $bits,
+    [int] $Bits,
     [Parameter(Mandatory = $true)]
     [ValidateSet('shared', 'static')]
-    [string] $link,
+    [string] $Link,
     [Parameter(Mandatory = $true)]
     [ValidateLength(1, [int]::MaxValue)]
     [ValidateScript({Test-Path -LiteralPath $_ -PathType Container})]
-    [string] $outputPath,
+    [string] $OutputPath,
     [Parameter(Mandatory = $true)]
     [ValidateLength(1, [int]::MaxValue)]
     [ValidateScript({Test-Path -LiteralPath $_ -PathType Container})]
-    [string] $mingwPath
+    [string] $MinGWPath
 )
 
 function Find-Dumpbin
@@ -27,7 +27,7 @@ function Find-Dumpbin
         throw "vswhere failed"
     }
     $vcToolsVersion = Get-Content -LiteralPath "$vsPath\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" -TotalCount 1
-    switch ($bits) {
+    switch ($Bits) {
         32 {
             $result = "$vsPath\VC\Tools\MSVC\$vcToolsVersion\bin\Hostx86\x86\dumpbin.exe"
         }
@@ -186,8 +186,8 @@ class Binaries
 }
 
 $dumpbin = Find-Dumpbin
-$mingwBinPath = Join-Path -Path $mingwPath -ChildPath 'sys-root\mingw\bin'
-$outputBinPath = Join-Path -Path $outputPath -ChildPath 'bin'
+$mingwBinPath = Join-Path -Path $MinGWPath -ChildPath 'sys-root\mingw\bin'
+$outputBinPath = Join-Path -Path $OutputPath -ChildPath 'bin'
 $binaries = [Binaries]::new()
 foreach ($file in Get-ChildItem -LiteralPath $outputBinPath -Recurse -File) {
     if ($file.Extension -eq '.exe' -or $file.Extension -eq '.dll') {
@@ -200,7 +200,7 @@ $binaries.RemoveUnusedDlls()
 $binaries.AddMingwDlls($mingwBinPath)
 if ($binaries.MinGWFilesAdded) {
     Write-Host -Object "Adding MinGW-w64 license"
-    $mingwLicenseFile = Join-Path -Path $outputPath -ChildPath 'mingw-w64-license.txt'
+    $mingwLicenseFile = Join-Path -Path $OutputPath -ChildPath 'mingw-w64-license.txt'
     $mingwLicense = $(Invoke-WebRequest -Uri 'https://sourceforge.net/p/mingw-w64/mingw-w64/ci/master/tree/COPYING.MinGW-w64-runtime/COPYING.MinGW-w64-runtime.txt?format=raw').ToString()
     $mingwLicense -ireplace "`r`n","`n" -ireplace "`n","`r`n" | Set-Content -LiteralPath $mingwLicenseFile -NoNewline -Encoding utf8
 }
