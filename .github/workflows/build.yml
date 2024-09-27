@@ -80,12 +80,19 @@ jobs:
         id: setup-cygwin
         working-directory: C:\cygwin
         run: |
-          printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
           /bin/mkdir -p "$HOME"
+          printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
           /bin/mkdir -p /src/downloads
           /bin/mkdir -p /installed
           /bin/mkdir -p /output
           /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < "$(/bin/cygpath "$GITHUB_WORKSPACE/build-exe/license-for-distribution.txt")" > /output/license.txt
+      -
+        name: Dump Cygwin PATH
+        run: |
+          IFS=:
+          for p in $PATH; do
+            printf '%s\n' "$p"
+          done
       -
         name: Download CLDR
         working-directory: C:\cygwin\src\downloads
