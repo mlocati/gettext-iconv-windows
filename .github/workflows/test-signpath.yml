@@ -1,0 +1,150 @@
+name: Test SignPath
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        bits:
+          - 32
+        link:
+          - shared
+    env:
+      CLDR_VERSION: 45
+      ICONV_VERSION: 1.17
+      GETTEXT_VERSION: 0.22.5a
+      CYGWIN_NOWINPATH: 1
+      CHERE_INVOKING: 1
+    defaults:
+      run:
+        shell: C:\cygwin\bin\bash.exe --login -e {0}
+    steps:
+      -
+        name: Configure git
+        shell: cmd
+        run: git config --global core.autocrlf input
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Restore cache
+        id: restore-cache
+        uses: actions/cache/restore@v4
+        with:
+          key: ${{ matrix.link }}-${{ matrix.bits }}
+          path: |
+            C:\cygwin-packages
+            C:\cygwin\src\downloads
+      -
+        name: Set variables
+        id: vars
+        shell: pwsh
+        run: ./build-exe/vars.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }}
+      -
+        name: Download Cygwin installer
+        shell: pwsh
+        run: Invoke-WebRequest -Uri https://cygwin.com/setup-x86_64.exe -OutFile C:\CygwinInstaller.exe
+      -
+        name: Install Cygwin
+        shell: cmd
+        run: >
+          C:\CygwinInstaller.exe
+          --root C:\cygwin
+          --local-package-dir C:\cygwin-packages
+          --packages ${{ steps.vars.outputs.cygwin-packages }}
+          --site http://mirrors.kernel.org/sourceware/cygwin/
+          --only-site
+          --quiet-mode
+          --upgrade-also
+          --no-shortcuts
+      -
+        name: Setup Cygwin environment
+        id: setup-cygwin
+        working-directory: C:\cygwin
+        run: >-
+          printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
+          && /bin/mkdir -p "$HOME"
+          && /bin/mkdir -p /src/downloads
+          && /bin/mkdir -p /installed
+          && /bin/mkdir -p /output
+          && /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < "$(/bin/cygpath "$GITHUB_WORKSPACE/build-exe/license-for-distribution.txt")" > /output/license.txt
+      -
+        name: Download iconv
+        working-directory: C:\cygwin\src\downloads
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath "libiconv-$env:ICONV_VERSION.tar.gz" -PathType Leaf) {
+            Write-Host -Object 'Already downloaded'
+          } else {
+            Invoke-WebRequest "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-$env:ICONV_VERSION.tar.gz" -OutFile "libiconv-$env:ICONV_VERSION.tar.gz"
+            Write-Host -Object 'Downloaded'
+          }
+      -
+        name: Extract iconv
+        working-directory: C:\cygwin\src
+        run: tar x -z -f downloads/libiconv-$ICONV_VERSION.tar.gz
+      -
+        name: Configure iconv
+        id: iconv-configure
+        working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}
+        run: >-
+          mkdir build
+          && cd build
+          && ../configure
+          CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}'
+          LDFLAGS='${{ steps.vars.outputs.ld-flags }}'
+          ${{ steps.vars.outputs.configure-args }}
+          --prefix=/installed
+      -
+        name: Compile iconv
+        working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}\build
+        run: make --jobs=$(nproc)
+      -
+        name: Install iconv
+        working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}\build
+        run: make install && cp ../COPYING /installed/iconv-license.txt
+      -
+        name: Copy built assets
+        run: ./test-signpath/create-output.sh /installed /output '${{ steps.vars.outputs.mingw-host }}'
+      -
+        name: Process dependencies
+        shell: pwsh
+        run: ./build-exe/process-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
+      -
+        name: Create zip
+        working-directory: C:\cygwin\output
+        shell: cmd
+        run: 7z.exe a -bd -bt -r -sse -tzip C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
+      -
+        name: Upload zip
+        id: upload-zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.link }}-${{ matrix.bits }}-zip
+          path: C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
+          if-no-files-found: error
+          compression-level: 0
+      -
+        name: Sign zip
+        id: sign-zip
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
+          project-slug: gettext-iconv-windows
+          signing-policy-slug: test-signing
+          github-artifact-id: ${{ steps.upload-zip.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: C:\
+      -
+        name: Zip signing request info
+        shell: pwsh
+        run: "Signing request ID: ${{ steps.sign-zip.outputs.signing-request-id }}"
+      -
+        name: List C:\
+        shell: pwsh
+        run:  Get-ChildItem -LiteralPath C:\
