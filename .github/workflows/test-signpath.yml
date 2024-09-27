@@ -5,14 +5,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  build:
+    name: Build executables ${{ matrix.link }} ${{ matrix.bits}} bits
     runs-on: windows-2022
     strategy:
       matrix:
         bits:
           - 32
+          #- 64 @todo uncomment
         link:
           - shared
+          #- static @todo uncomment
     env:
       CLDR_VERSION: 45
       ICONV_VERSION: 1.17
@@ -66,12 +69,41 @@ jobs:
         id: setup-cygwin
         working-directory: C:\cygwin
         run: |
-          printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
           /bin/mkdir -p "$HOME"
+          printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
           /bin/mkdir -p /src/downloads
-          /bin/mkdir -p /installed
-          /bin/mkdir -p /files-unsigned
+          /bin/mkdir /installed
+          /bin/mkdir /files-unsigned
+          /bin/mkdir /files-signed
+          /bin/mkdir /installer-unsigned
+          /bin/mkdir /installer-signed
           /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < "$(/bin/cygpath "$GITHUB_WORKSPACE/build-exe/license-for-distribution.txt")" > /files-unsigned/license.txt
+      -
+        name: Dump Cygwin PATH
+        run: |
+          IFS=:
+          for p in $PATH; do
+            printf '%s\n' "$p"
+          done
+      -
+        name: Download CLDR
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\downloads
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath "cldr-$env:CLDR_VERSION.zip" -PathType Leaf) {
+            Write-Host -Object 'Already downloaded'
+          } else {
+            Invoke-WebRequest "https://unicode.org/Public/cldr/$env:CLDR_VERSION/core.zip" -OutFile "cldr-$env:CLDR_VERSION.zip"
+            Write-Host -Object 'Downloaded'
+          }
+      -
+        name: Extract CLDR
+        if: false # @todo removeme
+        working-directory: C:\cygwin\installed
+        run: |
+          unzip -p /src/downloads/cldr-$CLDR_VERSION.zip LICENSE >cldr-license.txt
+          unzip -p /src/downloads/cldr-$CLDR_VERSION.zip common/supplemental/plurals.xml >cldr-plurals.xml
       -
         name: Download iconv
         working-directory: C:\cygwin\src\downloads
@@ -95,25 +127,165 @@ jobs:
           mkdir build
           cd build
           ../configure \
-            CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}'
-            LDFLAGS='${{ steps.vars.outputs.ld-flags }}'
-            ${{ steps.vars.outputs.configure-args }}
+            CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}' \
+            LDFLAGS='${{ steps.vars.outputs.ld-flags }}' \
+            ${{ steps.vars.outputs.configure-args }} \
             --prefix=/installed
       -
         name: Compile iconv
         working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}\build
         run: make --jobs=$(nproc)
       -
+        name: Check iconv
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}\build
+        run: make check --jobs=$(nproc)
+      -
         name: Install iconv
         working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}\build
         run: make install && cp ../COPYING /installed/iconv-license.txt
+      -
+        name: Download gettext
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\downloads
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath "gettext-$env:GETTEXT_VERSION.tar.gz" -PathType Leaf) {
+            Write-Host -Object 'Already downloaded'
+          } else {
+            Invoke-WebRequest "${{ steps.vars.outputs.gettext-source-url }}" -OutFile "gettext-$env:GETTEXT_VERSION.tar.gz"
+            Write-Host -Object 'Downloaded'
+          }
+      -
+        name: Extract gettext
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src
+        run: tar x -z -f downloads/gettext-$GETTEXT_VERSION.tar.gz
+      -
+        name: Configure gettext
+        if: false # @todo removeme
+        id: gettext-configure
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}
+        run: |
+          mkdir build
+          cd build
+          ../configure \
+            CPPFLAGS='-I/installed/include ${{ steps.vars.outputs.cpp-flags }}' \
+            LDFLAGS='-L/installed/lib ${{ steps.vars.outputs.ld-flags }}' \
+            ${{ steps.vars.outputs.configure-args }} \
+            --prefix=/installed \
+            --disable-java \
+            --disable-native-java \
+            --disable-csharp \
+            --disable-openmp \
+            --disable-curses \
+            --without-emacs \
+            --with-included-libxml \
+            --without-bzip2 \
+            --without-xz
+      -
+        name: Ignore gettext C tests
+        if: false # @todo removeme
+        #if: steps.vars.outputs.gettext-ignore-tests-c @todo uncomment
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}
+        run: for f in ${{ steps.vars.outputs.gettext-ignore-tests-c }}; do echo 'int main() { return 0; }' >$f; done
+      -
+        name: Install gettext license
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}
+        run: cp COPYING /installed/gettext-license.txt
+      -
+        name: Compile gettext/gnulib-local
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\gnulib-local
+        run: make --jobs=$(nproc)
+      -
+        name: Check gettext/gnulib-local
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\gnulib-local
+        run: make --jobs=$(nproc) check
+      -
+        name: Install gettext/gnulib-local
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\gnulib-local
+        run: make --jobs=$(nproc) install
+      -
+        name: Compile gettext/gettext-runtime
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\gettext-runtime
+        run: make --jobs=$(nproc)
+      -
+        name: Check gettext/gettext-runtime
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\gettext-runtime
+        run: make --jobs=$(nproc) check
+      -
+        name: Install gettext/gettext-runtime
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\gettext-runtime
+        run: make --jobs=$(nproc) install
+      -
+        name: Compile gettext/libtextstyle
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\libtextstyle
+        run: make --jobs=$(nproc)
+      -
+        name: Check gettext/libtextstyle
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\libtextstyle
+        run: make --jobs=$(nproc) check
+      -
+        name: Install gettext/libtextstyle
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\libtextstyle
+        run: make --jobs=$(nproc) install
+      -
+        name: Compile gettext/gettext-tools
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\gettext-tools
+        run: make --jobs=$(nproc)
+      -
+        name: Check gettext/gettext-tools
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\gettext-tools
+        run: XFAIL_TESTS='${{ steps.vars.outputs.gettext-xfail-gettext-tools }}' make --jobs=$(nproc) check
+      -
+        name: Install gettext/gettext-tools
+        if: false # @todo removeme
+        working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}\build\gettext-tools
+        run: make --jobs=$(nproc) install
+      -
+        name: Prepare build log
+        id: prepare-build-log
+        if: false # @todo removeme
+        # if: (success() || failure()) && steps.iconv-configure.outcome == 'success' @todo uncomment
+        run: |
+          mkdir /build-log
+          if [ -d /src/libiconv-$ICONV_VERSION/build ]; then
+            tar c -J -f /build-log/iconv.tar.xz /src/libiconv-$ICONV_VERSION/build
+          fi
+          if [ -d /src/gettext-$GETTEXT_VERSION/build ]; then
+            tar c -J -f /build-log/gettext.tar.xz /src/gettext-$GETTEXT_VERSION/build
+          fi
+          if [ -d /installed ]; then
+            tar c -J -f /build-log/installed.tar.xz /installed
+          fi
+          ls -al /build-log
       -
         name: Copy built assets
         run: ./test-signpath/create-output.sh /installed /files-unsigned '${{ steps.vars.outputs.mingw-host }}'
       -
         name: Process dependencies
         shell: pwsh
-        run: ./build-exe/process-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\files-unsigned C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
+        run: >
+          ./build-exe/process-dependencies.ps1
+          -Bits ${{ matrix.bits }}
+          -Link ${{ matrix.link }}
+          -OutputPath C:\cygwin\files-unsigned
+          -MinGWPath C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
+      -
+        name: Check bitness
+        run: ./build-exe/check-bits.sh ${{ matrix.bits }} /files-unsigned
       -
         name: Upload unsigned files
         id: upload-files-unsigned
@@ -134,35 +306,43 @@ jobs:
           signing-policy-slug: test-signing
           github-artifact-id: ${{ steps.upload-files-unsigned.outputs.artifact-id }}
           wait-for-completion: true
-          output-artifact-directory: C:\files-signed
+          output-artifact-directory: C:\cygwin\files-signed
       -
         name: Signing request details
         shell: pwsh
         run: "Signing request ID: ${{ steps.sign-files.outputs.signing-request-id }}"
       -
-        name: Create signed files archive
-        working-directory: C:\files-signed
+        name: Create signed files
+        working-directory: C:\cygwin\files-signed
         shell: cmd
-        run: 7z.exe a -bd -bt -mx9 -r -sse -tzip C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
+        run: 7z.exe a -bd -bt -mx9 -r -sse -tzip C:\cygwin\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
       -
         name: Upload signed files archive
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-files
-          path: C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
+          path: C:\cygwin\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
           if-no-files-found: error
           compression-level: 0
       -
         name: Create installer
         shell: pwsh
-        run: ./build-exe/create-installer.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -SourceDirectory C:\files-signed -OutputDirectory C:\
+        run: >
+          ./build-exe/create-installer.ps1
+          -Bits ${{ matrix.bits }}
+          -Link ${{ matrix.link }}
+          -SourceDirectory C:\cygwin\files-signed
+          -OutputDirectory C:\cygwin\installer-unsigned
+      -
+        name: Check bitness
+        run: ./build-exe/check-bits.sh 32 /installer-unsigned/gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
       -
         name: Upload unsigned installer
         id: upload-installer-unsigned
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-installer-unsigned
-          path: C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          path: C:\cygwin\installer-unsigned\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           if-no-files-found: error
           compression-level: 0
           retention-days: 1
@@ -177,16 +357,36 @@ jobs:
           signing-policy-slug: test-signing
           github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
           wait-for-completion: true
-          output-artifact-directory: C:\installer-signed
+          output-artifact-directory: C:\cygwin\installer-signed
       -
         name: Signing request details
         shell: pwsh
         run: "Signing request ID: ${{ steps.sign-installer.outputs.signing-request-id }}"
       -
-        name: Upload installer
+        name: Upload signed installer
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-installer
-          path: C:\installer-signed\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          path: C:\cygwin\installer-signed\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           if-no-files-found: error
           compression-level: 0
+      -
+        name: Upload build log
+        if: always() && steps.prepare-build-log.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.link }}-${{ matrix.bits }}-log
+          if-no-files-found: ignore
+          retention-days: 1
+          include-hidden-files: true
+          compression-level: 0
+          path: C:\cygwin\build-log
+      -
+        name: Persist cache
+        if: always() && steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+          path: |
+            C:\cygwin-packages
+            C:\cygwin\src\downloads
