@@ -21,7 +21,7 @@ jobs:
       CHERE_INVOKING: 1
     defaults:
       run:
-        shell: C:\cygwin\bin\bash.exe --login -e {0}
+        shell: C:\cygwin\bin\bash.exe --login -o igncr -o errexit -o pipefail {0}
     steps:
       -
         name: Configure git
@@ -65,13 +65,13 @@ jobs:
         name: Setup Cygwin environment
         id: setup-cygwin
         working-directory: C:\cygwin
-        run: >-
+        run: |
           printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
-          && /bin/mkdir -p "$HOME"
-          && /bin/mkdir -p /src/downloads
-          && /bin/mkdir -p /installed
-          && /bin/mkdir -p /output
-          && /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < "$(/bin/cygpath "$GITHUB_WORKSPACE/build-exe/license-for-distribution.txt")" > /output/license.txt
+          /bin/mkdir -p "$HOME"
+          /bin/mkdir -p /src/downloads
+          /bin/mkdir -p /installed
+          /bin/mkdir -p /files-unsigned
+          /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < "$(/bin/cygpath "$GITHUB_WORKSPACE/build-exe/license-for-distribution.txt")" > /files-unsigned/license.txt
       -
         name: Download iconv
         working-directory: C:\cygwin\src\downloads
@@ -91,14 +91,14 @@ jobs:
         name: Configure iconv
         id: iconv-configure
         working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}
-        run: >-
+        run: |
           mkdir build
-          && cd build
-          && ../configure
-          CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}'
-          LDFLAGS='${{ steps.vars.outputs.ld-flags }}'
-          ${{ steps.vars.outputs.configure-args }}
-          --prefix=/installed
+          cd build
+          ../configure \
+            CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}'
+            LDFLAGS='${{ steps.vars.outputs.ld-flags }}'
+            ${{ steps.vars.outputs.configure-args }}
+            --prefix=/installed
       -
         name: Compile iconv
         working-directory: C:\cygwin\src\libiconv-${{ env.ICONV_VERSION }}\build
@@ -109,42 +109,84 @@ jobs:
         run: make install && cp ../COPYING /installed/iconv-license.txt
       -
         name: Copy built assets
-        run: ./test-signpath/create-output.sh /installed /output '${{ steps.vars.outputs.mingw-host }}'
+        run: ./test-signpath/create-output.sh /installed /files-unsigned '${{ steps.vars.outputs.mingw-host }}'
       -
         name: Process dependencies
         shell: pwsh
-        run: ./build-exe/process-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\output C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
+        run: ./build-exe/process-dependencies.ps1 ${{ matrix.bits }} ${{ matrix.link }} C:\cygwin\files-unsigned C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
       -
-        name: Create zip
-        working-directory: C:\cygwin\output
-        shell: cmd
-        run: 7z.exe a -bd -bt -r -sse -tzip C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
-      -
-        name: Upload zip
-        id: upload-zip
+        name: Upload unsigned files
+        id: upload-files-unsigned
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-zip
-          path: C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
+          name: ${{ matrix.link }}-${{ matrix.bits }}-files-unsigned
+          path: C:\cygwin\files-unsigned
           if-no-files-found: error
-          compression-level: 0
+          retention-days: 1
       -
-        name: Sign zip
-        id: sign-zip
+        name: Sign files
+        id: sign-files
         uses: signpath/github-action-submit-signing-request@v1
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
           project-slug: gettext-iconv-windows
           signing-policy-slug: test-signing
-          github-artifact-id: ${{ steps.upload-zip.outputs.artifact-id }}
+          github-artifact-id: ${{ steps.upload-files-unsigned.outputs.artifact-id }}
           wait-for-completion: true
-          output-artifact-directory: C:\
+          output-artifact-directory: C:\files-signed
       -
-        name: Zip signing request info
+        name: Signing request details
         shell: pwsh
-        run: "Signing request ID: ${{ steps.sign-zip.outputs.signing-request-id }}"
+        run: "Signing request ID: ${{ steps.sign-files.outputs.signing-request-id }}"
       -
-        name: List C:\
+        name: Create signed files archive
+        working-directory: C:\files-signed
+        shell: cmd
+        run: 7z.exe a -bd -bt -mx9 -r -sse -tzip C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
+      -
+        name: Upload signed files archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.link }}-${{ matrix.bits }}-files
+          path: C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
+          if-no-files-found: error
+          compression-level: 0
+      -
+        name: Create installer
         shell: pwsh
-        run:  Get-ChildItem -LiteralPath C:\
+        run: ./build-exe/create-installer.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -SourceDirectory C:\files-signed -OutputDirectory C:\
+      -
+        name: Upload unsigned installer
+        id: upload-installer-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.link }}-${{ matrix.bits }}-installer-unsigned
+          path: C:\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+      -
+        name: Sign installer
+        id: sign-installer
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
+          project-slug: gettext-iconv-windows
+          signing-policy-slug: test-signing
+          github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: C:\installer-signed
+      -
+        name: Signing request details
+        shell: pwsh
+        run: "Signing request ID: ${{ steps.sign-installer.outputs.signing-request-id }}"
+      -
+        name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.link }}-${{ matrix.bits }}-installer
+          path: C:\installer-signed\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          if-no-files-found: error
+          compression-level: 0
