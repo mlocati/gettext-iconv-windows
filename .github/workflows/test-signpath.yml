@@ -2,6 +2,17 @@ name: Test SignPath
 
 on:
   pull_request:
+#    paths: @todo uncomment
+#      - .github/workflows/build.yml @todo uncomment
+#      - build-exe/** @todo uncomment
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - "**"
+    paths:
+      - .github/workflows/build.yml
+      - build-exe/**
   workflow_dispatch:
 
 jobs:
@@ -257,8 +268,7 @@ jobs:
       -
         name: Prepare build log
         id: prepare-build-log
-        if: false # @todo removeme
-        # if: (success() || failure()) && steps.iconv-configure.outcome == 'success' @todo uncomment
+        if: (success() || failure()) && steps.iconv-configure.outcome == 'success'
         run: |
           mkdir /build-log
           if [ -d /src/libiconv-$ICONV_VERSION/build ]; then
@@ -267,7 +277,7 @@ jobs:
           if [ -d /src/gettext-$GETTEXT_VERSION/build ]; then
             tar c -J -f /build-log/gettext.tar.xz /src/gettext-$GETTEXT_VERSION/build
           fi
-          if [ -d /installed ]; then
+          if find /installed -mindepth 1 -maxdepth 1 | read; then
             tar c -J -f /build-log/installed.tar.xz /installed
           fi
           ls -al /build-log
@@ -296,6 +306,23 @@ jobs:
           if-no-files-found: error
           retention-days: 1
       -
+        name: Delete install directory
+        run: rm -rf /installed
+      -
+        name: Check if programs load translations correctly
+        shell: pwsh
+        run: |
+          $env:LANGUAGE = 'it'
+          $stdout = & C:\cygwin\files-unsigned\bin\xgettext.exe --help
+          if (-not($?)) {
+            throw "xgettext.exe failed"
+          }
+          $stdout = $stdout -join "`n"
+          if (!$stdout.Contains('impostazione predefinita')) {
+            throw "xgettext.exe didn't load the translations.`nIts output is:`n$stdout"
+          }
+          Write-Host "xgettext.exe correctly loaded the translations when LANGUAGE=$env:LANGUAGE`nIts localized output is`n$stdout"
+      -
         name: Sign files
         id: sign-files
         uses: signpath/github-action-submit-signing-request@v1
@@ -304,6 +331,7 @@ jobs:
           organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
           project-slug: gettext-iconv-windows
           signing-policy-slug: test-signing
+          artifact-configuration-slug: gh_sigh_files
           github-artifact-id: ${{ steps.upload-files-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: C:\cygwin\files-signed
@@ -355,6 +383,7 @@ jobs:
           organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
           project-slug: gettext-iconv-windows
           signing-policy-slug: test-signing
+          artifact-configuration-slug: gh_sigh_installer
           github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: C:\cygwin\installer-signed
