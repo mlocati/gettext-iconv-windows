@@ -1,7 +1,13 @@
 #!/bin/bash
-
+#
 # Script that creates the "output" directory starting from the directory created by
 # "make install" calls
+#
+# Arguments:
+# $1: the directory created by the "make install calls
+# $2: the directory where the files should be copied to
+# $3: the MinGW-w64 host (i686-w64-mingw32, x86_64-w64-mingw32)
+#
 
 set -o errexit
 set -o nounset
