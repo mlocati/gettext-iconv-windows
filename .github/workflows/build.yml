@@ -161,7 +161,6 @@ jobs:
         name: Configure gettext
         id: gettext-configure
         working-directory: C:\cygwin\src\gettext-${{ env.GETTEXT_VERSION }}
-        # See https://savannah.gnu.org/bugs/?66232 for gl_cv_header_working_stdint_h=no
         run: |
           mkdir build
           cd build
