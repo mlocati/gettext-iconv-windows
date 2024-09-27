@@ -75,23 +75,23 @@ jobs:
           --quiet-mode
           --upgrade-also
           --no-shortcuts
+          --no-admin
       -
-        name: Prepare Cygwin
+        name: Setup Cygwin environment
         run: |
+          cd -- "$(/bin/cygpath -au '${{ github.workspace }}')"
+          /bin/printf 'Working directory: %s\n' "$(/bin/pwd)"
+          /bin/mkdir -p src/downloads
+          /bin/mkdir installed
+          /bin/mkdir files-unsigned
+          /bin/mkdir files-signed
+          /bin/mkdir installer-unsigned
+          /bin/mkdir installer-signed
+          /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < build-exe/license-for-distribution.txt > files-unsigned/license.txt
+          INSTALLED_PATH="$(/bin/cygpath -au ./installed)"
+          /bin/echo "INSTALLED_PATH=$INSTALLED_PATH" >> $GITHUB_ENV
           /bin/mkdir -p "$HOME"
-          printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
-      -
-        name: Setup environment
-        run: |
-          printf 'Working directory: %s\n' "$(pwd)"
-          mkdir -p src/downloads
-          mkdir installed
-          mkdir files-unsigned
-          mkdir files-signed
-          mkdir installer-unsigned
-          mkdir installer-signed
-          perl -pe 's/\r\n|\n|\r/\r\n/g' < build-exe/license-for-distribution.txt > files-unsigned/license.txt
-          echo "INSTALLED_PATH=$(cygpath -au ./installed)" >> $GITHUB_ENV
+          /bin/printf '\nPATH=%s:${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' "$INSTALLED_PATH" >>$HOME/.bash_profile
       -
         name: Dump Cygwin PATH
         run: |
@@ -157,7 +157,7 @@ jobs:
       -
         name: Install iconv
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
-        run: make install && cp ../COPYING $INSTALLED_PATH/iconv-license.txt)
+        run: make install && cp ../COPYING $INSTALLED_PATH/iconv-license.txt
       -
         name: Download gettext
         if: false # @todo removeme
@@ -207,7 +207,7 @@ jobs:
         name: Install gettext license
         if: false # @todo removeme
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}
-        run: cp COPYING $(cygpath -au $INSTALLED_PATH/gettext-license.txt)
+        run: cp COPYING $INSTALLED_PATH/gettext-license.txt
       -
         name: Compile gettext/gnulib-local
         if: false # @todo removeme
