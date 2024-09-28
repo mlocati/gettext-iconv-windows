@@ -79,7 +79,7 @@ fi
 mkdir -p "$DESTINATION/share/gettext"
 
 # copyFile "$SOURCE/cldr-license.txt" text @todo uncomment
-copyFile "$SOURCE/iconv-license.txt" text @todo uncomment
+copyFile "$SOURCE/iconv-license.txt" text
 # copyFile "$SOURCE/gettext-license.txt" text @todo uncomment
 for i in $(find "$SOURCE/bin/" -name '*.exe' -o -name '*.dll'); do
     copyFile "$i" binary
