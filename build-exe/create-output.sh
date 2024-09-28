@@ -88,7 +88,7 @@ fi
 for i in $(find "$SOURCE/share/doc" -maxdepth 2 -type f ! -iname '*.3.html' ! -iname 'autopoint.1.html' ! -iname 'gettextize.1.html'); do
     copyFile "$i" doc
 done
-if [ "$BUILD_ONLY_ICONV" != y ]; then
+if [ "${BUILD_ONLY_ICONV:-}" != y ]; then
     copyFile "$SOURCE/cldr-license.txt" text
     copyFile "$SOURCE/gettext-license.txt" text
     copyFile "$SOURCE/lib/gettext/cldr-plurals.exe" binary bin/cldr-plurals.exe

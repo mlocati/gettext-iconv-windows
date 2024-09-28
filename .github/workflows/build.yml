@@ -95,7 +95,7 @@ jobs:
           INSTALLED_PATH="$(/bin/cygpath -au ./installed)"
           /bin/echo "INSTALLED_PATH=$INSTALLED_PATH" >> $GITHUB_ENV
           /bin/mkdir -p "$HOME"
-          /bin/printf '\nPATH=%s:${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' "$INSTALLED_PATH" >>$HOME/.bash_profile
+          /bin/printf '\nPATH=%s/bin:${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' "$INSTALLED_PATH" >>$HOME/.bash_profile
       -
         name: Dump Cygwin PATH
         run: |
@@ -189,9 +189,8 @@ jobs:
           cd build
           ../configure \
             CPPFLAGS="-I$INSTALLED_PATH/include ${{ steps.vars.outputs.cpp-flags }}" \
-            LDFLAGS="-L$INSTALLED_PATH/lib ${{ steps.vars.outputs.ld-flags }}' \
+            LDFLAGS="-L$INSTALLED_PATH/lib ${{ steps.vars.outputs.ld-flags }}" \
             ${{ steps.vars.outputs.configure-args }} \
-            --prefix=$INSTALLED_PATH
             --disable-java \
             --disable-native-java \
             --disable-csharp \
@@ -200,7 +199,8 @@ jobs:
             --without-emacs \
             --with-included-libxml \
             --without-bzip2 \
-            --without-xz
+            --without-xz \
+            --prefix=$INSTALLED_PATH
       -
         name: Ignore gettext C tests
         if: steps.vars.outputs.gettext-ignore-tests-c && env.BUILD_ONLY_ICONV != 'y'
