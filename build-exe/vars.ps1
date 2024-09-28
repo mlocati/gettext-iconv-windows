@@ -51,8 +51,10 @@ switch ($Link) {
 
 # Leave empty to disable code signing
 $signpathSigningPolicy = ''
+$signaturesCanBeInvalid = 0
 if ($true) {
     $signpathSigningPolicy = 'test-signing'
+    $signaturesCanBeInvalid = 1
 }
 
 $gettextIgnoreTestsC = @()
@@ -89,6 +91,7 @@ switch ($env:GETTEXT_VERSION) {
 "gettext-ignore-tests-c=$gettextIgnoreTestsC" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "gettext-xfail-gettext-tools=$gettextXFailTests" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "signpath-signing-policy=$signpathSigningPolicy" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+"signatures-canbeinvalid=$signaturesCanBeInvalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT

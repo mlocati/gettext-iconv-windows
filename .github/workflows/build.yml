@@ -344,6 +344,14 @@ jobs:
           wait-for-completion: true
           output-artifact-directory: files-signed
       -
+        name: Check signatures
+        if: steps.vars.outputs.signpath-signing-policy
+        shell: pwsh
+        run: >
+          ./build-exe/check-signature.ps1
+          -Path files-signed
+          -CanBeInvalid ${{ steps.vars.outputs.signatures-canbeinvalid }}
+      -
         name: Create files archive
         shell: pwsh
         run: |
@@ -406,6 +414,14 @@ jobs:
           github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: installer-signed
+      -
+        name: Check signatures
+        if: steps.vars.outputs.signpath-signing-policy
+        shell: pwsh
+        run: >
+          ./build-exe/check-signature.ps1
+          -Path installer-signed
+          -CanBeInvalid ${{ steps.vars.outputs.signatures-canbeinvalid }}
       -
         name: Move installer
         run: |
