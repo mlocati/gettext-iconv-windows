@@ -25,6 +25,7 @@ Compression=lzma2/max
 LicenseFile={#MyCompiledFolderPath}\license.txt
 OutputDir=setup
 OutputBaseFilename=gettext{#MyGettextVer}-iconv{#MyIconvVer}-{#MyVersionCodeName}
+VersionInfoProductTextVersion=1.0
 
 [Files]
 Source: "{#MyCompiledFolderPath}\*.*"; DestDir: "{app}"; Flags: recursesubdirs

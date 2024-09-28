@@ -344,6 +344,10 @@ jobs:
           github-artifact-id: ${{ steps.upload-files-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: files-signed
+          parameters: |
+            iconvPEVersion: "${{ env.ICONV_VERSION }}"
+            gettextPEVersion: "${{ env.GETTEXT_VERSION }}"
+            gettextPEVersionNumeric: "${{ steps.vars.outputs.gettext-peversion-numeric }}"
       -
         name: Check signatures
         if: steps.vars.outputs.signpath-signing-policy
@@ -415,6 +419,8 @@ jobs:
           github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: installer-signed
+          parameters: |
+            productName: ${{ steps.vars.outputs.installer-quoted-productname }}
       -
         name: Check signatures
         if: steps.vars.outputs.signpath-signing-policy

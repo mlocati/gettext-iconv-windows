@@ -16,7 +16,17 @@ function Test-CanFileBeSigned()
         [System.IO.FileInfo] $file
     )
     $excludedNames = @(
-        # MinGW-w64 files
+        # Files missing details
+        # - see https://signpath.org/terms#signpath-configuration-requirements
+        # - see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00049.html
+        'libcharset-*.dll',
+        'libgettextlib-*.dll',
+        'libgettextpo-*.dll',
+        'libgettextsrc-*.dll',
+        # MinGW-w64 files:
+        # - see https://signpath.org/terms#conditions-for-what-can-be-signed
+        # - see https://signpath.org/terms#signpath-configuration-requirements
+        # - see https://sourceforge.net/p/mingw-w64/mailman/message/58822390/
         'libatomic-*.dll',
         'libgcc_s_sjlj-*.dll',
         'libgomp-*.dll',

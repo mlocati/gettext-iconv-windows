@@ -12,7 +12,8 @@ param (
 if (-not($env:GETTEXT_VERSION)) {
     throw 'Missing GETTEXT_VERSION environment variable'
 }
-$gettextVersion = [Version]($env:GETTEXT_VERSION -replace '[a-z]+$','')
+$gettextVersionNumeric = $env:GETTEXT_VERSION -replace '[a-z]+$',''
+$gettextVersionObject = [Version]$gettextVersionNumeric
 
 switch ($Bits) {
     32 {
@@ -60,13 +61,13 @@ if ($true) {
 $gettextIgnoreTestsC = @()
 # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
 $gettextIgnoreTestsC += 'gettext-tools/gnulib-tests/test-asyncsafe-spin2.c'
-if ($gettextVersion -le [Version]'0.22.5') {
+if ($gettextVersionObject -le [Version]'0.22.5') {
     # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
     $gettextIgnoreTestsC += 'gettext-tools/gnulib-tests/test-getopt-gnu.c gettext-tools/gnulib-tests/test-getopt-posix.c'
 }
 
 $gettextXFailTests = @()
-if ($gettextVersion -le [Version]'0.22.5') {
+if ($gettextVersionObject -le [Version]'0.22.5') {
     # see https://savannah.gnu.org/bugs/?66232
     $gettextXFailTests += 'msgexec-1 msgexec-3 msgexec-4 msgexec-5 msgexec-6 msgfilter-6 msgfilter-7 msginit-3'
 }
@@ -81,6 +82,9 @@ switch ($env:GETTEXT_VERSION) {
     }
 }
 
+# See https://stackoverflow.com/questions/54145006/inno-setup-compiler-adding-trailing-spaces-to-executable-details-ex-fileversi
+$installerProductName = "gettext + iconv - $Link ($Bits bit)".PadRight(60, ' ')
+
 "cygwin-packages=$cygwinPackages" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "cygwin-path=/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/System32:/cygdrive/c/Windows" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "mingw-host=$mingwHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -92,6 +96,8 @@ switch ($env:GETTEXT_VERSION) {
 "gettext-xfail-gettext-tools=$gettextXFailTests" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "signpath-signing-policy=$signpathSigningPolicy" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "signatures-canbeinvalid=$signaturesCanBeInvalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+"gettext-peversion-numeric=$gettextVersionNumeric" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+"installer-quoted-productname=`"$installerProductName`"" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
