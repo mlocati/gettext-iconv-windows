@@ -15,6 +15,11 @@ on:
       - build-exe/**
   workflow_dispatch:
 
+env:
+  CLDR_VERSION: 45
+  ICONV_VERSION: 1.17
+  GETTEXT_VERSION: 0.22.5a
+
 jobs:
   exe:
     name: Build executables ${{ matrix.link }} ${{ matrix.bits}} bits
@@ -28,9 +33,6 @@ jobs:
           - shared
           #- static @todo uncomment
     env:
-      CLDR_VERSION: 45
-      ICONV_VERSION: 1.17
-      GETTEXT_VERSION: 0.22.5a
       CYGWIN_NOWINPATH: 1
       CHERE_INVOKING: 1
     defaults:
@@ -288,6 +290,9 @@ jobs:
         name: Copy built assets
         run: ./build-exe/create-output.sh installed files-unsigned '${{ steps.vars.outputs.mingw-host }}'
       -
+        name: Delete install directory
+        run: rm -rf installed
+      -
         name: Process dependencies
         shell: pwsh
         run: >
@@ -299,18 +304,6 @@ jobs:
       -
         name: Check bitness
         run: ./build-exe/check-bits.sh ${{ matrix.bits }} files-unsigned
-      -
-        name: Upload unsigned files
-        id: upload-files-unsigned
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-files-unsigned
-          path: files-unsigned
-          if-no-files-found: error
-          retention-days: 1
-      -
-        name: Delete install directory
-        run: rm -rf installed
       -
         name: Check if programs load translations correctly
         if: false # @todo removeme
@@ -327,30 +320,41 @@ jobs:
           }
           Write-Host "xgettext.exe correctly loaded the translations when LANGUAGE=$env:LANGUAGE`nIts localized output is`n$stdout"
       -
+        name: Upload unsigned files
+        if: steps.vars.outputs.signpath-signing-policy
+        id: upload-files-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.link }}-${{ matrix.bits }}-files-unsigned
+          path: files-unsigned
+          if-no-files-found: error
+          retention-days: 1
+      -
         name: Sign files
+        if: steps.vars.outputs.signpath-signing-policy
         id: sign-files
         uses: signpath/github-action-submit-signing-request@v1
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
           project-slug: gettext-iconv-windows
-          signing-policy-slug: test-signing
+          signing-policy-slug: '${{ steps.vars.outputs.signpath-signing-policy }}'
           artifact-configuration-slug: gh_sigh_files
           github-artifact-id: ${{ steps.upload-files-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: files-signed
       -
-        name: Signing request details
+        name: Create files archive
         shell: pwsh
         run: |
-          Write-Host -Object 'Signing request ID: ${{ steps.sign-files.outputs.signing-request-id }}'
+          if ('${{ steps.vars.outputs.signpath-signing-policy }}') {
+            Set-Location -LiteralPath 'files-signed'
+          } else {
+            Set-Location -LiteralPath 'files-unsigned'
+          }
+          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
       -
-        name: Create signed files
-        working-directory: files-signed
-        shell: cmd
-        run: 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.zip
-      -
-        name: Upload signed files archive
+        name: Upload files archive
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-files
@@ -358,19 +362,28 @@ jobs:
           if-no-files-found: error
           compression-level: 0
       -
+        name: Prepare installer files
+        run: |
+          if [ -n '${{ steps.vars.outputs.signpath-signing-policy }}' ]; then
+            mv files-signed installer-files
+          else
+            mv files-unsigned installer-files
+          fi
+      -
         name: Create installer
         shell: pwsh
         run: >
           ./build-exe/create-installer.ps1
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
-          -SourceDirectory files-signed
+          -SourceDirectory installer-files
           -OutputDirectory installer-unsigned
       -
         name: Check bitness
         run: ./build-exe/check-bits.sh 32 installer-unsigned/gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
       -
         name: Upload unsigned installer
+        if: steps.vars.outputs.signpath-signing-policy
         id: upload-installer-unsigned
         uses: actions/upload-artifact@v4
         with:
@@ -381,28 +394,32 @@ jobs:
           retention-days: 1
       -
         name: Sign installer
+        if: steps.vars.outputs.signpath-signing-policy
         id: sign-installer
         uses: signpath/github-action-submit-signing-request@v1
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
           project-slug: gettext-iconv-windows
-          signing-policy-slug: test-signing
+          signing-policy-slug: '${{ steps.vars.outputs.signpath-signing-policy }}'
           artifact-configuration-slug: gh_sigh_installer
           github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: installer-signed
       -
-        name: Signing request details
-        shell: pwsh
+        name: Move installer
         run: |
-          Write-Host -Object 'Signing request ID: ${{ steps.sign-installer.outputs.signing-request-id }}'
+          if [ -n '${{ steps.vars.outputs.signpath-signing-policy }}' ]; then
+            mv installer-signed/*.exe .
+          else
+            mv installer-unsigned/*.exe .
+          fi
       -
-        name: Upload signed installer
+        name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-installer
-          path: installer-signed\gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          path: gettext${{ env.GETTEXT_VERSION }}-iconv${{ env.ICONV_VERSION }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           if-no-files-found: error
           compression-level: 0
       -
