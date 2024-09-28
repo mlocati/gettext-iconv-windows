@@ -49,7 +49,11 @@ switch ($Link) {
     }
 }
 
+# Leave empty to disable code signing
 $signpathSigningPolicy = ''
+if ($true) {
+    $signpathSigningPolicy = 'test-signing'
+}
 
 $gettextIgnoreTestsC = @()
 # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
