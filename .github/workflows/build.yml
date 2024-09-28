@@ -20,7 +20,7 @@ env:
   ICONV_VERSION: 1.17
   GETTEXT_VERSION: 0.22.5a
   # To be used for testing: we'll only build iconv
-  BUILD_ONLY_ICONV: y
+  #BUILD_ONLY_ICONV: y
 
 jobs:
   exe:
