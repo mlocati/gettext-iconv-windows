@@ -201,7 +201,7 @@ $binaries.AddMingwDlls($mingwBinPath)
 if ($binaries.MinGWFilesAdded) {
     Write-Host -Object "Adding MinGW-w64 license"
     $mingwLicenseFile = Join-Path -Path $OutputPath -ChildPath 'mingw-w64-license.txt'
-    $mingwLicense = $(Invoke-WebRequest -Uri 'https://sourceforge.net/p/mingw-w64/mingw-w64/ci/master/tree/COPYING.MinGW-w64-runtime/COPYING.MinGW-w64-runtime.txt?format=raw').ToString()
+    $mingwLicense = $(Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/niXman/mingw-builds/refs/heads/develop/COPYING.TXT').ToString()
     $mingwLicense -ireplace "`r`n","`n" -ireplace "`n","`r`n" | Set-Content -LiteralPath $mingwLicenseFile -NoNewline -Encoding utf8
 }
 
