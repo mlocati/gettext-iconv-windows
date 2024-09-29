@@ -9,7 +9,7 @@
 
 [Setup]
 AppId=gettext-iconv
-AppName="gettext + iconv - {#MyVersionShownName}"
+AppName="gettext + iconv"
 AppVerName="gettext {#MyGettextVer} + iconv {#MyIconvVer} - {#MyVersionShownName}"
 DefaultDirName={commonpf}\gettext-iconv
 AppPublisher=Michele Locati

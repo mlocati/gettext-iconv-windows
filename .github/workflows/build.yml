@@ -419,8 +419,6 @@ jobs:
           github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: installer-signed
-          parameters: |
-            productName: ${{ steps.vars.outputs.installer-quoted-productname }}
       -
         name: Check signatures
         if: steps.vars.outputs.signpath-signing-policy

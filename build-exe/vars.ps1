@@ -82,9 +82,6 @@ switch ($env:GETTEXT_VERSION) {
     }
 }
 
-# See https://stackoverflow.com/questions/54145006/inno-setup-compiler-adding-trailing-spaces-to-executable-details-ex-fileversi
-$installerProductName = "gettext + iconv - $Link ($Bits bit)".PadRight(60, ' ')
-
 "cygwin-packages=$cygwinPackages" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "cygwin-path=/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/System32:/cygdrive/c/Windows" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "mingw-host=$mingwHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
@@ -97,7 +94,6 @@ $installerProductName = "gettext + iconv - $Link ($Bits bit)".PadRight(60, ' ')
 "signpath-signing-policy=$signpathSigningPolicy" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "signatures-canbeinvalid=$signaturesCanBeInvalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "gettext-peversion-numeric=$gettextVersionNumeric" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"installer-quoted-productname=`"$installerProductName`"" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
