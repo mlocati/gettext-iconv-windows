@@ -27,13 +27,15 @@ function Test-CanFileBeSigned()
         # - see https://signpath.org/terms#conditions-for-what-can-be-signed
         # - see https://signpath.org/terms#signpath-configuration-requirements
         # - see https://sourceforge.net/p/mingw-w64/mailman/message/58822390/
-        'libatomic-*.dll',
-        'libgcc_s_sjlj-*.dll',
-        'libgomp-*.dll',
-        'libquadmath-*.dll',
-        'libssp-*.dll',
-        'libstdc++-*.dll',
-        'libwinpthread-*.dll'
+        # - see https://github.com/niXman/mingw-builds/issues/684
+        'libatomic-*.dll', # mingw64-i686-gcc-core, mingw64-x86_64-gcc-core
+        'libgcc_s_sjlj-*.dll', # mingw64-i686-gcc-core
+        'libgcc_s_seh-*.dll', # mingw64-x86_64-gcc-core
+        'libgomp-*.dll', # mingw64-i686-gcc-core, mingw64-x86_64-gcc-core
+        'libquadmath-*.dll', # mingw64-i686-gcc-core, mingw64-x86_64-gcc-core
+        'libssp-*.dll', # mingw64-i686-gcc-core, mingw64-x86_64-gcc-core
+        'libstdc++-*.dll', # mingw64-i686-gcc, mingw64-x86_64-gcc-g++
+        'libwinpthread-*.dll' # mingw64-i686-winpthreads, mingw64-x86_64-winpthreads
     )
     foreach ($excludedName in $excludedNames) {
         if ($file.Name -like $excludedName) {
