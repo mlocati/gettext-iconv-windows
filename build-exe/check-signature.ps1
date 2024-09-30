@@ -29,8 +29,8 @@ function Test-CanFileBeSigned()
         # - see https://sourceforge.net/p/mingw-w64/mailman/message/58822390/
         # - see https://github.com/niXman/mingw-builds/issues/684
         'libatomic-*.dll', # mingw64-i686-gcc-core, mingw64-x86_64-gcc-core
-        'libgcc_s_sjlj-*.dll', # mingw64-i686-gcc-core
         'libgcc_s_seh-*.dll', # mingw64-x86_64-gcc-core
+        'libgcc_s_sjlj-*.dll', # mingw64-i686-gcc-core
         'libgomp-*.dll', # mingw64-i686-gcc-core, mingw64-x86_64-gcc-core
         'libquadmath-*.dll', # mingw64-i686-gcc-core, mingw64-x86_64-gcc-core
         'libssp-*.dll', # mingw64-i686-gcc-core, mingw64-x86_64-gcc-core
