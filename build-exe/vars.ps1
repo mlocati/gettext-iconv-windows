@@ -53,9 +53,20 @@ switch ($Link) {
 # Leave empty to disable code signing
 $signpathSigningPolicy = ''
 $signaturesCanBeInvalid = 0
-if ($true) {
-    $signpathSigningPolicy = 'test-signing'
-    $signaturesCanBeInvalid = 1
+if ($env:GITHUB_REPOSITORY -ne 'mlocati/gettext-iconv-windows') {
+    Write-Host -Object "Signing is disabled because the current repository ($($env:GITHUB_REPOSITORY)) is not the upstream one"
+} else {
+    switch ($env:GITHUB_EVENT_NAME) {
+        'pull_request' {
+            Write-Host -Object "Using the Test signing policy because the current event is $($env:GITHUB_EVENT_NAME)"
+            $signpathSigningPolicy = 'test-signing'
+            $signaturesCanBeInvalid = 1
+        }
+        default {
+            Write-Host -Object "Using the Release signing policy because the current event is $($env:GITHUB_EVENT_NAME)"
+            $signpathSigningPolicy = 'release-signing'
+        }
+    }
 }
 
 $gettextIgnoreTestsC = @()
