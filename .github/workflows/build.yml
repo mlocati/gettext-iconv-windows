@@ -112,7 +112,7 @@ jobs:
           if (Test-Path -LiteralPath "cldr-$env:CLDR_VERSION.zip" -PathType Leaf) {
             Write-Host -Object 'Already downloaded'
           } else {
-            Invoke-WebRequest "https://unicode.org/Public/cldr/$env:CLDR_VERSION/core.zip" -OutFile "cldr-$env:CLDR_VERSION.zip"
+            Invoke-WebRequest -Uri "https://unicode.org/Public/cldr/$env:CLDR_VERSION/core.zip" -OutFile "cldr-$env:CLDR_VERSION.zip"
             Write-Host -Object 'Downloaded'
           }
       -
@@ -130,7 +130,7 @@ jobs:
           if (Test-Path -LiteralPath "libiconv-$env:ICONV_VERSION.tar.gz" -PathType Leaf) {
             Write-Host -Object 'Already downloaded'
           } else {
-            Invoke-WebRequest "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-$env:ICONV_VERSION.tar.gz" -OutFile "libiconv-$env:ICONV_VERSION.tar.gz"
+            Invoke-WebRequest -Uri "${{ steps.vars.outputs.iconv-source-url }}" -OutFile "libiconv-$env:ICONV_VERSION.tar.gz"
             Write-Host -Object 'Downloaded'
           }
       -
@@ -171,7 +171,7 @@ jobs:
           if (Test-Path -LiteralPath "gettext-$env:GETTEXT_VERSION.tar.gz" -PathType Leaf) {
             Write-Host -Object 'Already downloaded'
           } else {
-            Invoke-WebRequest "${{ steps.vars.outputs.gettext-source-url }}" -OutFile "gettext-$env:GETTEXT_VERSION.tar.gz"
+            Invoke-WebRequest -Uri "${{ steps.vars.outputs.gettext-source-url }}" -OutFile "gettext-$env:GETTEXT_VERSION.tar.gz"
             Write-Host -Object 'Downloaded'
           }
       -
