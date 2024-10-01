@@ -203,7 +203,7 @@ jobs:
             --prefix=$INSTALLED_PATH
       -
         name: Ignore gettext C tests
-        if: steps.vars.outputs.gettext-ignore-tests-c && env.BUILD_ONLY_ICONV != 'y'
+        if: env.BUILD_ONLY_ICONV != 'y' && steps.vars.outputs.gettext-ignore-tests-c
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}
         run: for f in ${{ steps.vars.outputs.gettext-ignore-tests-c }}; do echo 'int main() { return 0; }' >$f; done
       -
@@ -272,6 +272,35 @@ jobs:
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}\build\gettext-tools
         run: make --jobs=$(nproc) install
       -
+        # We need to rebuild iconv because it depends on gettext's libintl in order to be localizable
+        name: Configure iconv (2nd time)
+        if: env.BUILD_ONLY_ICONV != 'y'
+        working-directory: src\libiconv-${{ env.ICONV_VERSION }}
+        run: |
+          rm -rf build
+          mkdir build
+          cd build
+          ../configure \
+            CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}' \
+            LDFLAGS='${{ steps.vars.outputs.ld-flags }}' \
+            ${{ steps.vars.outputs.configure-args }} \
+            --prefix=$INSTALLED_PATH
+      -
+        name: Compile iconv (2nd time)
+        if: env.BUILD_ONLY_ICONV != 'y'
+        working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
+        run: make --jobs=$(nproc)
+      -
+        name: Check iconv (2nd time)
+        if: env.BUILD_ONLY_ICONV != 'y'
+        working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
+        run: make check --jobs=$(nproc)
+      -
+        name: Install iconv (2nd time)
+        if: env.BUILD_ONLY_ICONV != 'y'
+        working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
+        run: make install
+      -
         name: Prepare build log
         id: prepare-build-log
         if: (success() || failure()) && steps.iconv-configure.outcome == 'success'
@@ -306,7 +335,22 @@ jobs:
         name: Check bitness
         run: ./build-exe/check-bits.sh ${{ matrix.bits }} files-unsigned
       -
-        name: Check if programs load translations correctly
+        name: Check if iconv program load translations correctly
+        if: env.BUILD_ONLY_ICONV != 'y'
+        shell: pwsh
+        run: |
+          $env:LANGUAGE = 'it'
+          $stdout = & .\files-unsigned\bin\iconv.exe --help
+          if (-not($?)) {
+            throw "iconv.exe failed"
+          }
+          $stdout = $stdout -join "`n"
+          if (!$stdout.Contains('formato di input')) {
+            throw "iconv.exe didn't load the translations.`nIts output is:`n$stdout"
+          }
+          Write-Host "iconv.exe correctly loaded the translations when LANGUAGE=$env:LANGUAGE`nIts localized output is`n$stdout"
+      -
+        name: Check if gettext programs load translations correctly
         if: env.BUILD_ONLY_ICONV != 'y'
         shell: pwsh
         run: |
