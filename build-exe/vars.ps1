@@ -57,11 +57,11 @@ switch ($Link) {
 }
 
 if ($env:GITHUB_REPOSITORY -ne 'mlocati/gettext-iconv-windows') {
-    Write-Host -Object "Using -Sign none because the current repository ($($env:GITHUB_REPOSITORY)) is not the upstream one`n"
+    Write-Host -Object "Using -Sign no because the current repository ($($env:GITHUB_REPOSITORY)) is not the upstream one`n"
     $Sign = 'no'
 } elseif ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
-    Write-Host -Object "Using -Sign test because the current event is $($env:GITHUB_EVENT_NAME)`n"
-    $Sign = 'test'
+    Write-Host -Object "Using -Sign no because the current event is $($env:GITHUB_EVENT_NAME)`n"
+    $Sign = 'no'
 } elseif (-not($Sign)) {
     Write-Host -Object "Using -Sign test`n"
     $Sign = 'test'
