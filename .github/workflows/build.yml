@@ -512,7 +512,7 @@ jobs:
         if: always() && steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          key: build-exe-${{ steps.restore-cache.outputs.cache-primary-key }}
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
           path: |
             src\downloads
             C:\cygwin-packages
