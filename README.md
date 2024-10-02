@@ -12,7 +12,7 @@ Please refer to the official manuals for support: [here for iconv](https://www.g
 
 ## Code Signing Policy
 
-Starting with gettext v0.22.5 / iconv v1.17, the build DLLs and executables are signed.
+Starting with gettext v0.22.5 / iconv v1.17, the built DLLs and executables are signed.
 
 Free code signing is provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
 
