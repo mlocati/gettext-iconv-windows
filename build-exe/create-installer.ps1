@@ -17,6 +17,9 @@ param (
     [string] $OutputDirectory
 )
 
+$SourceDirectory = [System.IO.Path]::GetFullPath($SourceDirectory)
+$OutputDirectory = [System.IO.Path]::GetFullPath($OutputDirectory)
+
 function GetIssSourceFile()
 {
     [OutputType([string])]

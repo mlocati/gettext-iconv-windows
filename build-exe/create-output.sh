@@ -78,21 +78,23 @@ fi
 
 mkdir -p "$DESTINATION/share/gettext"
 
-copyFile "$SOURCE/cldr-license.txt" text
 copyFile "$SOURCE/iconv-license.txt" text
-copyFile "$SOURCE/gettext-license.txt" text
 for i in $(find "$SOURCE/bin/" -name '*.exe' -o -name '*.dll'); do
     copyFile "$i" binary
 done
-copyFile "$SOURCE/lib/gettext/cldr-plurals.exe" binary bin/cldr-plurals.exe
 if [ -f "$SOURCE/lib/charset.alias" ]; then
     copyFile "$SOURCE/lib/charset.alias"
 fi
 for i in $(find "$SOURCE/share/doc" -maxdepth 2 -type f ! -iname '*.3.html' ! -iname 'autopoint.1.html' ! -iname 'gettextize.1.html'); do
     copyFile "$i" doc
 done
-cp -r "$SOURCE/share/locale" "$DESTINATION/share/"
-cp -r "$SOURCE/share/gettext/styles" "$DESTINATION/share/gettext/"
-cp -r $SOURCE/share/gettext-*/its "$DESTINATION/share/gettext"
-copyFile "$SOURCE/share/gettext/msgunfmt.tcl"
-copyFile "$SOURCE/cldr-plurals.xml" '' lib/gettext/common/supplemental/plurals.xml
+if [ "${BUILD_ONLY_ICONV:-}" != y ]; then
+    copyFile "$SOURCE/cldr-license.txt" text
+    copyFile "$SOURCE/gettext-license.txt" text
+    copyFile "$SOURCE/lib/gettext/cldr-plurals.exe" binary bin/cldr-plurals.exe
+    cp -r "$SOURCE/share/locale" "$DESTINATION/share/"
+    cp -r "$SOURCE/share/gettext/styles" "$DESTINATION/share/gettext/"
+    cp -r $SOURCE/share/gettext-*/its "$DESTINATION/share/gettext"
+    copyFile "$SOURCE/share/gettext/msgunfmt.tcl"
+    copyFile "$SOURCE/cldr-plurals.xml" '' lib/gettext/common/supplemental/plurals.xml
+fi

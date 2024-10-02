@@ -74,6 +74,56 @@ function Get-Dependencies()
     $dependencies | Sort-Object
 }
 
+function Get-ImportedFunctions()
+{
+    [OutputType([string[]])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.IO.FileInfo] $importer,
+        [Parameter(Mandatory = $true)]
+        [System.IO.FileInfo] $dllName
+    )
+    $dumpbinResult = & "$dumpbin" /NOLOGO /DEPENDENTS $importer.FullName "/IMPORTS:$dllName"
+    if (-not($?)) {
+        throw "dumpbin failed to analyze the file $($importer)"
+    }
+    $state = 0
+    $result = @()
+    foreach ($line in $dumpbinResult) {
+        if ($line -eq '') {
+            continue
+        }
+        if ($line -match '^ *Summary$') {
+            break;
+        }
+        if ($state -eq 0) {
+            if ($line -match '^\s*Section contains the following imports:\s*$') {
+                $state = 1
+            }
+        } elseif ($state -eq 1) {
+            if ($line -like "* $dllName") {
+                $state = 2
+            }
+        } elseif (-not($line -match '^       .*')) {
+            break
+        } elseif ($state -eq 2) {
+             if ($line -match '^\s*\d+\s+Index of first forwarder reference$') {
+                $state = 3
+             }
+        } else {
+            if ($state -ne 3)  {
+                throw 'Processing failed'
+            }
+            if (-not($line -match '^\s*[0-9A-Fa-f]+\s*(\w+)$')) {
+                throw 'Processing failed'
+            }
+            $result += $matches[1]
+        }
+    }
+    return $result
+}
+
+
 class Binary
 {
     [System.IO.FileInfo] $File
@@ -87,7 +137,7 @@ class Binary
 
 class Binaries
 {
-    [bool] $MinGWFilesAdded = $false
+    [string[]] $MinGWFilesAdded = @()
 
     [Binary[]] $Items
 
@@ -164,7 +214,7 @@ class Binaries
                 $newFile = Get-ChildItem -LiteralPath $newFilePath -File
                 $newBinary = [Binary]::new($newFile)
                 $this.Add($newBinary)
-                $this.MinGWFilesAdded = $true
+                $this.MinGWFilesAdded += $dependency
             }
         }
     }
@@ -180,6 +230,23 @@ class Binaries
                 }
             } else {
                 Write-Host -Object '  (none)'
+            }
+        }
+        if ($this.MinGWFilesAdded) {
+            Write-Host -Object ''
+            foreach ($minGWFileAdded in $this.MinGWFilesAdded) {
+                Write-Host -Object "$minGWFileAdded added beause:"
+                foreach ($binary in $binaries) {
+                    $functions = Get-ImportedFunctions $binary.File $minGWFileAdded
+                    if (-not($functions)) {
+                        continue
+                    }
+                    if ($this.MinGWFilesAdded -contains $binary.File.Name.ToLowerInvariant()) {
+                        Write-Host -Object "  - $($binary.File.Name) requires it"
+                    } else {
+                        Write-Host -Object "  - $($binary.File.Name) uses its functions: $($functions -join ', ')"
+                    }
+                }
             }
         }
     }
@@ -201,7 +268,7 @@ $binaries.AddMingwDlls($mingwBinPath)
 if ($binaries.MinGWFilesAdded) {
     Write-Host -Object "Adding MinGW-w64 license"
     $mingwLicenseFile = Join-Path -Path $OutputPath -ChildPath 'mingw-w64-license.txt'
-    $mingwLicense = $(Invoke-WebRequest -Uri 'https://sourceforge.net/p/mingw-w64/mingw-w64/ci/master/tree/COPYING.MinGW-w64-runtime/COPYING.MinGW-w64-runtime.txt?format=raw').ToString()
+    $mingwLicense = $(Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/niXman/mingw-builds/refs/heads/develop/COPYING.TXT').ToString()
     $mingwLicense -ireplace "`r`n","`n" -ireplace "`n","`r`n" | Set-Content -LiteralPath $mingwLicenseFile -NoNewline -Encoding utf8
 }
 
