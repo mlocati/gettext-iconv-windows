@@ -6,7 +6,10 @@ param (
     [int] $Bits,
     [Parameter(Mandatory = $true)]
     [ValidateSet('shared', 'static')]
-    [string] $Link
+    [string] $Link,
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('', 'no', 'test', 'production')]
+    [string] $Sign
 )
 
 if (-not($env:ICONV_VERSION)) {
@@ -53,22 +56,34 @@ switch ($Link) {
     }
 }
 
-# Leave empty to disable code signing
+if ($env:GITHUB_REPOSITORY -ne 'mlocati/gettext-iconv-windows') {
+    Write-Host -Object "Using -Sign none because the current repository ($($env:GITHUB_REPOSITORY)) is not the upstream one`n"
+    $Sign = 'no'
+} elseif ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+    Write-Host -Object "Using -Sign test because the current event is $($env:GITHUB_EVENT_NAME)`n"
+    $Sign = 'test'
+} elseif (-not($Sign)) {
+    Write-Host -Object "Using -Sign test`n"
+    $Sign = 'test'
+}
 $signpathSigningPolicy = ''
 $signaturesCanBeInvalid = 0
-if ($env:GITHUB_REPOSITORY -ne 'mlocati/gettext-iconv-windows') {
-    Write-Host -Object "Signing is disabled because the current repository ($($env:GITHUB_REPOSITORY)) is not the upstream one`n"
-} else {
-    switch ($env:GITHUB_EVENT_NAME) {
-        'pull_request' {
-            Write-Host -Object "Using the Test signing policy because the current event is $($env:GITHUB_EVENT_NAME)`n"
-            $signpathSigningPolicy = 'test-signing'
-            $signaturesCanBeInvalid = 1
-        }
-        default {
-            Write-Host -Object "Using the Release signing policy because the current event is $($env:GITHUB_EVENT_NAME)`n"
-            $signpathSigningPolicy = 'release-signing'
-        }
+switch ($Sign) {
+    'no' {
+        Write-Host "Signing is disabled`n"
+    }
+    'test' {
+        $signpathSigningPolicy = 'test-signing'
+        $signaturesCanBeInvalid = 1
+        Write-Host "SignPath signing policy: $signpathSigningPolicy (self-signed certificate)`n"
+    }
+    'production' {
+        $signpathSigningPolicy = 'release-signing'
+        $signaturesCanBeInvalid = 1
+        Write-Host "SignPath signing policy: $signpathSigningPolicy (production certificate)`n"
+    }
+    default {
+        throw "Invalid value of the -Sign argument ($Sign)"
     }
 }
 
