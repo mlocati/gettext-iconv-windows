@@ -18,7 +18,7 @@ Free code signing is provided by [SignPath.io](https://about.signpath.io/), cert
 
 The source code of gettext and iconv is created and maintained by the [Free Software Foundation](https://www.fsf.org/).
 
-This gettext-iconv-windows project only compile gettext and iconv for Windows, and is maintained by [Michele Locati](https://mlocati.github.io).
+This gettext-iconv-windows project only compiles gettext and iconv for Windows, and is maintained by [Michele Locati](https://mlocati.github.io).
 
 ## Privacy policy
 
