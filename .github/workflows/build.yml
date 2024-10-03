@@ -147,7 +147,7 @@ jobs:
         working-directory: src
         run: tar x -z -f downloads/libiconv-$ICONV_VERSION.tar.gz
       -
-        name: Configure iconv
+        name: Configure iconv (1st time)
         id: iconv-configure
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}
         run: |
@@ -159,16 +159,16 @@ jobs:
             ${{ steps.vars.outputs.configure-args }} \
             --prefix=$INSTALLED_PATH
       -
-        name: Compile iconv
+        name: Compile iconv (1st time)
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
         run: make --jobs=$(nproc)
       -
-        name: Check iconv
+        name: Check iconv (1st time)
         if: env.BUILD_ONLY_ICONV != 'y'
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
         run: make check --jobs=$(nproc)
       -
-        name: Install iconv
+        name: Install iconv (1st time)
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
         run: make install && cp ../COPYING $INSTALLED_PATH/iconv-license.txt
       -
