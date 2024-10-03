@@ -293,6 +293,7 @@ jobs:
             CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}' \
             LDFLAGS='${{ steps.vars.outputs.ld-flags }}' \
             ${{ steps.vars.outputs.configure-args }} \
+            --enable-extra-encodings \
             --prefix=$INSTALLED_PATH
       -
         name: Compile iconv (2nd time)
