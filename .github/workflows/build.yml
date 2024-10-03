@@ -156,6 +156,7 @@ jobs:
           ../configure \
             CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}' \
             LDFLAGS='${{ steps.vars.outputs.ld-flags }}' \
+            CXXFLAGS='${{ steps.vars.outputs.cxx-flags }}' \
             ${{ steps.vars.outputs.configure-args }} \
             --prefix=$INSTALLED_PATH
       -
@@ -199,6 +200,7 @@ jobs:
           ../configure \
             CPPFLAGS="-I$INSTALLED_PATH/include ${{ steps.vars.outputs.cpp-flags }}" \
             LDFLAGS="-L$INSTALLED_PATH/lib ${{ steps.vars.outputs.ld-flags }}" \
+            CXXFLAGS='${{ steps.vars.outputs.cxx-flags }}' \
             ${{ steps.vars.outputs.configure-args }} \
             --disable-java \
             --disable-native-java \
