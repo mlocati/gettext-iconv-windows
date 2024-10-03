@@ -45,7 +45,7 @@ $configureArgs = @(
     '--enable-nls',
     '--disable-rpath',
     '--disable-acl',
-    '--disable-threads'
+    '--enable-threads=windows'
 )
 switch ($Link) {
     'shared' {
