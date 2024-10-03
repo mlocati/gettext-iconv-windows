@@ -45,7 +45,7 @@ $configureArgs = @(
     '--enable-nls',
     '--disable-rpath',
     '--disable-acl',
-    '--enable-threads=windows'
+    '--disable-threads'
 )
 switch ($Link) {
     'shared' {
@@ -194,6 +194,7 @@ $gnuUrlPrefixer.WriteWarning()
 "configure-args=$configureArgs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "cpp-flags=-I/usr/$mingwHost/sys-root/mingw/include -g0 -O2" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "ld-flags=-L/usr/$mingwHost/sys-root/mingw/lib" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+"cxx-flags=-fno-threadsafe-statics" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "iconv-source-url=$iconvSourceUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "gettext-source-url=$gettextSourceUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 "gettext-ignore-tests-c=$gettextIgnoreTestsC" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
