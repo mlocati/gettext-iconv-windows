@@ -39,10 +39,10 @@ jobs:
       matrix:
         bits:
           - 32
-          - 64
+          #- 64
         link:
           - shared
-          - static
+          #- static
     env:
       CYGWIN_NOWINPATH: 1
       CHERE_INVOKING: 1
@@ -104,16 +104,21 @@ jobs:
           mkdir installer-signed
           cp build-exe/license-for-distribution.txt installed/license.txt
           mkdir -p "$HOME"
-          printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
+          printf '\n' >>$HOME/.bash_profile
+          echo "export PATH='${{ steps.vars.outputs.cygwin-path }}'" >>$HOME/.bash_profile
       -
         name: Dump Cygwin environment
         run: |
           printf 'Current working directory: %s\n' "$(pwd)"
           echo 'PATH contains:'
-          IFS=:
-          for p in $PATH; do
-            printf -- '- %s\n' "$p"
-          done
+          (
+            IFS=:
+            for p in $PATH; do
+              printf -- '- %s\n' "$p"
+            done
+          )
+          printf 'csc.exe version: '
+          csc -version
       -
         name: Download CLDR
         if: env.BUILD_ONLY_ICONV != 'y'
@@ -199,7 +204,7 @@ jobs:
           ../configure ${{ steps.vars.outputs.configure-args }} \
             --disable-java \
             --disable-native-java \
-            --disable-csharp \
+            --enable-csharp=csc \
             --disable-openmp \
             --disable-curses \
             --without-emacs \
@@ -329,8 +334,18 @@ jobs:
           -Path files-unsigned
           -MinGWPath C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
       -
+        name: Upload unsigned files
+        if: steps.vars.outputs.signpath-signing-policy
+        id: upload-files-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.link }}-${{ matrix.bits }}-files-unsigned
+          path: files-unsigned
+          if-no-files-found: error
+          retention-days: 1
+      -
         name: Check bitness
-        run: ./build-exe/check-bits.sh ${{ matrix.bits }} files-unsigned
+        run: ./build-exe/check-bits.sh ${{ matrix.bits }} files-unsigned/bin
       -
         name: Check if iconv program load translations correctly
         if: env.BUILD_ONLY_ICONV != 'y'
@@ -362,15 +377,16 @@ jobs:
           }
           Write-Host "xgettext.exe correctly loaded the translations when LANGUAGE=$env:LANGUAGE`nIts localized output is`n$stdout"
       -
-        name: Upload unsigned files
-        if: steps.vars.outputs.signpath-signing-policy
-        id: upload-files-unsigned
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-files-unsigned
-          path: files-unsigned
-          if-no-files-found: error
-          retention-days: 1
+        name: Check if msgfmt --csharp works
+        if: env.BUILD_ONLY_ICONV != 'y'
+        working-directory: test
+        shell: pwsh
+        run: |
+          $env:PATH += ';${{ steps.vars.outputs.csc-directory }}'
+          Write-Host -Object 'csc.exe version'
+          & csc.exe -version
+          Write-Host -Object 'Running msgfmt.exe --csharp'
+          & ..\files-unsigned\bin\msgfmt.exe --csharp -l it -d . it.po -vvv
       -
         name: Sign files
         if: steps.vars.outputs.signpath-signing-policy
