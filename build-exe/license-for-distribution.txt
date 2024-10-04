@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-For the Unicode CLDR files: see cldr-license.txt
-For the gettext files: see gettext-license.txt
-For the iconv files: see iconv-license.txt
-For the MinGW-w64 DLL files (if any): see mingw-w64-license.txt
+For the Unicode CLDR files: see license-cldr.txt
+For the iconv files: see license-iconv.txt
+For the gettext files: see license-gettext.txt
+For the MinGW-w64 DLL files (if any): see license-mingw-w64.txt
