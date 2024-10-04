@@ -12,7 +12,7 @@ param (
     [Parameter(Mandatory = $true)]
     [ValidateLength(1, [int]::MaxValue)]
     [ValidateScript({Test-Path -LiteralPath $_ -PathType Container})]
-    [string] $OutputPath,
+    [string] $Path,
     [Parameter(Mandatory = $true)]
     [ValidateLength(1, [int]::MaxValue)]
     [ValidateScript({Test-Path -LiteralPath $_ -PathType Container})]
@@ -48,12 +48,12 @@ function Get-Dependencies()
         [Parameter(Mandatory = $true)]
         [ValidateLength(1, [int]::MaxValue)]
         [ValidateScript({Test-Path -LiteralPath $_ -PathType Leaf})]
-        [string] $path
+        [string] $BinaryPath
     )
 
-    $dumpbinResult = & "$dumpbin" /NOLOGO /DEPENDENTS "$path"
+    $dumpbinResult = & "$dumpbin" /NOLOGO /DEPENDENTS "$BinaryPath"
     if (-not($?)) {
-        throw "dumpbin failed to analyze the file $($path)"
+        throw "dumpbin failed to analyze the file $BinaryPath"
     }
     [string[]]$dependencies = @()
     $started = $false
@@ -131,7 +131,7 @@ class Binary
     Binary([System.IO.FileInfo]$file)
     {
         $this.File = $file
-        $this.Dependencies = Get-Dependencies $this.File.FullName
+        $this.Dependencies = Get-Dependencies -BinaryPath $this.File.FullName
     }
 }
 
@@ -235,7 +235,7 @@ class Binaries
         if ($this.MinGWFilesAdded) {
             Write-Host -Object ''
             foreach ($minGWFileAdded in $this.MinGWFilesAdded) {
-                Write-Host -Object "$minGWFileAdded added beause:"
+                Write-Host -Object "$minGWFileAdded added because:"
                 foreach ($binary in $binaries) {
                     $functions = Get-ImportedFunctions $binary.File $minGWFileAdded
                     if (-not($functions)) {
@@ -254,7 +254,7 @@ class Binaries
 
 $dumpbin = Find-Dumpbin
 $mingwBinPath = Join-Path -Path $MinGWPath -ChildPath 'sys-root\mingw\bin'
-$outputBinPath = Join-Path -Path $OutputPath -ChildPath 'bin'
+$outputBinPath = Join-Path -Path $Path -ChildPath 'bin'
 $binaries = [Binaries]::new()
 foreach ($file in Get-ChildItem -LiteralPath $outputBinPath -Recurse -File) {
     if ($file.Extension -eq '.exe' -or $file.Extension -eq '.dll') {
@@ -267,9 +267,9 @@ $binaries.RemoveUnusedDlls()
 $binaries.AddMingwDlls($mingwBinPath)
 if ($binaries.MinGWFilesAdded) {
     Write-Host -Object "Adding MinGW-w64 license"
-    $mingwLicenseFile = Join-Path -Path $OutputPath -ChildPath 'mingw-w64-license.txt'
+    $mingwLicenseFile = Join-Path -Path $Path -ChildPath 'license-mingw-w64.txt'
     $mingwLicense = $(Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/niXman/mingw-builds/refs/heads/develop/COPYING.TXT').ToString()
-    $mingwLicense -ireplace "`r`n","`n" -ireplace "`n","`r`n" | Set-Content -LiteralPath $mingwLicenseFile -NoNewline -Encoding utf8
+    $mingwLicense -replace "`r`n","`n" -replace "`n","`r`n" | Set-Content -LiteralPath $mingwLicenseFile -NoNewline -Encoding utf8
 }
 
 $binaries.Dump()

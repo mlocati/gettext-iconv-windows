@@ -23,7 +23,7 @@ on:
           - test
           - production
         default: test
-    
+
 env:
   CLDR_VERSION: 45
   ICONV_VERSION: 1.17
@@ -33,7 +33,7 @@ env:
 
 jobs:
   exe:
-    name: Executables ${{ matrix.bits}}-bit ${{ matrix.link }}
+    name: ${{ matrix.bits}}-bit ${{ matrix.link }} executables
     runs-on: windows-2022
     strategy:
       matrix:
@@ -70,7 +70,7 @@ jobs:
         name: Set variables
         id: vars
         shell: pwsh
-        run: ./build-exe/vars.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -Sign '${{ github.event.inputs.sign }}'
+        run: ./build-exe/vars.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -InstalledPath installed -Sign '${{ github.event.inputs.sign }}'
       -
         name: Download Cygwin installer
         shell: pwsh
@@ -92,25 +92,27 @@ jobs:
       -
         name: Setup Cygwin environment
         run: |
-          cd -- "$(/bin/cygpath -au '${{ github.workspace }}')"
-          /bin/printf 'Working directory: %s\n' "$(/bin/pwd)"
-          /bin/mkdir -p src/downloads
-          /bin/mkdir installed
-          /bin/mkdir files-unsigned
-          /bin/mkdir files-signed
-          /bin/mkdir installer-unsigned
-          /bin/mkdir installer-signed
-          /bin/perl -pe 's/\r\n|\n|\r/\r\n/g' < build-exe/license-for-distribution.txt > files-unsigned/license.txt
-          INSTALLED_PATH="$(/bin/cygpath -au ./installed)"
-          /bin/echo "INSTALLED_PATH=$INSTALLED_PATH" >> $GITHUB_ENV
-          /bin/mkdir -p "$HOME"
-          /bin/printf '\nPATH=%s/bin:${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' "$INSTALLED_PATH" >>$HOME/.bash_profile
+          PATH='${{ steps.vars.outputs.cygwin-path }}'
+          cd -- "$(cygpath -ua '${{ github.workspace }}')"
+          mkdir -p src/downloads
+          mkdir -p installed/bin
+          mkdir -p installed/include
+          mkdir -p installed/lib
+          mkdir files-unsigned
+          mkdir files-signed
+          mkdir installer-unsigned
+          mkdir installer-signed
+          cp build-exe/license-for-distribution.txt installed/license.txt
+          mkdir -p "$HOME"
+          printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
       -
-        name: Dump Cygwin PATH
+        name: Dump Cygwin environment
         run: |
+          printf 'Current working directory: %s\n' "$(pwd)"
+          echo 'PATH contains:'
           IFS=:
           for p in $PATH; do
-            printf '%s\n' "$p"
+            printf -- '- %s\n' "$p"
           done
       -
         name: Download CLDR
@@ -127,10 +129,10 @@ jobs:
       -
         name: Extract CLDR
         if: env.BUILD_ONLY_ICONV != 'y'
-        working-directory: installed
         run: |
-          unzip -p ../src/downloads/cldr-$CLDR_VERSION.zip LICENSE >cldr-license.txt
-          unzip -p ../src/downloads/cldr-$CLDR_VERSION.zip common/supplemental/plurals.xml >cldr-plurals.xml
+          unzip -p src/downloads/cldr-$CLDR_VERSION.zip LICENSE > installed/license-cldr.txt
+          mkdir -p installed/lib/gettext/common/supplemental
+          unzip -p src/downloads/cldr-$CLDR_VERSION.zip common/supplemental/plurals.xml >installed/lib/gettext/common/supplemental/plurals.xml
       -
         name: Download iconv
         working-directory: src\downloads
@@ -144,8 +146,9 @@ jobs:
           }
       -
         name: Extract iconv
-        working-directory: src
-        run: tar x -z -f downloads/libiconv-$ICONV_VERSION.tar.gz
+        run: |
+          tar x -C src -z -f src/downloads/libiconv-$ICONV_VERSION.tar.gz
+          cp src/libiconv-$ICONV_VERSION/COPYING installed/license-iconv.txt
       -
         name: Configure iconv (1st time)
         id: iconv-configure
@@ -153,12 +156,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          ../configure \
-            CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}' \
-            LDFLAGS='${{ steps.vars.outputs.ld-flags }}' \
-            CXXFLAGS='${{ steps.vars.outputs.cxx-flags }}' \
-            ${{ steps.vars.outputs.configure-args }} \
-            --prefix=$INSTALLED_PATH
+          ../configure ${{ steps.vars.outputs.configure-args }}
       -
         name: Compile iconv (1st time)
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
@@ -167,11 +165,11 @@ jobs:
         name: Check iconv (1st time)
         if: env.BUILD_ONLY_ICONV != 'y'
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
-        run: make check --jobs=$(nproc)
+        run: make --jobs=$(nproc) check
       -
         name: Install iconv (1st time)
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
-        run: make install && cp ../COPYING $INSTALLED_PATH/iconv-license.txt
+        run: make --jobs=$(nproc) install-strip
       -
         name: Download gettext
         if: env.BUILD_ONLY_ICONV != 'y'
@@ -187,8 +185,9 @@ jobs:
       -
         name: Extract gettext
         if: env.BUILD_ONLY_ICONV != 'y'
-        working-directory: src
-        run: tar x -z -f downloads/gettext-$GETTEXT_VERSION.tar.gz
+        run: |
+          tar x -C src -z -f src/downloads/gettext-$GETTEXT_VERSION.tar.gz
+          cp src/gettext-$GETTEXT_VERSION/COPYING installed/license-gettext.txt
       -
         name: Configure gettext
         if: env.BUILD_ONLY_ICONV != 'y'
@@ -197,11 +196,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          ../configure \
-            CPPFLAGS="-I$INSTALLED_PATH/include ${{ steps.vars.outputs.cpp-flags }}" \
-            LDFLAGS="-L$INSTALLED_PATH/lib ${{ steps.vars.outputs.ld-flags }}" \
-            CXXFLAGS='${{ steps.vars.outputs.cxx-flags }}' \
-            ${{ steps.vars.outputs.configure-args }} \
+          ../configure ${{ steps.vars.outputs.configure-args }} \
             --disable-java \
             --disable-native-java \
             --disable-csharp \
@@ -210,18 +205,12 @@ jobs:
             --without-emacs \
             --with-included-libxml \
             --without-bzip2 \
-            --without-xz \
-            --prefix=$INSTALLED_PATH
+            --without-xz
       -
         name: Ignore gettext C tests
         if: env.BUILD_ONLY_ICONV != 'y' && steps.vars.outputs.gettext-ignore-tests-c
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}
         run: for f in ${{ steps.vars.outputs.gettext-ignore-tests-c }}; do echo 'int main() { return 0; }' >$f; done
-      -
-        name: Install gettext license
-        if: env.BUILD_ONLY_ICONV != 'y'
-        working-directory: src\gettext-${{ env.GETTEXT_VERSION }}
-        run: cp COPYING $INSTALLED_PATH/gettext-license.txt
       -
         name: Compile gettext/gnulib-local
         if: env.BUILD_ONLY_ICONV != 'y'
@@ -236,7 +225,7 @@ jobs:
         name: Install gettext/gnulib-local
         if: env.BUILD_ONLY_ICONV != 'y'
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}\build\gnulib-local
-        run: make --jobs=$(nproc) install
+        run: make --jobs=$(nproc) install-strip
       -
         name: Compile gettext/gettext-runtime
         if: env.BUILD_ONLY_ICONV != 'y'
@@ -251,7 +240,7 @@ jobs:
         name: Install gettext/gettext-runtime
         if: env.BUILD_ONLY_ICONV != 'y'
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}\build\gettext-runtime
-        run: make --jobs=$(nproc) install
+        run: make --jobs=$(nproc) install-strip
       -
         name: Compile gettext/libtextstyle
         if: env.BUILD_ONLY_ICONV != 'y'
@@ -266,7 +255,7 @@ jobs:
         name: Install gettext/libtextstyle
         if: env.BUILD_ONLY_ICONV != 'y'
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}\build\libtextstyle
-        run: make --jobs=$(nproc) install
+        run: make --jobs=$(nproc) install-strip
       -
         name: Compile gettext/gettext-tools
         if: env.BUILD_ONLY_ICONV != 'y'
@@ -281,7 +270,7 @@ jobs:
         name: Install gettext/gettext-tools
         if: env.BUILD_ONLY_ICONV != 'y'
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}\build\gettext-tools
-        run: make --jobs=$(nproc) install
+        run: make --jobs=$(nproc) install-strip
       -
         # We need to rebuild iconv because it depends on gettext's libintl in order to be localizable
         name: Configure iconv (2nd time)
@@ -291,12 +280,8 @@ jobs:
           rm -rf build
           mkdir build
           cd build
-          ../configure \
-            CPPFLAGS='${{ steps.vars.outputs.cpp-flags }}' \
-            LDFLAGS='${{ steps.vars.outputs.ld-flags }}' \
-            ${{ steps.vars.outputs.configure-args }} \
-            --enable-extra-encodings \
-            --prefix=$INSTALLED_PATH
+          ../configure ${{ steps.vars.outputs.configure-args }} \
+            --enable-extra-encodings
       -
         name: Compile iconv (2nd time)
         if: env.BUILD_ONLY_ICONV != 'y'
@@ -306,12 +291,12 @@ jobs:
         name: Check iconv (2nd time)
         if: env.BUILD_ONLY_ICONV != 'y'
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
-        run: make check --jobs=$(nproc)
+        run: make --jobs=$(nproc) check
       -
         name: Install iconv (2nd time)
         if: env.BUILD_ONLY_ICONV != 'y'
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
-        run: make install
+        run: make --jobs=$(nproc) install-strip
       -
         name: Prepare build log
         id: prepare-build-log
@@ -330,7 +315,7 @@ jobs:
           ls -al build-log
       -
         name: Copy built assets
-        run: ./build-exe/create-output.sh installed files-unsigned '${{ steps.vars.outputs.mingw-host }}'
+        run: ./build-exe/create-output.sh installed files-unsigned ${{ steps.vars.outputs.mingw-host }}-strip
       -
         name: Delete install directory
         run: rm -rf installed
@@ -341,7 +326,7 @@ jobs:
           ./build-exe/process-dependencies.ps1
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
-          -OutputPath files-unsigned
+          -Path files-unsigned
           -MinGWPath C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
       -
         name: Check bitness
@@ -476,7 +461,7 @@ jobs:
           wait-for-completion: true
           output-artifact-directory: installer-signed
       -
-        name: Check signatures
+        name: Check signature
         if: steps.vars.outputs.signpath-signing-policy
         shell: pwsh
         run: >

@@ -41,8 +41,8 @@ function New-IssFile()
             "#define MyIs64bit false" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
         }
         "#define MyGettextVer `"$env:GETTEXT_VERSION`"" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
-		"#define MyIconvVer `"$env:ICONV_VERSION`"" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
-		"#define MyCompiledFolderPath `"$SourceDirectory`"" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
+        "#define MyIconvVer `"$env:ICONV_VERSION`"" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
+        "#define MyCompiledFolderPath `"$SourceDirectory`"" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
         Get-Content -LiteralPath $templateFile -Encoding utf8 | Out-File -FilePath $temporaryFile -Append -Encoding utf8
         $deleteTemporaryFile = $false
         $temporaryFile

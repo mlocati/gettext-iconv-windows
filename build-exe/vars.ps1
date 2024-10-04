@@ -7,10 +7,23 @@ param (
     [Parameter(Mandatory = $true)]
     [ValidateSet('shared', 'static')]
     [string] $Link,
+    [Parameter(Mandatory = $true)]
+    [string] $InstalledPath,
     [Parameter(Mandatory = $false)]
     [ValidateSet('', 'no', 'test', 'production')]
     [string] $Sign
 )
+
+function Export-Variable()
+{
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Name,
+        [Parameter(Mandatory = $false)]
+        [string] $Value
+    )
+    "$Name=$Value" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+}
 
 if (-not($env:ICONV_VERSION)) {
     throw 'Missing ICONV_VERSION environment variable'
@@ -21,6 +34,13 @@ if (-not($env:GETTEXT_VERSION)) {
 $gettextVersionNumeric = $env:GETTEXT_VERSION -replace '[a-z]+$',''
 $gettextVersionObject = [Version]$gettextVersionNumeric
 
+$absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
+$match = Select-String -InputObject $absoluteInstalledPath -Pattern '^([A-Za-z]):(\\.*?)\\?$'
+if (!$match) {
+    throw "Invalid value of InstalledPath '$InstalledPath' (resolved to '$absoluteInstalledPath')"
+}
+$cygwinInstalledPath = '/cygdrive/' + $match.Matches.Groups[1].Value.ToLowerInvariant() + $match.Matches.Groups[2].Value.Replace('\', '/')
+
 switch ($Bits) {
     32 {
         $architecture = 'i686'
@@ -30,14 +50,32 @@ switch ($Bits) {
     }
 }
 
-$cygwinPackages = "file,make,unzip,perl,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
-
 $mingwHost = "$architecture-w64-mingw32"
 
+# We use -fno-threadsafe-statics because:
+# - otherwise xgettext would use the the __cxa_guard_acquire and __cxa_guard_release functions of lib-stdc++
+# - the only tool that uses multi-threading is msgmerge, which is in C (and not C++)
+# See:
+# - https://sourceforge.net/p/mingw-w64/mailman/message/58824383/
+# - https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00008.html
+# - https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00010.html
 $configureArgs = @(
-    "CC=$mingwHost-gcc",
-    "CXX=$mingwHost-g++",
-    "LD=$mingwHost-ld",
+    # The C compiler
+    "CC='$mingwHost-gcc'",
+    # The C++ compiler
+    "CXX='$mingwHost-g++'",
+    # The linker
+    "LD='$mingwHost-ld'",
+    # The strip command
+    "STRIP='$mingwHost-strip'",
+    # The C/C++ preprocessor flags
+    "CPPFLAGS='-I$cygwinInstalledPath/include -I/usr/$mingwHost/sys-root/mingw/include -g0 -O2'",
+    # The flags for the C compiler
+    "CFLAGS=''",
+    # The flags for the C++ compiler
+    "CXXFLAGS='-fno-threadsafe-statics'",
+    # The flags for the linker
+    "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib'",
     "--host=$mingwHost",
     '--enable-relocatable',
     '--config-cache',
@@ -45,7 +83,8 @@ $configureArgs = @(
     '--enable-nls',
     '--disable-rpath',
     '--disable-acl',
-    '--enable-threads=windows'
+    '--enable-threads=windows',
+    "--prefix=$cygwinInstalledPath"
 )
 switch ($Link) {
     'shared' {
@@ -165,7 +204,7 @@ $text
 See:
 - https://www.gnu.org/prep/ftp.html
 - https://web.archive.org/web/20240929102626/https://www.gnu.org/prep/ftp.html
-        
+
 "@
     }
 }
@@ -188,20 +227,17 @@ switch ($env:GETTEXT_VERSION) {
 }
 $gnuUrlPrefixer.WriteWarning()
 
-"cygwin-packages=$cygwinPackages" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"cygwin-path=/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/System32:/cygdrive/c/Windows" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"mingw-host=$mingwHost" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"configure-args=$configureArgs" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"cpp-flags=-I/usr/$mingwHost/sys-root/mingw/include -g0 -O2" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"ld-flags=-L/usr/$mingwHost/sys-root/mingw/lib" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"cxx-flags=-fno-threadsafe-statics" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"iconv-source-url=$iconvSourceUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"gettext-source-url=$gettextSourceUrl" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"gettext-ignore-tests-c=$gettextIgnoreTestsC" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"gettext-xfail-gettext-tools=$gettextXFailTests" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"signpath-signing-policy=$signpathSigningPolicy" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"signatures-canbeinvalid=$signaturesCanBeInvalid" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-"gettext-peversion-numeric=$gettextVersionNumeric" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+Export-Variable -Name 'cygwin-packages' -Value "file,make,unzip,dos2unix,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
+Export-Variable -Name 'cygwin-path' -Value "$cygwinInstalledPath/bin:/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/System32:/cygdrive/c/Windows"
+Export-Variable -Name 'mingw-host' -Value $mingwHost
+Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
+Export-Variable -Name 'iconv-source-url' -Value $iconvSourceUrl
+Export-Variable -Name 'gettext-source-url' -Value $gettextSourceUrl
+Export-Variable -Name 'gettext-ignore-tests-c' -Value $($gettextIgnoreTestsC -join ' ')
+Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests -join ' ')
+Export-Variable -Name 'signpath-signing-policy' -Value $signpathSigningPolicy
+Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
+Export-Variable -Name 'gettext-peversion-numeric' -Value $gettextVersionNumeric
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
