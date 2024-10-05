@@ -25,6 +25,20 @@ function Export-Variable()
     "$Name=$Value" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 }
 
+function Convert-PathToCygwin()
+{
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $WindowsPath
+    )
+    $match = Select-String -InputObject $WindowsPath -Pattern '^([A-Za-z]):(\\.*?)\\?$'
+    if (!$match) {
+        throw "Failed to parse Windows path '$WindowsPath'"
+    }
+    '/cygdrive/' + $match.Matches.Groups[1].Value.ToLowerInvariant() + $match.Matches.Groups[2].Value.Replace('\', '/')
+}
+
 if (-not($env:ICONV_VERSION)) {
     throw 'Missing ICONV_VERSION environment variable'
 }
@@ -33,13 +47,6 @@ if (-not($env:GETTEXT_VERSION)) {
 }
 $gettextVersionNumeric = $env:GETTEXT_VERSION -replace '[a-z]+$',''
 $gettextVersionObject = [Version]$gettextVersionNumeric
-
-$absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
-$match = Select-String -InputObject $absoluteInstalledPath -Pattern '^([A-Za-z]):(\\.*?)\\?$'
-if (!$match) {
-    throw "Invalid value of InstalledPath '$InstalledPath' (resolved to '$absoluteInstalledPath')"
-}
-$cygwinInstalledPath = '/cygdrive/' + $match.Matches.Groups[1].Value.ToLowerInvariant() + $match.Matches.Groups[2].Value.Replace('\', '/')
 
 switch ($Bits) {
     32 {
@@ -51,6 +58,17 @@ switch ($Bits) {
 }
 
 $mingwHost = "$architecture-w64-mingw32"
+
+$absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
+$cygwinInstalledPath = Convert-PathToCygwin -WindowsPath $absoluteInstalledPath
+
+$cscPath = & vswhere -latest -requires Microsoft.VisualStudio.Component.Roslyn.Compiler -find 'MSBuild\\**\\csc.exe'
+if (-not($cscPath)) {
+    throw 'Failed to find csc.exe'
+}
+$cscDirectory = Split-Path -LiteralPath $cscPath
+$cscCygwinDirectory = Convert-PathToCygwin -WindowsPath $cscDirectory
+
 
 # We use -fno-threadsafe-statics because:
 # - otherwise xgettext would use the the __cxa_guard_acquire and __cxa_guard_release functions of lib-stdc++
@@ -228,7 +246,7 @@ switch ($env:GETTEXT_VERSION) {
 $gnuUrlPrefixer.WriteWarning()
 
 Export-Variable -Name 'cygwin-packages' -Value "file,make,unzip,dos2unix,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
-Export-Variable -Name 'cygwin-path' -Value "$cygwinInstalledPath/bin:/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/System32:/cygdrive/c/Windows"
+Export-Variable -Name 'cygwin-path' -Value "$cygwinInstalledPath/bin:/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/System32:/cygdrive/c/Windows:$cscCygwinDirectory"
 Export-Variable -Name 'mingw-host' -Value $mingwHost
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
 Export-Variable -Name 'iconv-source-url' -Value $iconvSourceUrl
@@ -238,6 +256,7 @@ Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests 
 Export-Variable -Name 'signpath-signing-policy' -Value $signpathSigningPolicy
 Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
 Export-Variable -Name 'gettext-peversion-numeric' -Value $gettextVersionNumeric
+Export-Variable -Name 'csc-directory' -Value $cscDirectory
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT

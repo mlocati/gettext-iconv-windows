@@ -113,4 +113,5 @@ if [ "${BUILD_ONLY_ICONV:-}" != y ]; then
     cp -r $SOURCE/share/gettext-*/its "$DESTINATION/share/gettext"
     copyFile "$SOURCE/share/gettext/msgunfmt.tcl"
     copyFile "$SOURCE/lib/gettext/common/supplemental/plurals.xml"
+    copyFile "$SOURCE/lib/GNU.Gettext.dll"
 fi
