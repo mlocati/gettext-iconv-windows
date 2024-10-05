@@ -41,8 +41,8 @@ jobs:
           - 32
           #- 64
         link:
-          - shared
-          #- static
+          #- shared
+          - static
     env:
       CYGWIN_NOWINPATH: 1
       CHERE_INVOKING: 1
