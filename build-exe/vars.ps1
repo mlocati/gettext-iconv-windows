@@ -118,7 +118,6 @@ switch ($Sign) {
     }
     'production' {
         $signpathSigningPolicy = 'release-signing'
-        $signaturesCanBeInvalid = 1
         Write-Host "SignPath signing policy: $signpathSigningPolicy (production certificate)`n"
     }
     default {
