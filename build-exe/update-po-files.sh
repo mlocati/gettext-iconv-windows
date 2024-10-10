@@ -55,7 +55,12 @@ for newPOFile in $(find "$tmpDir" -type f -name '*.po'); do
     if [ "$poTPVersion" != latest ]; then
         wget --no-verbose --output-document="$newPOFile" "https://translationproject.org/PO-files/$poLang/$poTPPackage-$poTPVersion.$poLang.po"
     fi
-    printf 'Processing %s... ' "$poLang"
-    msgmerge --output-file="$poDir/$poLang.po" --no-fuzzy-matching --lang="$poLang" -- "$newPOFile" "$potFile" 2>&1
+    printf 'Processing %s:\n' "$poLang"
+    printf -- '- updating .po... '
+    msgmerge --output-file="$poDir/$poLang.po" --no-fuzzy-matching --lang="$poLang" --quiet -- "$newPOFile" "$potFile" 2>&1
+    echo 'done.'
+    printf -- '- updating .gmo... '
+    msgfmt --output-file="$poDir/$poLang.gmo" --check -- "$poDir/$poLang.po"
+    echo 'done.'
 done
 rm -rf -- "$tmpDir"
