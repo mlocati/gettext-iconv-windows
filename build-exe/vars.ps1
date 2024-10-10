@@ -227,7 +227,7 @@ switch ($env:GETTEXT_VERSION) {
 }
 $gnuUrlPrefixer.WriteWarning()
 
-Export-Variable -Name 'cygwin-packages' -Value "file,make,unzip,dos2unix,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
+Export-Variable -Name 'cygwin-packages' -Value "wget,file,make,unzip,dos2unix,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
 Export-Variable -Name 'cygwin-path' -Value "$cygwinInstalledPath/bin:/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/System32:/cygdrive/c/Windows"
 Export-Variable -Name 'mingw-host' -Value $mingwHost
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
