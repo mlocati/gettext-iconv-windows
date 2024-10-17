@@ -2,6 +2,9 @@
 # - there are no unused DLLs
 # - the required MinGW-w64 DLLs are included
 
+[Diagnostics.CodeAnalysis.SuppressMessage('PSReviewUnusedParameter', 'Bits', Justification = 'False positive as rule does not scan child scopes')]
+[Diagnostics.CodeAnalysis.SuppressMessage('PSReviewUnusedParameter', 'Link', Justification = 'Unused at the moment, but may be used in the future')]
+
 param (
     [Parameter(Mandatory = $true)]
     [ValidateSet(32, 64)]

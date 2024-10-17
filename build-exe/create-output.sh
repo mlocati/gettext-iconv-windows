@@ -21,7 +21,8 @@ set -o pipefail
 #  $2: special type (binary, text, doc). If omitted, no special handling will be performed
 #  $3: the relative path of the destination file (if omitted we'll calculate it)
 #
-copyFile () {
+copyFile()
+{
     local sourcePath="$1"
     local fileType="${2:-}"
     local relativePath="${3:-}"
@@ -58,7 +59,7 @@ copyFile () {
             fi
             printf 'done.\n'
             ;;
-        * )
+        *)
             printf 'Copying file %s... ' "$relativePath"
             cp "$sourcePath" "$destinationPath"
             printf 'done.\n'

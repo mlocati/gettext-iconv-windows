@@ -40,8 +40,70 @@ env:
   #BUILD_ONLY_ICONV: y
 
 jobs:
+  test-bash-scripts:
+    name: Test bash scripts
+    runs-on: ubuntu-latest
+    container:
+      image: mvdan/shfmt:v3.9.0-alpine
+      options: --entrypoint /bin/sh
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Check scripts
+        run: |
+          files="$(shfmt --find .)"
+          if [ $? -ne 0 ] || [ -z "$files" ]; then
+            echo 'Failed to list shell scripts'
+            exit 1
+          fi
+          rc=0
+          for file in $files; do
+            printf '# %s... ' "$file"
+            if shfmt --diff --simplify --indent 4 --case-indent --func-next-line -- "$file"; then
+              echo 'ok.'
+            else
+              rc=1
+              printf '\n\n'
+            fi
+          done
+          exit $rc
+  test-pwsh-scripts:
+    name: Test PowerShell scripts
+    runs-on: windows-latest
+    steps:
+      -
+        name: Install PSScriptAnalyzer
+        run: Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.23.0 -Force -SkipPublisherCheck -Verbose
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Check scripts
+        run: |
+          $rc = 0
+          $files = Get-ChildItem -Path . -Recurse -File -Filter *.ps1
+          foreach ($file in $files) {
+            Write-Host -Object "# $($file.Name)... " -NoNewline
+            $records = Invoke-ScriptAnalyzer -Path $file -ExcludeRule PSAvoidUsingWriteHost,PSUseShouldProcessForStateChangingFunctions,PSUseSingularNouns
+            if (-not($records)) {
+              Write-Host -Object 'ok.'
+            } else {
+              $rc = 1
+              Write-Host -Object 'ERRORS!'
+              foreach ($record in $records) {
+                Write-Host -Object "  - line $($record.Line): $($record.RuleName))`n    $($record.Message)`n"
+              }
+              Write-Host -Object ''
+            }
+          }
+          exit $rc
   exe:
     name: ${{ matrix.bits}}-bit ${{ matrix.link }} executables
+    needs:
+      - test-bash-scripts
+      - test-pwsh-scripts
     runs-on: windows-2022
     strategy:
       matrix:
