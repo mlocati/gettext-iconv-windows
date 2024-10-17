@@ -25,14 +25,88 @@ function Export-Variable()
     "$Name=$Value" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 }
 
+function ConvertTo-Version()
+{
+    [OutputType([Version])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateLength(1, [int]::MaxValue)]
+        [string] $Version
+    )
+    if ($Version -match '^[0-9]+(\.[0-9]+)+') {
+        return [Version]$matches[0]
+    }
+    throw "Invalid Version: '$Version'"
+}
+
+function Resolve-TPVersion()
+{
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [Version] $Version,
+        [Parameter(Mandatory = $true)]
+        [string[]] $TPVersions
+    )
+    $sortedTPVersions = $TPVersions | Sort-Object -Property { ConvertTo-Version  -Version $_ } -Descending
+    foreach ($tpVersion in $sortedTPVersions) {
+        $cmp = ConvertTo-Version -Version $tpVersion
+        if ($Version -ge $cmp) {
+            if ($tpVersion -eq $sortedTPVersions[0]) {
+                return 'latest'
+            }
+            return $tpVersion
+        }
+    }
+    return $sortedTPVersions[-1]
+}
+
 if (-not($env:ICONV_VERSION)) {
     throw 'Missing ICONV_VERSION environment variable'
 }
+$iconvVersion = ConvertTo-Version -Version $env:ICONV_VERSION
+$iconvTPVersion = Resolve-TPVersion -Version $iconvVersion -TPVersions @(
+    '1.12',
+    '1.15-pre1',
+    '1.17-pre1'
+)
+
 if (-not($env:GETTEXT_VERSION)) {
     throw 'Missing GETTEXT_VERSION environment variable'
 }
-$gettextVersionNumeric = $env:GETTEXT_VERSION -replace '[a-z]+$',''
-$gettextVersionObject = [Version]$gettextVersionNumeric
+$gettextVersion = ConvertTo-Version -Version $env:GETTEXT_VERSION
+$gettextTPVersion = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
+    '0.10.35',
+    '0.10.38',
+    '0.10.39',
+    '0.11.2',
+    '0.11.5',
+    '0.12-pre1',
+    '0.12.1',
+    '0.13-pre1',
+    '0.13.1',
+    '0.14',
+    '0.14.5',
+    '0.15-pre5',
+    '0.16',
+    '0.16.2-pre5',
+    '0.17',
+    '0.18',
+    '0.18.2',
+    '0.18.3',
+    '0.19-rc1',
+    '0.19.3',
+    '0.19.4-rc1',
+    '0.19.4.73',
+    '0.19.6.43',
+    '0.19.7-rc1',
+    '0.19.8-rc1',
+    '0.20-rc1',
+    '0.20.2',
+    '0.21',
+    '0.22',
+    '0.23-pre1'
+)
 
 $absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
 $match = Select-String -InputObject $absoluteInstalledPath -Pattern '^([A-Za-z]):(\\.*?)\\?$'
@@ -128,16 +202,17 @@ switch ($Sign) {
 $gettextIgnoreTestsC = @()
 # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
 $gettextIgnoreTestsC += 'gettext-tools/gnulib-tests/test-asyncsafe-spin2.c'
-if ($gettextVersionObject -le [Version]'0.22.5') {
+if ($gettextVersion -le [Version]'0.22.5') {
     # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
     $gettextIgnoreTestsC += 'gettext-tools/gnulib-tests/test-getopt-gnu.c gettext-tools/gnulib-tests/test-getopt-posix.c'
 }
 
 $gettextXFailTests = @()
-if ($gettextVersionObject -le [Version]'0.22.5') {
+if ($gettextVersion -le [Version]'0.22.5') {
     # see https://savannah.gnu.org/bugs/?66232
     $gettextXFailTests += 'msgexec-1 msgexec-3 msgexec-4 msgexec-5 msgexec-6 msgfilter-6 msgfilter-7 msginit-3'
 }
+
 
 class GnuUrlPrefixer
 {
@@ -236,7 +311,9 @@ Export-Variable -Name 'gettext-ignore-tests-c' -Value $($gettextIgnoreTestsC -jo
 Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests -join ' ')
 Export-Variable -Name 'signpath-signing-policy' -Value $signpathSigningPolicy
 Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
-Export-Variable -Name 'gettext-peversion-numeric' -Value $gettextVersionNumeric
+Export-Variable -Name 'gettext-peversion-numeric' -Value $gettextVersion.ToString()
+Export-Variable -Name 'iconv-tp-version' -Value $iconvTPVersion
+Export-Variable -Name 'gettext-tp-version' -Value $gettextTPVersion
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
