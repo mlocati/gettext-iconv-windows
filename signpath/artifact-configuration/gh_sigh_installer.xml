@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<artifact-configuration
+    xmlns="http://signpath.io/artifact-configuration/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://signpath.io/artifact-configuration/v1 https://app.signpath.io/Web/artifact-configuration/v1.xsd"
+>
+    <zip-file>
+        <pe-file
+            path="*.exe"
+            min-matches="1"
+            max-matches="1"
+            product-name="gettext + iconv                                             "
+            product-version="1.0                                               "
+        >
+            <authenticode-sign />
+        </pe-file>
+    </zip-file>
+</artifact-configuration>
