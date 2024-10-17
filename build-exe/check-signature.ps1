@@ -1,5 +1,7 @@
 # Script that checks if a file (or the files in a directory) is signed
 
+[Diagnostics.CodeAnalysis.SuppressMessage('PSReviewUnusedParameter', 'CanBeInvalid', Justification = 'False positive as rule does not scan child scopes')]
+
 param (
     [Parameter(Mandatory = $true)]
     [ValidateLength(1, [int]::MaxValue)]

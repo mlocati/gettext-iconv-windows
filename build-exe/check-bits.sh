@@ -14,8 +14,7 @@ set -o pipefail
 
 BITS="${1:-}"
 case "$BITS" in
-    32 | 64)
-        ;;
+    32 | 64) ;;
     '')
         echo 'Missing bitness'
         exit 1
@@ -64,7 +63,7 @@ checkBits()
             fi
             echo 'OK'
             ;;
-        PE32\+\ executable\ \(console\)\ x86-64*)
+        PE32+\ executable\ \(console\)\ x86-64*)
             printf '64-bit exe (console): '
             if [ $BITS -ne 64 ]; then
                 echo 'INVALID'
@@ -72,7 +71,7 @@ checkBits()
             fi
             echo 'OK'
             ;;
-        PE32\+\ executable\ \(GUI\)\ x86-64*)
+        PE32+\ executable\ \(GUI\)\ x86-64*)
             printf '64-bit exe (GUI): '
             if [ $BITS -ne 64 ]; then
                 echo 'INVALID'
