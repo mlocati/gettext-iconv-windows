@@ -367,6 +367,10 @@ switch ($env:GETTEXT_VERSION) {
         # see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00039.html
         $gettextSourceUrl = "$($gnuUrlPrefixer.GetAlphaUrlPrefix())/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
     }
+    '0.23-pre1' {
+        # see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00039.html
+        $gettextSourceUrl = "$($gnuUrlPrefixer.GetAlphaUrlPrefix())/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
+    }
     default {
         $gettextSourceUrl = "$($gnuUrlPrefixer.GetReleaseUrlPrefix())/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
     }

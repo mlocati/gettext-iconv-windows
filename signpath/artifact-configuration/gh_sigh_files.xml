@@ -20,29 +20,29 @@
             <include path="bin/iconv.exe" min-matches="1" max-matches="1" product-name="iconv: character set conversion program" product-version="${iconvPEVersion}" />
             <include path="bin/libiconv-*.dll" min-matches="0" max-matches="1" product-name="libiconv: character set conversion library" product-version="${iconvPEVersion}" />
             <!-- gettext -->
-            <include path="bin/envsubst.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/gettext.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/envsubst.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/gettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/libgettextlib-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextLib}" product-version="${gettextPEVersionLibGettextLib}" />
             <include path="bin/libgettextsrc-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextSrc}" product-version="${gettextPEVersionLibGettextSrc}" />
             <include path="bin/libintl-*.dll" min-matches="0" max-matches="1" product-name="GNU libintl: accessing NLS message catalogs" product-version="${gettextPEVersionLibIntl}" />
             <include path="bin/libtextstyle-*.dll" min-matches="0" max-matches="1" product-name="GNU libtextstyle: Text styling library" product-version="${gettextPEVersionLibTextStyle}" />
-            <include path="bin/msgattrib.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msgcat.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msgcmp.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msgcomm.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msgconv.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msgen.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msgexec.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msgfilter.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msgfmt.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msggrep.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msginit.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msgmerge.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msgunfmt.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/msguniq.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/ngettext.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/recode-sr-latin.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/xgettext.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgattrib.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgcat.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgcmp.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgcomm.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgconv.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgen.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgexec.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgfilter.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgfmt.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msggrep.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msginit.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgmerge.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msgunfmt.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/msguniq.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/ngettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/recode-sr-latin.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/xgettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <!-- Since gettext 0.23 -->
             <include path="libexec/gettext/cldr-plurals.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <!-- Before gettext 0.23 -->
@@ -52,17 +52,6 @@
             <include path="lib/gettext/msgfmt.net.exe" min-matches="0" max-matches="1" product-name="" product-version="0.0.0.0" />
             <include path="lib/gettext/msgunfmt.net.exe" min-matches="0" max-matches="1" product-name="" product-version="0.0.0.0" />
             <include path="lib/GNU.Gettext.dll" min-matches="0" max-matches="1" product-name="" product-version="0.0.0.0" />
-            -->
-            <!-- MinGW-w64 -->
-            <!-- Excuded since we don't build them on our own
-            <include path="bin/libatomic-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
-            <include path="bin/libgcc_s_seh-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
-            <include path="bin/libgcc_s_sjlj-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
-            <include path="bin/libgomp-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
-            <include path="bin/libquadmath-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
-            <include path="bin/libssp-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
-            <include path="bin/libstdc++-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
-            <include path="bin/libwinpthread-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
             -->
             <for-each>
                 <authenticode-sign />
