@@ -169,6 +169,7 @@ jobs:
           --upgrade-also
           --no-shortcuts
           --no-admin
+          --verbose
       -
         name: Setup Cygwin environment
         run: |
