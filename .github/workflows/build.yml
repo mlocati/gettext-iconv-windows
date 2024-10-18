@@ -162,8 +162,28 @@ jobs:
             throw 'Invalid hash of downloaded cygwin installer'
           }
       -
-        name: Install Cygwin
+        name: Install Cygwin (1st attempt)
+        id: install-cygwin
         shell: cmd
+        timeout-minutes: 5
+        continue-on-error: true
+        run: >
+          C:\CygwinInstaller.exe
+          --root C:\cygwin
+          --local-package-dir C:\cygwin-packages
+          --packages ${{ steps.vars.outputs.cygwin-packages }}
+          --site ${{ steps.vars.outputs.cygwin-mirror }}
+          --only-site
+          --quiet-mode
+          --upgrade-also
+          --no-shortcuts
+          --no-admin
+          --verbose
+      -
+        name: Install Cygwin (2nd attempt)
+        shell: cmd
+        timeout-minutes: 10
+        if: steps.install-cygwin.outcome == 'failure' && steps.install-cygwin.conclusion == 'success'
         run: >
           C:\CygwinInstaller.exe
           --root C:\cygwin
