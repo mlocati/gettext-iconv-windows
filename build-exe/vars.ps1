@@ -121,17 +121,17 @@ $gettextTPVersion = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
     '0.22',
     '0.23-pre1'
 )
-$gettextPEVersionLibGettextLib = $env:GETTEXT_VERSION
 $gettextPENameLibGettextLib = 'GNU gettext utilities'
-$gettextPEVersionLibGettextSrc = $env:GETTEXT_VERSION
+$gettextPEVersionLibGettextLib = $env:GETTEXT_VERSION
 $gettextPENameLibGettextSrc = 'GNU gettext utilities'
+$gettextPEVersionLibGettextSrc = $env:GETTEXT_VERSION
 $gettextPEVersionLibIntl = $env:GETTEXT_VERSION
 $gettextPEVersionLibTextStyle = $env:GETTEXT_VERSION
 if ($gettextVersion -le [Version]'0.22.5') {
-    $gettextPEVersionLibGettextLib = ''
     $gettextPENameLibGettextLib = ''
-    $gettextPEVersionLibGettextSrc = ''
+    $gettextPEVersionLibGettextLib = ''
     $gettextPENameLibGettextSrc = ''
+    $gettextPEVersionLibGettextSrc = ''
 }
 switch ($env:GETTEXT_VERSION) {
     0.22.5a {
