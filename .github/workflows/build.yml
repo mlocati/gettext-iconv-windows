@@ -145,7 +145,7 @@ jobs:
           --root C:\cygwin
           --local-package-dir C:\cygwin-packages
           --packages ${{ steps.vars.outputs.cygwin-packages }}
-          --site http://mirrors.kernel.org/sourceware/cygwin/
+          --site ${{ steps.vars.outputs.cygwin-mirror }}
           --only-site
           --quiet-mode
           --upgrade-also

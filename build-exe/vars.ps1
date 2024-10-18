@@ -373,6 +373,28 @@ switch ($env:GETTEXT_VERSION) {
 }
 $gnuUrlPrefixer.WriteWarning()
 
+$cygwinMirror = ''
+foreach ($url in @(
+    'http://cygwin.cathedral-networks.org/',
+    'http://cygwin.mirror.constant.com/',
+    'http://mirror.cs.vt.edu/pub/cygwin/cygwin/',
+    'http://mirrors.kernel.org/sourceware/cygwin/'
+)) {
+    try {
+        $available = Invoke-WebRequest -Uri $url -Method Head -ConnectionTimeoutSeconds 3 -OperationTimeoutSeconds 5 -ErrorAction SilentlyContinue
+    } catch {
+        $available = $false
+    }
+    if ($available) {
+        $cygwinMirror = $url
+        break
+    }
+}
+if (-not($cygwinMirror)) {
+    throw 'Unable to reach any of the Cygwin mirrors'
+}
+
+Export-Variable -Name 'cygwin-mirror' -Value $cygwinMirror
 Export-Variable -Name 'cygwin-packages' -Value "wget,file,make,unzip,dos2unix,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
 Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
 Export-Variable -Name 'mingw-host' -Value $mingwHost
