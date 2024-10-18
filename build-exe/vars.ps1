@@ -61,6 +61,20 @@ function Resolve-TPVersion()
     return $sortedTPVersions[-1]
 }
 
+function ConvertTo-CygwinPath()
+{
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]] $WindowsPath
+    )
+    $match = Select-String -InputObject $WindowsPath -Pattern '^([A-Za-z]):(\\.*)$'
+    if (!$match) {
+        throw "Invalid value of WindowsPath '$WindowsPath'"
+    }
+    return '/cygdrive/' + $match.Matches.Groups[1].Value.ToLowerInvariant() + $match.Matches.Groups[2].Value.Replace('\', '/')
+}
+
 if (-not($env:ICONV_VERSION)) {
     throw 'Missing ICONV_VERSION environment variable'
 }
@@ -107,13 +121,34 @@ $gettextTPVersion = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
     '0.22',
     '0.23-pre1'
 )
+$gettextPEVersionLibGettextLib = $env:GETTEXT_VERSION
+$gettextPENameLibGettextLib = 'GNU gettext utilities'
+$gettextPEVersionLibGettextSrc = $env:GETTEXT_VERSION
+$gettextPENameLibGettextSrc = 'GNU gettext utilities'
+$gettextPEVersionLibIntl = $env:GETTEXT_VERSION
+$gettextPEVersionLibTextStyle = $env:GETTEXT_VERSION
+if ($gettextVersion -le [Version]'0.22.5') {
+    $gettextPEVersionLibGettextLib = ''
+    $gettextPENameLibGettextLib = ''
+    $gettextPEVersionLibGettextSrc = ''
+    $gettextPENameLibGettextSrc = ''
+}
+switch ($env:GETTEXT_VERSION) {
+    0.22.5a {
+        $gettextPEVersionLibIntl = '0.22.5'
+        $gettextPEVersionLibTextStyle = '0.22.5'
+    }
+    0.23-pre1 {
+        $gettextPEVersionLibTextStyle = '0.22.5'
+    }
+}
 
 $absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
 $match = Select-String -InputObject $absoluteInstalledPath -Pattern '^([A-Za-z]):(\\.*?)\\?$'
 if (!$match) {
     throw "Invalid value of InstalledPath '$InstalledPath' (resolved to '$absoluteInstalledPath')"
 }
-$cygwinInstalledPath = '/cygdrive/' + $match.Matches.Groups[1].Value.ToLowerInvariant() + $match.Matches.Groups[2].Value.Replace('\', '/')
+$cygwinInstalledPath = ConvertTo-CygwinPath -WindowsPath $absoluteInstalledPath.TrimEnd('\')
 
 switch ($Bits) {
     32 {
@@ -125,6 +160,18 @@ switch ($Bits) {
 }
 
 $mingwHost = "$architecture-w64-mingw32"
+
+$cygwinPath = @(
+    "$cygwinInstalledPath/bin",
+    "/usr/$mingwHost/bin",
+    "/usr/$mingwHost/sys-root/mingw/bin",
+    '/usr/sbin',
+    '/usr/bin',
+    '/sbin',
+    '/bin',
+    '/cygdrive/c/Windows/System32',
+    '/cygdrive/c/Windows'
+)
 
 # We use -fno-threadsafe-statics because:
 # - otherwise xgettext would use the the __cxa_guard_acquire and __cxa_guard_release functions of lib-stdc++
@@ -167,6 +214,32 @@ switch ($Link) {
     'static' {
         $configureArgs += '--disable-shared --enable-static'
     }
+}
+$gettextConfigureArgs = @(
+    '--disable-java',
+    '--disable-native-java',
+    '--disable-csharp',
+    '--disable-openmp',
+    '--disable-curses',
+    '--without-emacs',
+    '--with-included-libxml',
+    '--without-bzip2',
+    '--without-xz'
+)
+if ($gettextVersion -le [Version]'0.22.5') {
+    $gettextConfigureArgs += '--disable-csharp'
+} else {
+    $gettextConfigureArgs += '--enable-csharp=dotnet'
+    try {
+        $dotnetCommand = Get-Command -Name dotnet.exe
+    } catch {
+        $dotnetCommand = $null
+    }
+    if (-not($dotnetCommand) || -not($dotnetCommand.Path)) {
+        throw 'Failed to find dotnet.exe'
+    }
+    $dotnetCommandPath = (Get-Item -Path ($dotnetCommand.Path)).Directory.FullName
+    $cygwinPath += ConvertTo-CygwinPath -WindowsPath $dotnetCommandPath
 }
 
 if ($env:GITHUB_REPOSITORY -ne 'mlocati/gettext-iconv-windows') {
@@ -212,7 +285,6 @@ if ($gettextVersion -le [Version]'0.22.5') {
     # see https://savannah.gnu.org/bugs/?66232
     $gettextXFailTests += 'msgexec-1 msgexec-3 msgexec-4 msgexec-5 msgexec-6 msgfilter-6 msgfilter-7 msginit-3'
 }
-
 
 class GnuUrlPrefixer
 {
@@ -302,16 +374,22 @@ switch ($env:GETTEXT_VERSION) {
 $gnuUrlPrefixer.WriteWarning()
 
 Export-Variable -Name 'cygwin-packages' -Value "wget,file,make,unzip,dos2unix,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
-Export-Variable -Name 'cygwin-path' -Value "$cygwinInstalledPath/bin:/usr/$mingwHost/bin:/usr/$mingwHost/sys-root/mingw/bin:/usr/sbin:/usr/bin:/sbin:/bin:/cygdrive/c/Windows/System32:/cygdrive/c/Windows"
+Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
 Export-Variable -Name 'mingw-host' -Value $mingwHost
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
+Export-Variable -Name 'configure-args-gettext' -Value $($gettextConfigureArgs -join ' ')
 Export-Variable -Name 'iconv-source-url' -Value $iconvSourceUrl
 Export-Variable -Name 'gettext-source-url' -Value $gettextSourceUrl
 Export-Variable -Name 'gettext-ignore-tests-c' -Value $($gettextIgnoreTestsC -join ' ')
 Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests -join ' ')
 Export-Variable -Name 'signpath-signing-policy' -Value $signpathSigningPolicy
 Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
-Export-Variable -Name 'gettext-peversion-numeric' -Value $gettextVersion.ToString()
+Export-Variable -Name 'gettext-pename-libgettextlib' -Value $gettextPENameLibGettextLib
+Export-Variable -Name 'gettext-peversion-libgettextlib' -Value $gettextPEVersionLibGettextLib
+Export-Variable -Name 'gettext-pename-libgettextsrc' -Value $gettextPENameLibGettextSrc
+Export-Variable -Name 'gettext-peversion-libgettextsrc' -Value $gettextPEVersionLibGettextSrc
+Export-Variable -Name 'gettext-peversion-libintl' -Value $gettextPEVersionLibIntl
+Export-Variable -Name 'gettext-peversion-libtextstyle' -Value $gettextPEVersionLibTextStyle
 Export-Variable -Name 'iconv-tp-version' -Value $iconvTPVersion
 Export-Variable -Name 'gettext-tp-version' -Value $gettextTPVersion
 

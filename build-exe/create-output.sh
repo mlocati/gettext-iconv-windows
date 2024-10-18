@@ -45,7 +45,7 @@ copyFile()
             local bytesPre=$(stat -c%s "$destinationPath")
             bytesSaved=$((bytesPre - bytesPre))
             if [ $bytesSaved -eq 0 ]; then
-                printf 'done (no bytes saved out of %s)\n' $bytesPre
+                printf 'done\n' $bytesPre
             else
                 printf 'done (%s bytes saved out of %s)\n' $bytesSaved $bytesPre
             fi
@@ -79,7 +79,7 @@ if [ ! -d "$SOURCE" ]; then
 fi
 DESTINATION="${2:-}"
 DESTINATION="${DESTINATION%/}"
-if [ -z "$SOURCE" ]; then
+if [ -z "$DESTINATION" ]; then
     echo 'Missing 2nd argument (destination directory)'
     exit 1
 fi
@@ -95,23 +95,48 @@ fi
 
 mkdir -p "$DESTINATION/share/gettext"
 
-for i in $(find "$SOURCE" -maxdepth 1 -type f -name license*.txt); do
+find "$SOURCE" -maxdepth 1 -type f -name license*.txt -print0 | while IFS= read -r -d '' i; do
     copyFile "$i" text
 done
-for i in $(find "$SOURCE/bin/" -name '*.exe' -o -name '*.dll'); do
+find "$SOURCE/bin/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while IFS= read -r -d '' i; do
     copyFile "$i" binary
 done
+if [ -d "$SOURCE/lib/" ]; then
+    find "$SOURCE/lib/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while IFS= read -r -d '' i; do
+        copyFile "$i" binary
+    done
+fi
+if [ -d "$SOURCE/libexec/" ]; then
+    find "$SOURCE/libexec/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while IFS= read -r -d '' i; do
+        case "$i" in
+            "$SOURCE/libexec/gettext/cldr-plurals.exe")
+                copyFile "$i" binary
+                ;;
+            "$SOURCE/libexec/gettext/hostname.exe" | "$SOURCE/libexec/gettext/urlget.exe") ;;
+            *)
+                printf 'Unrecognized binary: %s\n' "$i"
+                ;;
+        esac
+    done
+fi
 if [ -f "$SOURCE/lib/charset.alias" ]; then
     copyFile "$SOURCE/lib/charset.alias"
 fi
-for i in $(find "$SOURCE/share/doc" -maxdepth 2 -type f ! -iname '*.3.html' ! -iname 'autopoint.1.html' ! -iname 'gettextize.1.html'); do
+find "$SOURCE/share/doc" -maxdepth 2 -type f ! -iname '*.3.html' ! -iname 'autopoint.1.html' ! -iname 'gettextize.1.html' -print0 | while IFS= read -r -d '' i; do
     copyFile "$i" doc
 done
-if [ "${BUILD_ONLY_ICONV:-}" != y ]; then
-    copyFile "$SOURCE/lib/gettext/cldr-plurals.exe" binary bin/cldr-plurals.exe
+if [ -d "$SOURCE/share/locale" ]; then
     cp -r "$SOURCE/share/locale" "$DESTINATION/share/"
+fi
+if [ -d "$SOURCE/share/gettext/styles" ]; then
     cp -r "$SOURCE/share/gettext/styles" "$DESTINATION/share/gettext/"
+fi
+if [ -d $SOURCE/share/gettext-* ]; then
     cp -r $SOURCE/share/gettext-*/its "$DESTINATION/share/gettext"
+fi
+if [ -f "$SOURCE/share/gettext/msgunfmt.tcl" ]; then
     copyFile "$SOURCE/share/gettext/msgunfmt.tcl"
+fi
+if [ -f "$SOURCE/lib/gettext/common/supplemental/plurals.xml" ]; then
     copyFile "$SOURCE/lib/gettext/common/supplemental/plurals.xml"
 fi

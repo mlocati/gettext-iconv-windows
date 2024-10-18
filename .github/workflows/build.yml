@@ -288,16 +288,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          ../configure ${{ steps.vars.outputs.configure-args }} \
-            --disable-java \
-            --disable-native-java \
-            --disable-csharp \
-            --disable-openmp \
-            --disable-curses \
-            --without-emacs \
-            --with-included-libxml \
-            --without-bzip2 \
-            --without-xz
+          ../configure ${{ steps.vars.outputs.configure-args }} ${{ steps.vars.outputs.configure-args-gettext }}
       -
         name: Ignore gettext C tests
         if: env.BUILD_ONLY_ICONV != 'y' && steps.vars.outputs.gettext-ignore-tests-c
@@ -480,7 +471,12 @@ jobs:
           parameters: |
             iconvPEVersion: "${{ env.ICONV_VERSION }}"
             gettextPEVersion: "${{ env.GETTEXT_VERSION }}"
-            gettextPEVersionNumeric: "${{ steps.vars.outputs.gettext-peversion-numeric }}"
+            gettextPENameLibGettextLib: "${{ steps.vars.outputs.gettext-pename-libgettextlib }}"
+            gettextPEVersionLibGettextLib: "${{ steps.vars.outputs.gettext-peversion-libgettextlib }}"
+            gettextPENameLibGettextSrc: "${{ steps.vars.outputs.gettext-pename-libgettextsrc }}"
+            gettextPEVersionLibGettextSrc: "${{ steps.vars.outputs.gettext-peversion-libgettextsrc }}"
+            gettextPEVersionLibIntl: "${{ steps.vars.outputs.gettext-peversion-libintl }}"
+            gettextPEVersionLibTextStyle: "${{ steps.vars.outputs.gettext-peversion-libtextstyle }}"
       -
         name: Check signatures
         if: steps.vars.outputs.signpath-signing-policy

@@ -17,7 +17,7 @@ function Read-File()
 
     )
     if ($RelativeTo) {
-        $displayName = $Path.FullName.Substring($RelativeTo.FullName.Length + 1)
+        $displayName = $Path.FullName.Substring($RelativeTo.FullName.Length + 1).Replace('\', '/')
     } else {
         $displayName = $Path.Name
     }
@@ -31,10 +31,10 @@ ${displayName}:
 "@
 }
 
+$Path = $Path.TrimEnd('/').TrimEnd('\')
 $parent = Get-Item -LiteralPath $Path
 if ($parent.PSIsContainer) {
     $files = Get-ChildItem -Path $Path -Recurse -File -Include *.exe,*.dll
-    $files
     foreach ($file in $files) {
         Read-File -Path $file -RelativeTo $parent
     }
