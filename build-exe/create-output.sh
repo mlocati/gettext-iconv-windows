@@ -103,18 +103,20 @@ find "$SOURCE/bin/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while
 done
 if [ -d "$SOURCE/lib/" ]; then
     find "$SOURCE/lib/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while IFS= read -r -d '' i; do
-        copyFile "$i" binary
+        case "$i" in
+            */hostname.exe | */urlget.exe) ;;
+            *)
+                copyFile "$i" binary
+                ;;
+        esac
     done
 fi
 if [ -d "$SOURCE/libexec/" ]; then
     find "$SOURCE/libexec/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while IFS= read -r -d '' i; do
         case "$i" in
-            "$SOURCE/libexec/gettext/cldr-plurals.exe")
-                copyFile "$i" binary
-                ;;
-            "$SOURCE/libexec/gettext/hostname.exe" | "$SOURCE/libexec/gettext/urlget.exe") ;;
+            */hostname.exe | */urlget.exe) ;;
             *)
-                printf 'Unrecognized binary: %s\n' "$i"
+                copyFile "$i" binary
                 ;;
         esac
     done
