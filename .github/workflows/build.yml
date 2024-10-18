@@ -163,7 +163,7 @@ jobs:
           }
       -
         name: Install Cygwin (1st attempt)
-        id: install-cygwin
+        id: install-cygwin-1
         shell: cmd
         timeout-minutes: 5
         continue-on-error: true
@@ -184,9 +184,31 @@ jobs:
           --verbose
       -
         name: Install Cygwin (2nd attempt)
+        id: install-cygwin-2
         shell: cmd
         timeout-minutes: 10
-        if: steps.install-cygwin.outcome == 'failure' && steps.install-cygwin.conclusion == 'success'
+        continue-on-error: true
+        if: steps.install-cygwin-1.outcome == 'failure' && steps.install-cygwin-1.conclusion == 'success'
+        run: >
+          C:\CygwinInstaller.exe
+          --root C:\cygwin
+          --local-package-dir C:\cygwin-packages
+          --packages ${{ steps.vars.outputs.cygwin-packages }}
+          --site ${{ steps.vars.outputs.cygwin-mirror }}
+          --only-site
+          --quiet-mode
+          --upgrade-also
+          --no-shortcuts
+          --no-admin
+          --no-replaceonreboot
+          --no-version-check
+          --no-write-registry
+          --verbose
+      -
+        name: Install Cygwin (3rd attempt)
+        shell: cmd
+        continue-on-error: true
+        if: steps.install-cygwin-2.outcome == 'failure' && steps.install-cygwin-2.conclusion == 'success'
         run: >
           C:\CygwinInstaller.exe
           --root C:\cygwin
