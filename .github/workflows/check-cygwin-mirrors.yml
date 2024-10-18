@@ -1,0 +1,44 @@
+name: Check Cygwin mirrors
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-mirrors:
+    name: Check Cygwin mirrors
+    runs-on: windows-latest
+    steps:
+      -
+        name: Check
+        run: |
+          $list = $(Invoke-WebRequest -Uri https://cygwin.com/mirrors.lst).ToString()
+          $lines = $list -split "`r`n|`n"
+          $hosts = @()
+          foreach ($line in $lines) {
+              if (-not($line)) {
+                  continue
+              }
+              $url, $name, $continent, $country, $flag = $line -split ';'
+              $match = Select-String -InputObject $url -Pattern '^(?<proto>https?)://(?<host>[^:/]+)(?<port>:\d+)?($|/)'
+              if (-not($match)) {
+                  continue
+              }
+              if ($match.Matches[0].Groups['port'] -and $match.Matches[0].Groups['port'].Value) {
+                  $port = $match.Matches[0].Groups['port'].Value
+              } else {
+                  $port = $match.Matches[0].Groups['proto'].Value -eq 'http' ? 80 : 443;
+              }
+              try {
+                  $conn = Test-Connection -TargetName $match.Matches[0].Groups['host'].Value -Count 1 -TimeoutSeconds 1 -TcpPort $port -Detailed
+              } catch {
+                  $conn = $null
+              }
+              if ($conn -and $conn.Status -eq 'Success') {
+                  $latency = $conn.Latency
+              } else {
+                  $latency = $null
+              }
+              $hosts += [pscustomobject] @{'Url' = $url; 'Latency' = $latency}
+          }
+          $hosts = $hosts | Sort-Object -Property @{Expression={if ($_.Latency -eq $null) { [int]::MaxValue } else { $_.Latency }}}, 'Url'
+          $hosts
