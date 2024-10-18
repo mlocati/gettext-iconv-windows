@@ -218,7 +218,6 @@ switch ($Link) {
 $gettextConfigureArgs = @(
     '--disable-java',
     '--disable-native-java',
-    '--disable-csharp',
     '--disable-openmp',
     '--disable-curses',
     '--without-emacs',
