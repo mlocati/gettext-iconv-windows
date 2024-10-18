@@ -5,12 +5,14 @@
     xsi:schemaLocation="http://signpath.io/artifact-configuration/v1 https://app.signpath.io/Web/artifact-configuration/v1.xsd"
 >
     <parameters>
-        <!-- Example: 1.17 -->
         <parameter name="iconvPEVersion" required="true" />
-        <!-- Example: 0.22.5a -->
         <parameter name="gettextPEVersion" required="true" />
-        <!-- Example: 0.22.5 -->
-        <parameter name="gettextPEVersionNumeric" required="true" />
+        <parameter name="gettextPENameLibGettextLib" required="true" />
+        <parameter name="gettextPEVersionLibGettextLib" required="true" />
+        <parameter name="gettextPENameLibGettextSrc" required="true" />
+        <parameter name="gettextPEVersionLibGettextSrc" required="true" />
+        <parameter name="gettextPEVersionLibIntl" required="true" />
+        <parameter name="gettextPEVersionLibTextStyle" required="true" />
     </parameters>
     <zip-file>
         <pe-file-set>
@@ -18,13 +20,12 @@
             <include path="bin/iconv.exe" min-matches="1" max-matches="1" product-name="iconv: character set conversion program" product-version="${iconvPEVersion}" />
             <include path="bin/libiconv-*.dll" min-matches="0" max-matches="1" product-name="libiconv: character set conversion library" product-version="${iconvPEVersion}" />
             <!-- gettext -->
-            <include path="bin/cldr-plurals.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/envsubst.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/gettext.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/libasprintf-*.dll" min-matches="0" max-matches="1" product-name="GNU libasprintf: automatic formatted output" product-version="1.0" />
-            <include path="bin/libgettextpo-*.dll" min-matches="0" max-matches="1" product-name="GNU libgettextpo: public API for PO files" product-version="${gettextPEVersion}" />
-            <include path="bin/libintl-*.dll" min-matches="0" max-matches="1" product-name="GNU libintl: accessing NLS message catalogs" product-version="${gettextPEVersionNumeric}" />
-            <include path="bin/libtextstyle-*.dll" min-matches="0" max-matches="1" product-name="GNU libtextstyle: Text styling library" product-version="${gettextPEVersionNumeric}" />
+            <include path="bin/libgettextlib-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextLib}" product-version="${gettextPEVersionLibGettextLib}" />
+            <include path="bin/libgettextsrc-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextSrc}" product-version="${gettextPEVersionLibGettextSrc}" />
+            <include path="bin/libintl-*.dll" min-matches="0" max-matches="1" product-name="GNU libintl: accessing NLS message catalogs" product-version="${gettextPEVersionLibIntl}" />
+            <include path="bin/libtextstyle-*.dll" min-matches="0" max-matches="1" product-name="GNU libtextstyle: Text styling library" product-version="${gettextPEVersionLibTextStyle}" />
             <include path="bin/msgattrib.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/msgcat.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/msgcmp.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
@@ -42,10 +43,12 @@
             <include path="bin/ngettext.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/recode-sr-latin.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/xgettext.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <!-- Missing metadata: see https://savannah.gnu.org/bugs/?66267
-            <include path="bin/libcharset-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
-            <include path="bin/libgettextlib-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
-            <include path="bin/libgettextsrc-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
+            <include path="libexec/gettext/cldr-plurals.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <!-- Missing metadata: see https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00058.html
+            <include path="lib/gettext/GNU.Gettext.dll" min-matches="0" max-matches="1" product-name="" product-version="0.0.0.0" />
+            <include path="lib/gettext/msgfmt.net.exe" min-matches="0" max-matches="1" product-name="" product-version="0.0.0.0" />
+            <include path="lib/gettext/msgunfmt.net.exe" min-matches="0" max-matches="1" product-name="" product-version="0.0.0.0" />
+            <include path="lib/GNU.Gettext.dll" min-matches="0" max-matches="1" product-name="" product-version="0.0.0.0" />
             -->
             <!-- MinGW-w64 -->
             <!-- Excuded since we don't build them on our own

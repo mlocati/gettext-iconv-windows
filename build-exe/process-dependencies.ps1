@@ -130,37 +130,49 @@ function Get-ImportedFunctions()
 class Binary
 {
     [System.IO.FileInfo] $File
+    [string] $RelativePath
     [string[]] $Dependencies
-    Binary([System.IO.FileInfo]$file)
+    Binary([System.IO.FileInfo]$file, [System.IO.DirectoryInfo]$root)
     {
         $this.File = $file
+        if (!$file.FullName.StartsWith($root.FullName + [System.IO.Path]::DirectorySeparatorChar)) {
+            throw "File out of path: $($file.FullName)"
+        }
+        $this.RelativePath = $file.FullName.Substring($root.FullName.Length + 1).Replace([System.IO.Path]::DirectorySeparatorChar, '/')
         $this.Dependencies = Get-Dependencies -BinaryPath $this.File.FullName
     }
 }
 
 class Binaries
 {
+    [System.IO.DirectoryInfo] $Root;
+
     [string[]] $MinGWFilesAdded = @()
 
     [Binary[]] $Items
 
-    Binaries()
+    Binaries([string] $Path)
     {
+        $this.Root = Get-Item -LiteralPath $Path
         $this.Items = @()
+        foreach ($file in Get-ChildItem -LiteralPath $this.Root.FullName -Recurse -File -Include *.exe,*.dll) {
+            $binary = [Binary]::new($file, $this.Root)
+            $this.Add($binary)
+        }
     }
 
-    [void] Add([Binary]$binary)
+    hidden [void] Add([Binary]$binary)
     {
-        if ($this.GetBinaryByName($binary.File.Name)) {
-            throw "Duplicated binary name $($binary.File.Name)"
+        if ($this.GetBinaryByRelativePath($binary.RelativePath)) {
+            throw "Duplicated binary name $($binary.RelativePath)"
         }
         $this.Items += $binary
     }
 
-    [Binary] GetBinaryByName([string] $name)
+    [Binary] GetBinaryByRelativePath([string] $relativePath)
     {
         foreach ($item in $this.Items) {
-            if ($item.File.Name -eq $name) {
+            if ($relativePath -eq $item.RelativePath) {
                 return $item
             }
         }
@@ -172,7 +184,7 @@ class Binaries
         do {
             $repeat = $false
             foreach ($binary in $this.Items) {
-                if ($binary.File.Extension -ne '.dll') {
+                if (-not($binary.RelativePath -match '^bin/[^/]+\.dll$')) {
                     continue
                 }
                 $name = $binary.File.Name.ToLowerInvariant()
@@ -184,7 +196,7 @@ class Binaries
                     }
                 }
                 if ($unused) {
-                    Write-Host -Object "$($binary.File.Name) is never used: deleting it"
+                    Write-Host -Object "$($binary.RelativePath) is never used: deleting it"
                     $binary.File.Delete()
                     $this.Items = $this.Items | Where-Object { $_ -ne $binary }
                     $repeat = $true
@@ -204,7 +216,7 @@ class Binaries
                     continue
                 }
                 $checkedDeps += $dependency
-                if ($this.GetBinaryByName($dependency)) {
+                if ($this.GetBinaryByRelativePath("bin/$dependency")) {
                     continue
                 }
                 $mingwDllPath = Join-Path -Path $mingwBinPath -ChildPath $dependency
@@ -212,10 +224,10 @@ class Binaries
                     continue
                 }
                 Write-Host -Object "Adding MinGW-w64 DLL $dependency"
-                Copy-Item -LiteralPath $mingwDllPath -Destination $binary.File.Directory
-                $newFilePath = Join-Path -Path $binary.File.Directory -ChildPath $dependency
-                $newFile = Get-ChildItem -LiteralPath $newFilePath -File
-                $newBinary = [Binary]::new($newFile)
+                Copy-Item -LiteralPath $mingwDllPath -Destination $(Join-Path -Path $this.Root.FullName -ChildPath bin)
+                $newFilePath = Join-Path -Path $this.Root.FullName -ChildPath "bin/$dependency"
+                $newFile = Get-Item -LiteralPath $newFilePath
+                $newBinary = [Binary]::new($newFile, $this.Root)
                 $this.Add($newBinary)
                 $this.MinGWFilesAdded += $dependency
             }
@@ -224,9 +236,9 @@ class Binaries
 
     [void] Dump()
     {
-        $binaries = $this.Items | Sort-Object -Property {  $_.File.Name }
+        $binaries = $this.Items | Sort-Object -Property {  $_.RelativePath }
         foreach ($binary in $binaries) {
-            Write-Host -Object "Dependencies of $($binary.File.Name)"
+            Write-Host -Object "Dependencies of $($binary.RelativePath)"
             if ($binary.Dependencies) {
                 foreach ($dependency in $binary.Dependencies) {
                     Write-Host -Object "  - $dependency"
@@ -257,14 +269,7 @@ class Binaries
 
 $dumpbin = Find-Dumpbin
 $mingwBinPath = Join-Path -Path $MinGWPath -ChildPath 'sys-root\mingw\bin'
-$outputBinPath = Join-Path -Path $Path -ChildPath 'bin'
-$binaries = [Binaries]::new()
-foreach ($file in Get-ChildItem -LiteralPath $outputBinPath -Recurse -File) {
-    if ($file.Extension -eq '.exe' -or $file.Extension -eq '.dll') {
-        $binary = [Binary]::new($file)
-        $binaries.Add($binary)
-    }
-}
+$binaries = [Binaries]::new($Path)
 
 $binaries.RemoveUnusedDlls()
 $binaries.AddMingwDlls($mingwBinPath)
