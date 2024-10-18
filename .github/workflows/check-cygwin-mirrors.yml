@@ -38,7 +38,7 @@ jobs:
               } else {
                   $latency = $null
               }
-              $hosts += [pscustomobject] @{'Url' = $url; 'Latency' = $latency}
+              $hosts += [pscustomobject] @{'Url' = $url; 'Latency' = $latency; 'Continent' = $continent; 'Country' = $country}
           }
           $hosts = $hosts | Sort-Object -Property @{Expression={if ($_.Latency -eq $null) { [int]::MaxValue } else { $_.Latency }}}, 'Url'
           $hosts
