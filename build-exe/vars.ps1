@@ -385,10 +385,14 @@ $gnuUrlPrefixer.WriteWarning()
 
 $cygwinMirror = ''
 foreach ($url in @(
-    'http://cygwin.cathedral-networks.org/',
-    'http://cygwin.mirror.constant.com/',
-    'http://mirror.cs.vt.edu/pub/cygwin/cygwin/',
-    'http://mirrors.kernel.org/sourceware/cygwin/'
+    # The Linux Kernel Archives (North America / United States)
+    'https://mirrors.kernel.org/sourceware/cygwin/',
+    # University of Kent (Europe / UK)
+    'https://www.mirrorservice.org/sites/sourceware.org/pub/cygwin/',
+    # Oregon State University (North America / United States)
+    'https://cygwin.osuosl.org/',
+    # Manitoba UNIX User Group (North America / Canada)
+    'https://muug.ca/mirror/cygwin/'
 )) {
     try {
         $available = Invoke-WebRequest -Uri $url -Method Head -ConnectionTimeoutSeconds 3 -OperationTimeoutSeconds 5 -ErrorAction SilentlyContinue
