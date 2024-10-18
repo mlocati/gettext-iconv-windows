@@ -36,12 +36,21 @@ fi
 checkBits()
 {
     local checkMe="$1"
+    local actualBits
+    case "$(basename "$checkMe")" in
+        GNU.Gettext.dll | msgfmt.net.exe | msgunfmt.net.exe)
+            actualBits=32
+            ;;
+        *)
+            actualBits=$BITS
+            ;;
+    esac
     printf 'Checking %s... ' "$checkMe"
     local info="$(file -bEh -- "$checkMe" | head -n1)"
     case "$info" in
         PE32\ executable\ \(console\)\ Intel\ 80386*)
             printf '32-bit exe (console): '
-            if [ $BITS -ne 32 ]; then
+            if [ $actualBits -ne 32 ]; then
                 echo 'INVALID'
                 return 1
             fi
@@ -49,7 +58,7 @@ checkBits()
             ;;
         PE32\ executable\ \(GUI\)\ Intel\ 80386*)
             printf '32-bit exe (GUI): '
-            if [ $BITS -ne 32 ]; then
+            if [ $actualBits -ne 32 ]; then
                 echo 'INVALID'
                 return 1
             fi
@@ -57,7 +66,7 @@ checkBits()
             ;;
         PE32\ executable\ \(DLL\)\ \(console\)\ Intel\ 80386*)
             printf '32-bit dll: '
-            if [ $BITS -ne 32 ]; then
+            if [ $actualBits -ne 32 ]; then
                 echo 'INVALID'
                 return 1
             fi
@@ -65,7 +74,7 @@ checkBits()
             ;;
         PE32+\ executable\ \(console\)\ x86-64*)
             printf '64-bit exe (console): '
-            if [ $BITS -ne 64 ]; then
+            if [ $actualBits -ne 64 ]; then
                 echo 'INVALID'
                 return 1
             fi
@@ -73,7 +82,7 @@ checkBits()
             ;;
         PE32+\ executable\ \(GUI\)\ x86-64*)
             printf '64-bit exe (GUI): '
-            if [ $BITS -ne 64 ]; then
+            if [ $actualBits -ne 64 ]; then
                 echo 'INVALID'
                 return 1
             fi
@@ -81,7 +90,7 @@ checkBits()
             ;;
         PE32+\ executable\ \(DLL\)\ \(console\)\ x86-64*)
             printf '64-bit dll: '
-            if [ $BITS -ne 64 ]; then
+            if [ $actualBits -ne 64 ]; then
                 echo 'INVALID'
                 return 1
             fi
