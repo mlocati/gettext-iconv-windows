@@ -462,7 +462,7 @@ jobs:
           organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
           project-slug: gettext-iconv-windows
           signing-policy-slug: '${{ steps.vars.outputs.signpath-signing-policy }}'
-          artifact-configuration-slug: gh_sigh_files
+          artifact-configuration-slug: ${{ steps.vars.outputs.signpath-artifactconfiguration-files }}
           github-artifact-id: ${{ steps.upload-files-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: files-signed
@@ -542,7 +542,7 @@ jobs:
           organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
           project-slug: gettext-iconv-windows
           signing-policy-slug: '${{ steps.vars.outputs.signpath-signing-policy }}'
-          artifact-configuration-slug: gh_sigh_installer
+          artifact-configuration-slug: gh_sign_installer
           github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: installer-signed

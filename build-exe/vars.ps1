@@ -272,6 +272,12 @@ switch ($Sign) {
     }
 }
 
+if ($gettextVersion -le [Version]'0.22.5') {
+    $signpathArtifactConfigurationFiles = 'gh_sign_files-0.22'
+} else {
+    $signpathArtifactConfigurationFiles = 'gh_sign_files-0.23'
+}
+
 $gettextIgnoreTestsC = @()
 # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
 $gettextIgnoreTestsC += 'gettext-tools/gnulib-tests/test-asyncsafe-spin2.c'
@@ -409,6 +415,7 @@ Export-Variable -Name 'gettext-source-url' -Value $gettextSourceUrl
 Export-Variable -Name 'gettext-ignore-tests-c' -Value $($gettextIgnoreTestsC -join ' ')
 Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests -join ' ')
 Export-Variable -Name 'signpath-signing-policy' -Value $signpathSigningPolicy
+Export-Variable -Name 'signpath-artifactconfiguration-files' -Value $signpathArtifactConfigurationFiles
 Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
 Export-Variable -Name 'gettext-pename-libgettextlib' -Value $gettextPENameLibGettextLib
 Export-Variable -Name 'gettext-peversion-libgettextlib' -Value $gettextPEVersionLibGettextLib
