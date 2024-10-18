@@ -217,7 +217,7 @@ jobs:
           mkdir installer-signed
           cp build-exe/license-for-distribution.txt installed/license.txt
           mkdir -p "$HOME"
-          printf '\nPATH=${{ steps.vars.outputs.cygwin-path }}\nexport PATH\n' >>$HOME/.bash_profile
+          printf "\nPATH='${{ steps.vars.outputs.cygwin-path }}'\nexport PATH\n" >>$HOME/.bash_profile
       -
         name: Dump Cygwin environment
         run: |
