@@ -152,33 +152,14 @@ jobs:
         shell: pwsh
         run: ./build-exe/vars.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -InstalledPath installed -Sign '${{ github.event.inputs.sign }}'
       -
-        name: Download Cygwin installer
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri https://cygwin.com/setup-x86_64.exe -OutFile setup-x86_64.exe
-          $expectedHash = (Invoke-WebRequest -Uri https://cygwin.com/sha512.sum).ToString()
-          $actualHash = Get-FileHash -LiteralPath setup-x86_64.exe -Algorithm SHA512
-          if (-not($expectedHash.ToLower().Contains("${$actualHash.Hash.ToLower()}  setup-x86_64.exe"))) {
-            throw 'Invalid hash of downloaded cygwin installer'
-          }
-      -
         name: Install Cygwin
-        shell: cmd
+        uses: cygwin/cygwin-install-action@v4
         timeout-minutes: 60
-        run: >
-          .\setup-x86_64.exe
-          --root C:\cygwin
-          --local-package-dir C:\cygwin-packages
-          --packages ${{ steps.vars.outputs.cygwin-packages }}
-          --site ${{ steps.vars.outputs.cygwin-mirror }}
-          --only-site
-          --quiet-mode
-          --no-shortcuts
-          --no-replaceonreboot
-          --no-version-check
-          --no-verify
-          --no-write-registry
-          --verbose
+        with:
+          packages: ${{ steps.vars.outputs.cygwin-packages }}
+          install-dir: C:\cygwin
+          site: ${{ steps.vars.outputs.cygwin-mirror }}
+          add-to-path: false
       -
         name: Setup Cygwin environment
         run: |
