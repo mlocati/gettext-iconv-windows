@@ -407,6 +407,12 @@ if (-not($cygwinMirror)) {
     throw 'Unable to reach any of the Cygwin mirrors'
 }
 
+$cldrPluralWorks = 'yes'
+if ($Link -eq 'shared') {
+    # See https://savannah.gnu.org/bugs/?66356
+    $cldrPluralWorks = 'no'
+}
+
 Export-Variable -Name 'cygwin-mirror' -Value $cygwinMirror
 Export-Variable -Name 'cygwin-packages' -Value "wget,file,make,unzip,dos2unix,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
 Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
@@ -428,6 +434,7 @@ Export-Variable -Name 'gettext-peversion-libintl' -Value $gettextPEVersionLibInt
 Export-Variable -Name 'gettext-peversion-libtextstyle' -Value $gettextPEVersionLibTextStyle
 Export-Variable -Name 'iconv-tp-version' -Value $iconvTPVersion
 Export-Variable -Name 'gettext-tp-version' -Value $gettextTPVersion
+Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
