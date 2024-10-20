@@ -155,9 +155,9 @@ jobs:
         name: Download Cygwin installer
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri https://cygwin.com/setup-x86_64.exe -OutFile C:\CygwinInstaller.exe
+          Invoke-WebRequest -Uri https://cygwin.com/setup-x86_64.exe -OutFile setup-x86_64.exe
           $expectedHash = (Invoke-WebRequest -Uri https://cygwin.com/sha512.sum).ToString()
-          $actualHash = Get-FileHash -LiteralPath C:\CygwinInstaller.exe -Algorithm SHA512
+          $actualHash = Get-FileHash -LiteralPath setup-x86_64.exe -Algorithm SHA512
           if (-not($expectedHash.ToLower().Contains("${$actualHash.Hash.ToLower()}  setup-x86_64.exe"))) {
             throw 'Invalid hash of downloaded cygwin installer'
           }
@@ -166,7 +166,7 @@ jobs:
         shell: cmd
         timeout-minutes: 60
         run: >
-          C:\CygwinInstaller.exe
+          .\setup-x86_64.exe
           --root C:\cygwin
           --local-package-dir C:\cygwin-packages
           --packages ${{ steps.vars.outputs.cygwin-packages }}
