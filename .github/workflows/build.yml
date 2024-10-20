@@ -176,6 +176,7 @@ jobs:
           --no-shortcuts
           --no-replaceonreboot
           --no-version-check
+          --no-verify
           --no-write-registry
           --verbose
       -
