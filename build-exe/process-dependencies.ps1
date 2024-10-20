@@ -156,6 +156,9 @@ class Binaries
         $this.Root = Get-Item -LiteralPath $Path
         $this.Items = @()
         foreach ($file in Get-ChildItem -LiteralPath $this.Root.FullName -Recurse -File -Include *.exe,*.dll) {
+            if ($file.Extension -ne '.dll' -and $file.Extension -ne '.exe') {
+                continue;
+            }
             $binary = [Binary]::new($file, $this.Root)
             $this.Add($binary)
         }
