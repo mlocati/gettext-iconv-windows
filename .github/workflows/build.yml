@@ -491,6 +491,38 @@ jobs:
           }
           Write-Host "xgettext.exe correctly loaded the translations when LANGUAGE=$env:LANGUAGE`nIts localized output is`n$stdout"
       -
+        name: Check cldr-plurals
+        shell: pwsh
+        run: |
+          $pot = @'
+          msgid ""
+          msgstr ""
+          "Content-Type: text/plain; charset=UTF-8\n"
+          "MIME-Version: 1.0\n"
+          "Content-Transfer-Encoding: 8bit\n"
+
+          msgid "Hi"
+          msgstr ""
+          '@
+          $lang = 'zu'
+
+          Remove-Item -LiteralPath Env:GETTEXTCLDRDIR -ErrorAction SilentlyContinue
+          $po = $pot | & .\files-unsigned\bin\msginit.exe --input=- --output-file=- --locale="$lang"
+          $rule = $po -match "Plural-Forms:"
+          if ($rule) {
+            throw "Without GETTEXTCLDRDIR there shouldn't be a Plural-Forms header in the .po file for the locale $lang."
+          }
+          Write-Output -InputObject "As expected, without GETTEXTCLDRDIR there isn't a Plural-Forms header in the .po file for the locale $lang."
+          if ('${{ steps.vars.outputs.cldr-plural-works }}' -eq 'yes') {
+            $env:GETTEXTCLDRDIR = "$PWD\files-unsigned\lib\gettext"
+            $po = $pot | & .\files-unsigned\bin\msginit.exe --input=- --output-file=- --locale="$lang"
+            $rule = $po -match "Plural-Forms:"
+            if (-not($rule)) {
+              throw "With GETTEXTCLDRDIR there should be a Plural-Forms header in the .po file for the locale $lang, but there isn't."
+            }
+            Write-Output -InputObject "With GETTEXTCLDRDIR there is a Plural-Forms header ($rule) in the .po file for the locale $lang."
+          }
+      -
         name: Upload unsigned files
         if: steps.vars.outputs.signpath-signing-policy
         id: upload-files-unsigned
