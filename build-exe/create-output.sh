@@ -83,9 +83,9 @@ find "$SOURCE/bin/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while
     copyFile "$i"
 done
 if [ -d "$SOURCE/lib/" ]; then
-    find "$SOURCE/lib/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while IFS= read -r -d '' i; do
+    find "$SOURCE/lib/" -type f -print0 | while IFS= read -r -d '' i; do
         case "$i" in
-            */hostname.exe | */urlget.exe) ;;
+            *.a | *.la) ;;
             *)
                 copyFile "$i"
                 ;;
@@ -93,20 +93,22 @@ if [ -d "$SOURCE/lib/" ]; then
     done
 fi
 if [ -d "$SOURCE/libexec/" ]; then
-    find "$SOURCE/libexec/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while IFS= read -r -d '' i; do
-        case "$i" in
-            */hostname.exe | */urlget.exe) ;;
-            *)
-                copyFile "$i"
-                ;;
-        esac
+    find "$SOURCE/libexec/" -type f -print0 | while IFS= read -r -d '' i; do
+        copyFile "$i"
     done
 fi
 if [ -f "$SOURCE/lib/charset.alias" ]; then
     copyFile "$SOURCE/lib/charset.alias"
 fi
-find "$SOURCE/share/doc" -maxdepth 2 -type f ! -iname '*.3.html' ! -iname 'autopoint.1.html' ! -iname 'gettextize.1.html' -print0 | while IFS= read -r -d '' i; do
-    copyFile "$i" doc
+find "$SOURCE/share/doc" -type f ! -iname '*.3.html' -print0 | while IFS= read -r -d '' i; do
+    case "$i" in
+        */autopoint.1.html) ;;
+        */gettextize.1.html) ;;
+        */doc/gettext/examples/*) ;;
+        *)
+            copyFile "$i" doc
+            ;;
+    esac
 done
 if [ -d "$SOURCE/share/locale" ]; then
     cp -r "$SOURCE/share/locale" "$DESTINATION/share/"

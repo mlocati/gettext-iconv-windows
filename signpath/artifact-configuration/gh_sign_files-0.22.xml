@@ -42,6 +42,8 @@
             <include path="bin/recode-sr-latin.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/xgettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="lib/gettext/cldr-plurals.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="lib/gettext/hostname.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="lib/gettext/urlget.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <!-- Missing metadata: see https://savannah.gnu.org/bugs/?66267
             <include path="bin/libgettextlib-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextLib}" product-version="${gettextPEVersionLibGettextLib}" />
             <include path="bin/libgettextsrc-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextSrc}" product-version="${gettextPEVersionLibGettextSrc}" />
