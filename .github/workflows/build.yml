@@ -382,7 +382,7 @@ jobs:
           ls -al build-log
       -
         name: Copy built assets
-        run: ./build-exe/create-output.sh installed files-unsigned ${{ steps.vars.outputs.mingw-host }}-strip
+        run: ./build-exe/create-output.sh installed files-unsigned
       -
         name: Delete install directory
         run: rm -rf installed
