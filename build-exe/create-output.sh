@@ -6,8 +6,6 @@
 # Arguments:
 # $1: the directory containing the files created by the "make install-strip" calls
 # $2: the directory where the files should be copied to
-# $3: the strip command
-#
 
 set -o errexit
 set -o nounset
@@ -18,7 +16,7 @@ set -o pipefail
 #
 # Arguments:
 #  $1: the full path to the source file
-#  $2: special type (binary, text, doc). If omitted, no special handling will be performed
+#  $2: special type (text, doc). If omitted, no special handling will be performed
 #  $3: the relative path of the destination file (if omitted we'll calculate it)
 #
 copyFile()
@@ -38,18 +36,6 @@ copyFile()
     fi
     mkdir -p "$(dirname "$destinationPath")"
     case "$fileType" in
-        binary)
-            printf 'Copying binary file %s... ' "$relativePath"
-            local bytesPre=$(stat -c%s "$sourcePath")
-            "$STRIP_COMMAND" --strip-unneeded "$sourcePath" -o "$destinationPath"
-            local bytesPre=$(stat -c%s "$destinationPath")
-            bytesSaved=$((bytesPre - bytesPre))
-            if [ $bytesSaved -eq 0 ]; then
-                printf 'done\n' $bytesPre
-            else
-                printf 'done (%s bytes saved out of %s)\n' $bytesSaved $bytesPre
-            fi
-            ;;
         text)
             printf 'Copying text file %s (converting line endings)... ' "$relativePath"
             local unix2dosOutput
@@ -87,11 +73,6 @@ if [ ! -d "$DESTINATION" ]; then
     printf 'Destination directory (%s) not found\n' "$DESTINATION"
     exit 1
 fi
-STRIP_COMMAND="${3:-}"
-if [ -z "$STRIP_COMMAND" ]; then
-    echo 'Missing 3rd argument (strip command)'
-    exit 1
-fi
 
 mkdir -p "$DESTINATION/share/gettext"
 
@@ -99,14 +80,14 @@ find "$SOURCE" -maxdepth 1 -type f -name license*.txt -print0 | while IFS= read 
     copyFile "$i" text
 done
 find "$SOURCE/bin/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while IFS= read -r -d '' i; do
-    copyFile "$i" binary
+    copyFile "$i"
 done
 if [ -d "$SOURCE/lib/" ]; then
     find "$SOURCE/lib/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while IFS= read -r -d '' i; do
         case "$i" in
             */hostname.exe | */urlget.exe) ;;
             *)
-                copyFile "$i" binary
+                copyFile "$i"
                 ;;
         esac
     done
@@ -116,7 +97,7 @@ if [ -d "$SOURCE/libexec/" ]; then
         case "$i" in
             */hostname.exe | */urlget.exe) ;;
             *)
-                copyFile "$i" binary
+                copyFile "$i"
                 ;;
         esac
     done
