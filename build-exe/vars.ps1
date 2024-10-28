@@ -190,11 +190,11 @@ $configureArgs = @(
     # The strip command
     "STRIP='$mingwHost-strip'",
     # The C/C++ preprocessor flags
-    "CPPFLAGS='-I$cygwinInstalledPath/include -I/usr/$mingwHost/sys-root/mingw/include -g0 -O2'",
+    "CPPFLAGS='-I$cygwinInstalledPath/include -I/usr/$mingwHost/sys-root/mingw/include -DWINVER=0x0601 -D_WIN32_WINNT=0x0601'",
     # The flags for the C compiler
-    "CFLAGS=''",
+    "CFLAGS='-g0 -O2'",
     # The flags for the C++ compiler
-    "CXXFLAGS='-fno-threadsafe-statics'",
+    "CXXFLAGS='-g0 -O2 -fno-threadsafe-statics'",
     # The flags for the linker
     "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib'",
     "--host=$mingwHost",
