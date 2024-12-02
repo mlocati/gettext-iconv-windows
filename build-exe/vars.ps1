@@ -408,7 +408,7 @@ if (-not($cygwinMirror)) {
 }
 
 $cldrPluralWorks = 'yes'
-if ($Link -eq 'shared') {
+if ($Link -eq 'shared' -and $gettextVersion -lt [Version]'0.23') {
     # See https://savannah.gnu.org/bugs/?66356
     $cldrPluralWorks = 'no'
 }
@@ -435,7 +435,7 @@ Export-Variable -Name 'gettext-peversion-libtextstyle' -Value $gettextPEVersionL
 Export-Variable -Name 'iconv-tp-version' -Value $iconvTPVersion
 Export-Variable -Name 'gettext-tp-version' -Value $gettextTPVersion
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
-Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.23.0' ? 'true' : '')
+Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.23' ? 'true' : '')
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
