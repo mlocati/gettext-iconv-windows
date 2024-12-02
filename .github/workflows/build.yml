@@ -230,6 +230,11 @@ jobs:
           mkdir -p installed/lib/gettext/common/supplemental
           unzip -p src/downloads/cldr-$CLDR_VERSION.zip common/supplemental/plurals.xml >installed/lib/gettext/common/supplemental/plurals.xml
       -
+        name: Simplify CLDR plurals.xml
+        if: steps.vars.outputs.simplify-plurals-xml
+        shell: pwsh
+        run: ./build-exe/simplify-plurals-xml.ps1 installed/lib/gettext/common/supplemental/plurals.xml
+      -
         name: Extract iconv
         run: |
           tar x -C src -z -f src/downloads/libiconv-$ICONV_VERSION.tar.gz
