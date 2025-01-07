@@ -132,7 +132,7 @@ jobs:
           if ($v -eq '') { $v = '1.17' }
           Write-Output -InputObject "ICONV_VERSION=$v" >>"$env:GITHUB_ENV"
           $v = '${{ github.event.inputs.gettext-version }}'.Trim()
-          if ($v -eq '') { $v = '0.23' }
+          if ($v -eq '') { $v = '0.24' }
           Write-Output -InputObject "GETTEXT_VERSION=$v" >>"$env:GITHUB_ENV"
       -
         name: Checkout

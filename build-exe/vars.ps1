@@ -435,7 +435,7 @@ Export-Variable -Name 'gettext-peversion-libtextstyle' -Value $gettextPEVersionL
 Export-Variable -Name 'iconv-tp-version' -Value $iconvTPVersion
 Export-Variable -Name 'gettext-tp-version' -Value $gettextTPVersion
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
-Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.23' ? 'true' : '')
+Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.24' ? 'true' : '')
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
