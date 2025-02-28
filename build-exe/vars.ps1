@@ -119,7 +119,8 @@ $gettextTPVersion = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
     '0.20.2',
     '0.21',
     '0.22',
-    '0.23-pre1'
+    '0.23',
+    '0.24-pre1'
 )
 $gettextPENameLibGettextLib = 'GNU gettext utilities'
 $gettextPEVersionLibGettextLib = $env:GETTEXT_VERSION
