@@ -254,15 +254,15 @@ jobs:
       -
         name: Update gettext-examples translations
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}
-        run: ../../build-exe/update-po-files.sh gettext-tools/examples/po gettext-tools/examples/po/gettext-examples.pot gettext-examples '${{ steps.vars.outputs.gettext-tp-version }}'
+        run: ../../build-exe/update-po-files.sh gettext-tools/examples/po gettext-tools/examples/po/gettext-examples.pot gettext-examples '${{ steps.vars.outputs.gettext-tp-version-examples }}'
       -
         name: Update gettext-runtime translations
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}
-        run: ../../build-exe/update-po-files.sh gettext-runtime/po gettext-runtime/po/gettext-runtime.pot gettext-runtime '${{ steps.vars.outputs.gettext-tp-version }}'
+        run: ../../build-exe/update-po-files.sh gettext-runtime/po gettext-runtime/po/gettext-runtime.pot gettext-runtime '${{ steps.vars.outputs.gettext-tp-version-runtime }}'
       -
         name: Update gettext-tools translations
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}
-        run: ../../build-exe/update-po-files.sh gettext-tools/po gettext-tools/po/gettext-tools.pot gettext-tools '${{ steps.vars.outputs.gettext-tp-version }}'
+        run: ../../build-exe/update-po-files.sh gettext-tools/po gettext-tools/po/gettext-tools.pot gettext-tools '${{ steps.vars.outputs.gettext-tp-version-tools }}'
       -
         name: Uninstall gettext-develop
         run: apt-cyg remove gettext-devel libgomp1
