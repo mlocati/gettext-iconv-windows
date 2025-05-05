@@ -89,19 +89,46 @@ if (-not($env:GETTEXT_VERSION)) {
     throw 'Missing GETTEXT_VERSION environment variable'
 }
 $gettextVersion = ConvertTo-Version -Version $env:GETTEXT_VERSION
-$gettextTPVersion = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
-    '0.10.35',
-    '0.10.38',
-    '0.10.39',
-    '0.11.2',
-    '0.11.5',
-    '0.12-pre1',
-    '0.12.1',
-    '0.13-pre1',
-    '0.13.1',
-    '0.14',
+$gettextTPVersionExamples = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
     '0.14.5',
     '0.15-pre5',
+    '0.16',
+    '0.16.2-pre5',
+    '0.17',
+    '0.18',
+    '0.19-rc1',
+    '0.19.4-rc1',
+    '0.19.4.73',
+    '0.20-rc1',
+    '0.20.2',
+    '0.22',
+    '0.23-pre1',
+    '0.24-pre1',
+    '0.25-pre1'
+)
+$gettextTPVersionRuntime = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
+    '0.12.1',
+    '0.13.1',
+    '0.14.5',
+    '0.15-pre5',
+    '0.16',
+    '0.16.2-pre5',
+    '0.17',
+    '0.18',
+    '0.18.2',
+    '0.19-rc1',
+    '0.19.4-rc1',
+    '0.19.4.73',
+    '0.20-rc1',
+    '0.20.2',
+    '0.22',
+    '0.23-pre1',
+    '0.24-pre1'
+)
+$gettextTPVersionTools = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
+    '0.12.1',
+    '0.13.1',
+    '0.14.5',
     '0.16',
     '0.16.2-pre5',
     '0.17',
@@ -119,8 +146,10 @@ $gettextTPVersion = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
     '0.20.2',
     '0.21',
     '0.22',
+    '0.23-pre1',
     '0.23',
-    '0.24-pre1'
+    '0.24-pre1',
+    '0.25-pre1'
 )
 $gettextPENameLibGettextLib = 'GNU gettext utilities'
 $gettextPEVersionLibGettextLib = $env:GETTEXT_VERSION
@@ -434,9 +463,11 @@ Export-Variable -Name 'gettext-peversion-libgettextsrc' -Value $gettextPEVersion
 Export-Variable -Name 'gettext-peversion-libintl' -Value $gettextPEVersionLibIntl
 Export-Variable -Name 'gettext-peversion-libtextstyle' -Value $gettextPEVersionLibTextStyle
 Export-Variable -Name 'iconv-tp-version' -Value $iconvTPVersion
-Export-Variable -Name 'gettext-tp-version' -Value $gettextTPVersion
+Export-Variable -Name 'gettext-tp-version-examples' -Value $gettextTPVersionExamples
+Export-Variable -Name 'gettext-tp-version-runtime' -Value $gettextTPVersionRuntime
+Export-Variable -Name 'gettext-tp-version-tools' -Value $gettextTPVersionTools
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
-Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.24' ? 'true' : '')
+Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.24.1' ? 'true' : '')
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
