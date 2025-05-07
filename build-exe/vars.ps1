@@ -467,7 +467,7 @@ Export-Variable -Name 'gettext-tp-version-examples' -Value $gettextTPVersionExam
 Export-Variable -Name 'gettext-tp-version-runtime' -Value $gettextTPVersionRuntime
 Export-Variable -Name 'gettext-tp-version-tools' -Value $gettextTPVersionTools
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
-Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.24.1' ? 'true' : '')
+Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.25' ? 'true' : '')
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
