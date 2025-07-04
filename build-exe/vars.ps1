@@ -444,7 +444,7 @@ if ($Link -eq 'shared' -and $gettextVersion -lt [Version]'0.23') {
 }
 
 Export-Variable -Name 'cygwin-mirror' -Value $cygwinMirror
-Export-Variable -Name 'cygwin-packages' -Value "wget,file,make,unzip,dos2unix,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
+Export-Variable -Name 'cygwin-packages' -Value "wget,file,make,unzip,dos2unix,patch,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
 Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
 Export-Variable -Name 'mingw-host' -Value $mingwHost
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
