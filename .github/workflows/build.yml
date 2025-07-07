@@ -132,7 +132,7 @@ jobs:
           if ($v -eq '') { $v = '1.17' }
           Write-Output -InputObject "ICONV_VERSION=$v" >>"$env:GITHUB_ENV"
           $v = '${{ github.event.inputs.gettext-version }}'.Trim()
-          if ($v -eq '') { $v = '0.25' }
+          if ($v -eq '') { $v = '0.25.1' }
           Write-Output -InputObject "GETTEXT_VERSION=$v" >>"$env:GITHUB_ENV"
       -
         name: Checkout
@@ -244,6 +244,20 @@ jobs:
         run: |
           tar x -C src -z -f src/downloads/gettext-$GETTEXT_VERSION.tar.gz
           cp src/gettext-$GETTEXT_VERSION/COPYING installed/license-gettext.txt
+      -
+        name: Apply patches
+        run: |
+          set -o errexit
+          for dir in $(find src/* -maxdepth 1 -type d -printf '%f\n'); do
+            if ! test -d "patches/$dir"; then
+              continue
+            fi
+            printf 'Applying patches for %s\n' "$dir"
+            for patchfile in $(find patches/$dir -maxdepth 1 -type f -printf '%f\n' | sort); do
+              printf -- '- %s\n' "$patchfile"
+              patch -d "src/$dir" -p1 -u <"patches/$dir/$patchfile"
+            done
+          done
       -
         name: Install gettext-develop
         run: apt-cyg install libgomp1 gettext-devel

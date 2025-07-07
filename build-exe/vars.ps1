@@ -104,7 +104,8 @@ $gettextTPVersionExamples = Resolve-TPVersion -Version $gettextVersion -TPVersio
     '0.22',
     '0.23-pre1',
     '0.24-pre1',
-    '0.25-pre1'
+    '0.25-pre1',
+    '0.26-pre1'
 )
 $gettextTPVersionRuntime = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
     '0.12.1',
@@ -123,7 +124,8 @@ $gettextTPVersionRuntime = Resolve-TPVersion -Version $gettextVersion -TPVersion
     '0.20.2',
     '0.22',
     '0.23-pre1',
-    '0.24-pre1'
+    '0.24-pre1',
+    '0.26-pre1'
 )
 $gettextTPVersionTools = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
     '0.12.1',
@@ -149,7 +151,8 @@ $gettextTPVersionTools = Resolve-TPVersion -Version $gettextVersion -TPVersions 
     '0.23-pre1',
     '0.23',
     '0.24-pre1',
-    '0.25-pre1'
+    '0.25-pre1',
+    '0.26-pre1'
 )
 $gettextPENameLibGettextLib = 'GNU gettext utilities'
 $gettextPEVersionLibGettextLib = $env:GETTEXT_VERSION
@@ -444,7 +447,7 @@ if ($Link -eq 'shared' -and $gettextVersion -lt [Version]'0.23') {
 }
 
 Export-Variable -Name 'cygwin-mirror' -Value $cygwinMirror
-Export-Variable -Name 'cygwin-packages' -Value "wget,file,make,unzip,dos2unix,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
+Export-Variable -Name 'cygwin-packages' -Value "wget,file,make,unzip,dos2unix,patch,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
 Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
 Export-Variable -Name 'mingw-host' -Value $mingwHost
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
@@ -467,7 +470,7 @@ Export-Variable -Name 'gettext-tp-version-examples' -Value $gettextTPVersionExam
 Export-Variable -Name 'gettext-tp-version-runtime' -Value $gettextTPVersionRuntime
 Export-Variable -Name 'gettext-tp-version-tools' -Value $gettextTPVersionTools
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
-Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.25' ? 'true' : '')
+Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.25.1' ? 'true' : '')
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
