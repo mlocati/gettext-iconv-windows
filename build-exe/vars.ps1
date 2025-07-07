@@ -104,7 +104,8 @@ $gettextTPVersionExamples = Resolve-TPVersion -Version $gettextVersion -TPVersio
     '0.22',
     '0.23-pre1',
     '0.24-pre1',
-    '0.25-pre1'
+    '0.25-pre1',
+    '0.26-pre1'
 )
 $gettextTPVersionRuntime = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
     '0.12.1',
@@ -123,7 +124,8 @@ $gettextTPVersionRuntime = Resolve-TPVersion -Version $gettextVersion -TPVersion
     '0.20.2',
     '0.22',
     '0.23-pre1',
-    '0.24-pre1'
+    '0.24-pre1',
+    '0.26-pre1'
 )
 $gettextTPVersionTools = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
     '0.12.1',
@@ -149,7 +151,8 @@ $gettextTPVersionTools = Resolve-TPVersion -Version $gettextVersion -TPVersions 
     '0.23-pre1',
     '0.23',
     '0.24-pre1',
-    '0.25-pre1'
+    '0.25-pre1',
+    '0.26-pre1'
 )
 $gettextPENameLibGettextLib = 'GNU gettext utilities'
 $gettextPEVersionLibGettextLib = $env:GETTEXT_VERSION
