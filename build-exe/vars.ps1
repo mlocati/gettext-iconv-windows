@@ -177,6 +177,9 @@ switch ($env:GETTEXT_VERSION) {
     0.25.1 {
         $gettextPEVersionLibTextStyle = '0.25'
     }
+    0.26-pre1 {
+        $gettextPEVersionLibTextStyle = '0.25'
+    }
 }
 
 $absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
