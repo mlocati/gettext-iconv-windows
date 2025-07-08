@@ -175,7 +175,7 @@ switch ($env:GETTEXT_VERSION) {
         $gettextPEVersionLibTextStyle = '0.22.5'
     }
     0.25.1 {
-        $gettextPEVersionLibTextStyle = '0.25.0'
+        $gettextPEVersionLibTextStyle = '0.25'
     }
 }
 
