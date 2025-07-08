@@ -384,25 +384,21 @@ See:
 }
 
 $gnuUrlPrefixer = [GnuUrlPrefixer]::new()
-switch ($env:ICONV_VERSION) {
-    default {
-        $iconvSourceUrl = "$($gnuUrlPrefixer.GetReleaseUrlPrefix())/libiconv/libiconv-$env:ICONV_VERSION.tar.gz"
-    }
-}
 
-switch ($env:GETTEXT_VERSION) {
-    '0.22.5a' {
-        # see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00039.html
-        $gettextSourceUrl = "$($gnuUrlPrefixer.GetAlphaUrlPrefix())/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
-    }
-    '0.23-pre1' {
-        # see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00039.html
-        $gettextSourceUrl = "$($gnuUrlPrefixer.GetAlphaUrlPrefix())/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
-    }
-    default {
-        $gettextSourceUrl = "$($gnuUrlPrefixer.GetReleaseUrlPrefix())/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
-    }
+$iconvSourceUrlPrefix = if ($env:ICONV_VERSION -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
+    $gnuUrlPrefixer.GetAlphaUrlPrefix()
+} else {
+    $gnuUrlPrefixer.GetReleaseUrlPrefix()
 }
+$iconvSourceUrl = "$iconvSourceUrlPrefix/libiconv/libiconv-$env:ICONV_VERSION.tar.gz"
+
+$gettextSourceUrlPrefix = if ($env:GETTEXT_VERSION -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
+    $gnuUrlPrefixer.GetAlphaUrlPrefix()
+} else {
+    $gnuUrlPrefixer.GetReleaseUrlPrefix()
+}
+$gettextSourceUrl = "$gettextSourceUrlPrefix/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
+
 $gnuUrlPrefixer.WriteWarning()
 
 $cygwinMirror = ''
