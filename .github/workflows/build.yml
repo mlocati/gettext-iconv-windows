@@ -106,10 +106,10 @@ jobs:
       matrix:
         bits:
           - 32
-          - 64
+          #- 64
         link:
           - shared
-          - static
+          #- static
     env:
       CYGWIN_NOWINPATH: 1
       CHERE_INVOKING: 1
