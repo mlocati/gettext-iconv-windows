@@ -412,6 +412,9 @@ switch ($env:GETTEXT_VERSION) {
         # see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00039.html
         $gettextSourceUrl = "$($gnuUrlPrefixer.GetAlphaUrlPrefix())/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
     }
+    '0.26-pre1' {
+        $gettextSourceUrl = "$($gnuUrlPrefixer.GetAlphaUrlPrefix())/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
+    }
     default {
         $gettextSourceUrl = "$($gnuUrlPrefixer.GetReleaseUrlPrefix())/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
     }
@@ -473,7 +476,7 @@ Export-Variable -Name 'gettext-tp-version-examples' -Value $gettextTPVersionExam
 Export-Variable -Name 'gettext-tp-version-runtime' -Value $gettextTPVersionRuntime
 Export-Variable -Name 'gettext-tp-version-tools' -Value $gettextTPVersionTools
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
-Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.25.1' ? 'true' : '')
+Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.26' ? 'true' : '')
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
