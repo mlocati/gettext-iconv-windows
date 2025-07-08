@@ -418,6 +418,20 @@ jobs:
         name: Check bitness
         run: ./build-exe/check-bits.sh ${{ matrix.bits }} files-unsigned
       -
+        name: Check versions
+        shell: pwsh
+        run: >
+          ./build-exe/check-versioninfos.ps1
+          -RootPath '.\files-unsigned'
+          -IconvPEVersion '${{ env.ICONV_VERSION }}'
+          -GettextPEVersion '${{ env.GETTEXT_VERSION }}'
+          -GettextPENameLibGettextLib '${{ steps.vars.outputs.gettext-pename-libgettextlib }}'
+          -GettextPEVersionLibGettextLib '${{ steps.vars.outputs.gettext-peversion-libgettextlib }}'
+          -GettextPENameLibGettextSrc '${{ steps.vars.outputs.gettext-pename-libgettextsrc }}'
+          -GettextPEVersionLibGettextSrc '${{ steps.vars.outputs.gettext-peversion-libgettextsrc }}'
+          -GettextPEVersionLibIntl '${{ steps.vars.outputs.gettext-peversion-libintl }}'
+          -GettextPEVersionLibTextStyle '${{ steps.vars.outputs.gettext-peversion-libtextstyle }}'
+      -
         name: Check if iconv program load translations correctly
         shell: pwsh
         run: |
