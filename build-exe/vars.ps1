@@ -79,16 +79,20 @@ if (-not($env:ICONV_VERSION)) {
     throw 'Missing ICONV_VERSION environment variable'
 }
 $iconvVersion = ConvertTo-Version -Version $env:ICONV_VERSION
+if (-not($env:GETTEXT_VERSION)) {
+    throw 'Missing GETTEXT_VERSION environment variable'
+}
+$gettextVersion = ConvertTo-Version -Version $env:GETTEXT_VERSION
+if (-not($env:CLDR_VERSION)) {
+    throw 'Missing CLDR_VERSION environment variable'
+}
+$cldrMajorVersion = [int][regex]::Match($env:CLDR_VERSION, '^\d+').Value
+
 $iconvTPVersion = Resolve-TPVersion -Version $iconvVersion -TPVersions @(
     '1.12',
     '1.15-pre1',
     '1.17-pre1'
 )
-
-if (-not($env:GETTEXT_VERSION)) {
-    throw 'Missing GETTEXT_VERSION environment variable'
-}
-$gettextVersion = ConvertTo-Version -Version $env:GETTEXT_VERSION
 $gettextTPVersionExamples = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
     '0.14.5',
     '0.15-pre5',
@@ -480,7 +484,8 @@ Export-Variable -Name 'gettext-tp-version-examples' -Value $gettextTPVersionExam
 Export-Variable -Name 'gettext-tp-version-runtime' -Value $gettextTPVersionRuntime
 Export-Variable -Name 'gettext-tp-version-tools' -Value $gettextTPVersionTools
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
-Export-Variable -Name 'simplify-plurals-xml' -Value ($gettextVersion -le [Version]'0.25.1' ? 'true' : '')
+# See https://savannah.gnu.org/bugs/?func=detailitem&item_id=66378
+Export-Variable -Name 'simplify-plurals-xml' -Value ($cldrMajorVersion -ge 38 ? 'true' : '')
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
