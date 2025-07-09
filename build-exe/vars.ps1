@@ -154,33 +154,6 @@ $gettextTPVersionTools = Resolve-TPVersion -Version $gettextVersion -TPVersions 
     '0.25-pre1',
     '0.26-pre1'
 )
-$gettextPENameLibGettextLib = 'GNU gettext utilities'
-$gettextPEVersionLibGettextLib = $env:GETTEXT_VERSION
-$gettextPENameLibGettextSrc = 'GNU gettext utilities'
-$gettextPEVersionLibGettextSrc = $env:GETTEXT_VERSION
-$gettextPEVersionLibIntl = $env:GETTEXT_VERSION
-$gettextPEVersionLibTextStyle = $env:GETTEXT_VERSION
-if ($gettextVersion -le [Version]'0.22.5') {
-    $gettextPENameLibGettextLib = ''
-    $gettextPEVersionLibGettextLib = ''
-    $gettextPENameLibGettextSrc = ''
-    $gettextPEVersionLibGettextSrc = ''
-}
-switch ($env:GETTEXT_VERSION) {
-    0.22.5a {
-        $gettextPEVersionLibIntl = '0.22.5'
-        $gettextPEVersionLibTextStyle = '0.22.5'
-    }
-    0.23-pre1 {
-        $gettextPEVersionLibTextStyle = '0.22.5'
-    }
-    0.25.1 {
-        $gettextPEVersionLibTextStyle = '0.25'
-    }
-    0.26-pre1 {
-        $gettextPEVersionLibTextStyle = '0.25'
-    }
-}
 
 $absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
 $match = Select-String -InputObject $absoluteInstalledPath -Pattern '^([A-Za-z]):(\\.*?)\\?$'
@@ -475,12 +448,6 @@ Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests 
 Export-Variable -Name 'signpath-signing-policy' -Value $signpathSigningPolicy
 Export-Variable -Name 'signpath-artifactconfiguration-files' -Value $signpathArtifactConfigurationFiles
 Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
-Export-Variable -Name 'gettext-pename-libgettextlib' -Value $gettextPENameLibGettextLib
-Export-Variable -Name 'gettext-peversion-libgettextlib' -Value $gettextPEVersionLibGettextLib
-Export-Variable -Name 'gettext-pename-libgettextsrc' -Value $gettextPENameLibGettextSrc
-Export-Variable -Name 'gettext-peversion-libgettextsrc' -Value $gettextPEVersionLibGettextSrc
-Export-Variable -Name 'gettext-peversion-libintl' -Value $gettextPEVersionLibIntl
-Export-Variable -Name 'gettext-peversion-libtextstyle' -Value $gettextPEVersionLibTextStyle
 Export-Variable -Name 'iconv-tp-version' -Value $iconvTPVersion
 Export-Variable -Name 'gettext-tp-version-examples' -Value $gettextTPVersionExamples
 Export-Variable -Name 'gettext-tp-version-runtime' -Value $gettextTPVersionRuntime
