@@ -209,13 +209,20 @@ $cygwinPath = @(
     '/cygdrive/c/Windows'
 )
 
-# We use -fno-threadsafe-statics because:
-# - otherwise xgettext would use the the __cxa_guard_acquire and __cxa_guard_release functions of lib-stdc++
-# - the only tool that uses multi-threading is msgmerge, which is in C (and not C++)
-# See:
-# - https://sourceforge.net/p/mingw-w64/mailman/message/58824383/
-# - https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00008.html
-# - https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00010.html
+$cxxFlags = '-g0 -O2'
+if ($gettextVersion -lt [Version]'0.26' -or $env:GETTEXT_VERSION -eq '0.26-pre1') {
+    # We use -fno-threadsafe-statics because:
+    # - otherwise xgettext would use the the __cxa_guard_acquire and __cxa_guard_release functions of lib-stdc++
+    # - the only tool that uses multi-threading is msgmerge, which is in C (and not C++)
+    # See:
+    # - https://sourceforge.net/p/mingw-w64/mailman/message/58824383/
+    # - https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00008.html
+    # - https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00010.html
+    # Since gettext 0.26 the -fno-threadsafe-statics is already the default:
+    # see https://lists.gnu.org/archive/html/bug-gettext/2025-07/msg00019.html
+    $cxxFlags = "$cxxFlags -fno-threadsafe-statics"
+}
+
 $configureArgs = @(
     # The C compiler
     "CC='$mingwHost-gcc'",
@@ -230,7 +237,7 @@ $configureArgs = @(
     # The flags for the C compiler
     "CFLAGS='-g0 -O2'",
     # The flags for the C++ compiler
-    "CXXFLAGS='-g0 -O2 -fno-threadsafe-statics'",
+    "CXXFLAGS='$cxxFlags'",
     # The flags for the linker
     "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib'",
     "--host=$mingwHost",
