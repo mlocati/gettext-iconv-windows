@@ -93,6 +93,10 @@ foreach ($file in $files) {
         $versionVariableName = 'gettextPEVersion'
     } elseif ($file.Name -like 'ngettext.exe') {
         $versionVariableName = 'gettextPEVersion'
+    } elseif ($file.Name -like 'printf_gettext.exe') {
+        $versionVariableName = 'gettextPEVersion'
+    } elseif ($file.Name -like 'printf_ngettext.exe') {
+        $versionVariableName = 'gettextPEVersion'
     } elseif ($file.Name -like 'recode-sr-latin.exe') {
         $versionVariableName = 'gettextPEVersion'
     } elseif ($file.Name -like 'xgettext.exe') {

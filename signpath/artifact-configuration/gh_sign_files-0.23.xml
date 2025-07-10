@@ -41,6 +41,8 @@
             <include path="bin/msgunfmt.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/msguniq.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/ngettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/printf_gettext.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/printf_ngettext.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/recode-sr-latin.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/xgettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="libexec/gettext/cldr-plurals.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
