@@ -209,17 +209,6 @@ jobs:
             Write-Host -Object 'Downloaded'
           }
       -
-        name: Download gettext
-        working-directory: src\downloads
-        shell: pwsh
-        run: |
-          if (Test-Path -LiteralPath "gettext-$env:GETTEXT_VERSION.tar.gz" -PathType Leaf) {
-            Write-Host -Object 'Already downloaded'
-          } else {
-            Invoke-WebRequest -Uri "${{ steps.vars.outputs.gettext-source-url }}" -OutFile "gettext-$env:GETTEXT_VERSION.tar.gz"
-            Write-Host -Object 'Downloaded'
-          }
-      -
         name: Download JSON-C
         if: steps.vars.outputs.build-json-c-version
         working-directory: src\downloads
@@ -229,6 +218,17 @@ jobs:
             Write-Host -Object 'Already downloaded'
           } else {
             Invoke-WebRequest -Uri "https://s3.amazonaws.com/json-c_releases/releases/json-c-${{ steps.vars.outputs.build-json-c-version }}-nodoc.tar.gz" -OutFile "json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz"
+            Write-Host -Object 'Downloaded'
+          }
+      -
+        name: Download gettext
+        working-directory: src\downloads
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath "gettext-$env:GETTEXT_VERSION.tar.gz" -PathType Leaf) {
+            Write-Host -Object 'Already downloaded'
+          } else {
+            Invoke-WebRequest -Uri "${{ steps.vars.outputs.gettext-source-url }}" -OutFile "gettext-$env:GETTEXT_VERSION.tar.gz"
             Write-Host -Object 'Downloaded'
           }
       -
