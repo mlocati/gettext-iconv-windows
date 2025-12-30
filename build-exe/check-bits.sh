@@ -36,71 +36,57 @@ fi
 checkBits()
 {
     local checkMe="$1"
-    local actualBits
+    local expectedBits
     case "$(basename "$checkMe")" in
         GNU.Gettext.dll | msgfmt.net.exe | msgunfmt.net.exe)
-            actualBits=32
+            expectedBits=32
             ;;
         *)
-            actualBits=$BITS
+            expectedBits=$BITS
             ;;
     esac
     printf 'Checking %s... ' "$checkMe"
     local info="$(file -bEh -- "$checkMe" | head -n1)"
+    local detectedBits
     case "$info" in
-        PE32\ executable\ \(console\)\ Intel\ 80386*)
-            printf '32-bit exe (console): '
-            if [ $actualBits -ne 32 ]; then
-                echo 'INVALID'
-                return 1
-            fi
-            echo 'OK'
+        *PE32+*)
+            detectedBits=64
             ;;
-        PE32\ executable\ \(GUI\)\ Intel\ 80386*)
-            printf '32-bit exe (GUI): '
-            if [ $actualBits -ne 32 ]; then
-                echo 'INVALID'
-                return 1
-            fi
-            echo 'OK'
-            ;;
-        PE32\ executable\ \(DLL\)\ \(console\)\ Intel\ 80386*)
-            printf '32-bit dll: '
-            if [ $actualBits -ne 32 ]; then
-                echo 'INVALID'
-                return 1
-            fi
-            echo 'OK'
-            ;;
-        PE32+\ executable\ \(console\)\ x86-64*)
-            printf '64-bit exe (console): '
-            if [ $actualBits -ne 64 ]; then
-                echo 'INVALID'
-                return 1
-            fi
-            echo 'OK'
-            ;;
-        PE32+\ executable\ \(GUI\)\ x86-64*)
-            printf '64-bit exe (GUI): '
-            if [ $actualBits -ne 64 ]; then
-                echo 'INVALID'
-                return 1
-            fi
-            echo 'OK'
-            ;;
-        PE32+\ executable\ \(DLL\)\ \(console\)\ x86-64*)
-            printf '64-bit dll: '
-            if [ $actualBits -ne 64 ]; then
-                echo 'INVALID'
-                return 1
-            fi
-            echo 'OK'
+        *PE32*)
+            detectedBits=32
             ;;
         *)
-            printf 'UNRECOGNISED INFO: %s\n' "$info"
+            printf 'NOT A WINDOWS PE: %s\n' "$info"
             return 1
             ;;
     esac
+    local detectedKind
+    case "$info" in
+        *DLL*)
+            detectedKind=dll
+            ;;
+        *)
+            detectedKind=exe
+            ;;
+    esac
+    local detectedType
+    case "$info" in
+        *console*)
+            detectedType=console
+            ;;
+        *GUI*)
+            detectedType=GUI
+            ;;
+        *)
+            detectedType=unknown
+            ;;
+    esac
+    printf '%s-bit %s (%s): ' "$detectedBits" "$detectedKind" "$detectedType"
+    if [ $detectedBits -ne $expectedBits ]; then
+        echo 'INVALID'
+        return 1
+    fi
+    echo 'OK'
 }
 
 if [ -d "$CHECK_ME" ]; then
