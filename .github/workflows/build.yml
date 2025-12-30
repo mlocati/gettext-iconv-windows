@@ -103,6 +103,7 @@ jobs:
       - test-pwsh-scripts
     runs-on: windows-2022
     strategy:
+      fail-fast: false
       matrix:
         bits:
           - 32
