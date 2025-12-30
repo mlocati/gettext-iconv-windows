@@ -39,28 +39,6 @@ function ConvertTo-Version()
     throw "Invalid Version: '$Version'"
 }
 
-function Resolve-TPVersion()
-{
-    [OutputType([string])]
-    param(
-        [Parameter(Mandatory = $true)]
-        [Version] $Version,
-        [Parameter(Mandatory = $true)]
-        [string[]] $TPVersions
-    )
-    $sortedTPVersions = $TPVersions | Sort-Object -Property { ConvertTo-Version  -Version $_ } -Descending
-    foreach ($tpVersion in $sortedTPVersions) {
-        $cmp = ConvertTo-Version -Version $tpVersion
-        if ($Version -ge $cmp) {
-            if ($tpVersion -eq $sortedTPVersions[0]) {
-                return 'latest'
-            }
-            return $tpVersion
-        }
-    }
-    return $sortedTPVersions[-1]
-}
-
 function ConvertTo-CygwinPath()
 {
     [OutputType([string])]
@@ -78,7 +56,6 @@ function ConvertTo-CygwinPath()
 if (-not($env:ICONV_VERSION)) {
     throw 'Missing ICONV_VERSION environment variable'
 }
-$iconvVersion = ConvertTo-Version -Version $env:ICONV_VERSION
 if (-not($env:GETTEXT_VERSION)) {
     throw 'Missing GETTEXT_VERSION environment variable'
 }
@@ -87,77 +64,6 @@ if (-not($env:CLDR_VERSION)) {
     throw 'Missing CLDR_VERSION environment variable'
 }
 $cldrMajorVersion = [int][regex]::Match($env:CLDR_VERSION, '^\d+').Value
-
-$iconvTPVersion = Resolve-TPVersion -Version $iconvVersion -TPVersions @(
-    '1.12',
-    '1.15-pre1',
-    '1.17-pre1'
-)
-$gettextTPVersionExamples = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
-    '0.14.5',
-    '0.15-pre5',
-    '0.16',
-    '0.16.2-pre5',
-    '0.17',
-    '0.18',
-    '0.19-rc1',
-    '0.19.4-rc1',
-    '0.19.4.73',
-    '0.20-rc1',
-    '0.20.2',
-    '0.22',
-    '0.23-pre1',
-    '0.24-pre1',
-    '0.25-pre1',
-    '0.26-pre1'
-)
-$gettextTPVersionRuntime = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
-    '0.12.1',
-    '0.13.1',
-    '0.14.5',
-    '0.15-pre5',
-    '0.16',
-    '0.16.2-pre5',
-    '0.17',
-    '0.18',
-    '0.18.2',
-    '0.19-rc1',
-    '0.19.4-rc1',
-    '0.19.4.73',
-    '0.20-rc1',
-    '0.20.2',
-    '0.22',
-    '0.23-pre1',
-    '0.24-pre1',
-    '0.26-pre1'
-)
-$gettextTPVersionTools = Resolve-TPVersion -Version $gettextVersion -TPVersions @(
-    '0.12.1',
-    '0.13.1',
-    '0.14.5',
-    '0.16',
-    '0.16.2-pre5',
-    '0.17',
-    '0.18',
-    '0.18.2',
-    '0.18.3',
-    '0.19-rc1',
-    '0.19.3',
-    '0.19.4-rc1',
-    '0.19.4.73',
-    '0.19.6.43',
-    '0.19.7-rc1',
-    '0.19.8-rc1',
-    '0.20-rc1',
-    '0.20.2',
-    '0.21',
-    '0.22',
-    '0.23-pre1',
-    '0.23',
-    '0.24-pre1',
-    '0.25-pre1',
-    '0.26-pre1'
-)
 
 $absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
 $match = Select-String -InputObject $absoluteInstalledPath -Pattern '^([A-Za-z]):(\\.*?)\\?$'
@@ -445,10 +351,6 @@ Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests 
 Export-Variable -Name 'signpath-signing-policy' -Value $signpathSigningPolicy
 Export-Variable -Name 'signpath-artifactconfiguration-files' -Value $signpathArtifactConfigurationFiles
 Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
-Export-Variable -Name 'iconv-tp-version' -Value $iconvTPVersion
-Export-Variable -Name 'gettext-tp-version-examples' -Value $gettextTPVersionExamples
-Export-Variable -Name 'gettext-tp-version-runtime' -Value $gettextTPVersionRuntime
-Export-Variable -Name 'gettext-tp-version-tools' -Value $gettextTPVersionTools
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
 # See https://savannah.gnu.org/bugs/?func=detailitem&item_id=66378
 Export-Variable -Name 'simplify-plurals-xml' -Value ($cldrMajorVersion -ge 38 ? 'true' : '')
