@@ -132,7 +132,7 @@ jobs:
           if ($v -eq '') { $v = '1.17' }
           Write-Output -InputObject "ICONV_VERSION=$v" >>"$env:GITHUB_ENV"
           $v = '${{ github.event.inputs.gettext-version }}'.Trim()
-          if ($v -eq '') { $v = '0.26' }
+          if ($v -eq '') { $v = '1.0-pre1' }
           Write-Output -InputObject "GETTEXT_VERSION=$v" >>"$env:GITHUB_ENV"
       -
         name: Checkout
@@ -219,6 +219,18 @@ jobs:
             Write-Host -Object 'Downloaded'
           }
       -
+        name: Download JSON-C
+        if: steps.vars.outputs.build-json-c-version
+        working-directory: src\downloads
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath "json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz" -PathType Leaf) {
+            Write-Host -Object 'Already downloaded'
+          } else {
+            Invoke-WebRequest -Uri "https://s3.amazonaws.com/json-c_releases/releases/json-c-${{ steps.vars.outputs.build-json-c-version }}-nodoc.tar.gz" -OutFile "json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz"
+            Write-Host -Object 'Downloaded'
+          }
+      -
         name: Extract CLDR
         run: |
           unzip -p src/downloads/cldr-$CLDR_VERSION.zip LICENSE > installed/license-cldr.txt
@@ -234,6 +246,12 @@ jobs:
         run: |
           tar x -C src -z -f src/downloads/libiconv-$ICONV_VERSION.tar.gz
           cp src/libiconv-$ICONV_VERSION/COPYING installed/license-iconv.txt
+      -
+        name: Extract JSON-C
+        if: steps.vars.outputs.build-json-c-version
+        run: |
+          tar x -C src -z -f src/downloads/json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz
+          cp src/json-c-${{ steps.vars.outputs.build-json-c-version }}/COPYING installed/license-json-c.txt
       -
         name: Extract gettext
         run: |
@@ -273,6 +291,25 @@ jobs:
         name: Install iconv (1st time)
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
         run: make --jobs=$(nproc) install-strip
+
+      -
+        name: Prepare JSON-C
+        if: steps.vars.outputs.build-json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.build-json-c-version }}
+        run: |
+          mkdir build
+          cd build
+          cmake ${{ steps.vars.outputs.build-json-c-cmake-args }} ../
+      -
+        name: Build JSON-C
+        if: steps.vars.outputs.build-json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.build-json-c-version }}\build
+        run: make -j$(nproc) all
+      -
+        name: Install JSON-C
+        if: steps.vars.outputs.build-json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.build-json-c-version }}\build
+        run: make install
       -
         name: Configure gettext
         id: gettext-configure

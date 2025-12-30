@@ -107,10 +107,32 @@ $cygwinPackages = @(
     "mingw64-$architecture-headers",
     "mingw64-$architecture-runtime"
 )
+
+$buildJsonCVersion = ''
+$buildJsonCCMakeArgs = @()
+
 if ($gettextVersion -ge [Version]'1.0') {
     # The spit program (introduced in gettext 1.0) requires libcurl and json-c (otherwise gettext builds a Python script)
     $cygwinPackages += "mingw64-$architecture-curl"
-    $cygwinPackages += "mingw64-$architecture-json-c"
+    $cygwinPackages += "cmake"
+    $buildJsonCVersion = '0.18'
+    $buildJsonCCMakeArgs = @(
+        "'-DCMAKE_INSTALL_PREFIX=$cygwinInstalledPath'",
+        '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
+        '-DBUILD_TESTING=OFF',
+        "-DCMAKE_C_COMPILER=$mingwHost-gcc",
+        "-DCMAKE_C_FLAGS='-g0 -O2'"
+    )
+    switch ($Link) {
+        'shared' {
+            $buildJsonCCMakeArgs += '-DBUILD_SHARED_LIBS=ON'
+            $buildJsonCCMakeArgs += '-DBUILD_STATIC_LIBS=OFF'
+        }
+        'static' {
+            $buildJsonCCMakeArgs += '-DBUILD_STATIC_LIBS=ON'
+            $buildJsonCCMakeArgs += '-DBUILD_SHARED_LIBS=OFF'
+        }
+    }
 }
 
 $cxxFlags = '-g0 -O2'
@@ -181,7 +203,7 @@ if ($gettextVersion -le [Version]'0.22.5') {
     } catch {
         $dotnetCommand = $null
     }
-    if (-not($dotnetCommand) || -not($dotnetCommand.Path)) {
+    if (-not($dotnetCommand) -or -not($dotnetCommand.Path)) {
         throw 'Failed to find dotnet.exe'
     }
     $dotnetCommandPath = (Get-Item -Path ($dotnetCommand.Path)).Directory.FullName
@@ -363,6 +385,8 @@ Export-Variable -Name 'mingw-host' -Value $mingwHost
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
 Export-Variable -Name 'configure-args-gettext' -Value $($gettextConfigureArgs -join ' ')
 Export-Variable -Name 'iconv-source-url' -Value $iconvSourceUrl
+Export-Variable -Name 'build-json-c-version' -Value $buildJsonCVersion
+Export-Variable -Name 'build-json-c-cmake-args' -Value $($buildJsonCCMakeArgs -join ' ')
 Export-Variable -Name 'gettext-source-url' -Value $gettextSourceUrl
 Export-Variable -Name 'gettext-ignore-tests-c' -Value $($gettextIgnoreTestsC -join ' ')
 Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests -join ' ')
