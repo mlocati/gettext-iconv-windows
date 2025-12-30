@@ -95,6 +95,24 @@ $cygwinPath = @(
     '/cygdrive/c/Windows'
 )
 
+$cygwinPackages = @(
+    'wget',
+    'file',
+    'make',
+    'unzip',
+    'dos2unix',
+    'patch',
+    "mingw64-$architecture-gcc-core",
+    "mingw64-$architecture-gcc-g++",
+    "mingw64-$architecture-headers",
+    "mingw64-$architecture-runtime"
+)
+if ($gettextVersion -ge [Version]'1.0') {
+    # The spit program (introduced in gettext 1.0) requires libcurl and json-c (otherwise gettext builds a Python script)
+    $cygwinPackages += "mingw64-$architecture-curl"
+    $cygwinPackages += "mingw64-$architecture-json-c"
+}
+
 $cxxFlags = '-g0 -O2'
 if ($gettextVersion -lt [Version]'0.26' -or $env:GETTEXT_VERSION -eq '0.26-pre1') {
     # We use -fno-threadsafe-statics because:
@@ -339,7 +357,7 @@ if ($Link -eq 'shared' -and $gettextVersion -lt [Version]'0.23') {
 }
 
 Export-Variable -Name 'cygwin-mirror' -Value $cygwinMirror
-Export-Variable -Name 'cygwin-packages' -Value "wget,file,make,unzip,dos2unix,patch,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
+Export-Variable -Name 'cygwin-packages' -Value $($cygwinPackages -join ',')
 Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
 Export-Variable -Name 'mingw-host' -Value $mingwHost
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
