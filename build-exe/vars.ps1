@@ -117,6 +117,7 @@ if ($gettextVersion -ge [Version]'1.0') {
     $cygwinPackages += "cmake"
     $buildJsonCVersion = '0.18'
     $buildJsonCCMakeArgs = @(
+        '-DCMAKE_BUILD_TYPE=Release',
         "'-DCMAKE_INSTALL_PREFIX=$cygwinInstalledPath'",
         '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
         '-DBUILD_TESTING=OFF',
