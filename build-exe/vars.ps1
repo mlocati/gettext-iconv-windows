@@ -95,7 +95,98 @@ $cygwinPath = @(
     '/cygdrive/c/Windows'
 )
 
+$cygwinPackages = @(
+    'file',
+    'make',
+    'unzip',
+    'dos2unix',
+    'patch',
+    "mingw64-$architecture-gcc-core",
+    "mingw64-$architecture-gcc-g++",
+    "mingw64-$architecture-headers",
+    "mingw64-$architecture-runtime"
+)
+
+$cFlags = '-g0 -O2'
 $cxxFlags = '-g0 -O2'
+$configureLibs = ''
+
+$buildLibcurlVersion = ''
+$buildLibcurlConfigureArgs = @()
+$buildJsonCVersion = ''
+$buildJsonCCMakeArgs = @()
+
+if ($gettextVersion -ge [Version]'1.0') {
+    # The spit program (introduced in gettext 1.0) requires libcurl and json-c (otherwise gettext builds a Python script)
+    $cygwinPackages += 'cmake'
+    $buildLibcurlVersion = '8.18.0'
+    $buildLibcurlConfigureArgs = @(
+        "CC='$mingwHost-gcc'",
+        "CXX='$mingwHost-g++'",
+        "LD='$mingwHost-ld'",
+        "STRIP='$mingwHost-strip'",
+        "CPPFLAGS='-I$cygwinInstalledPath/include -I/usr/$mingwHost/sys-root/mingw/include -DWINVER=0x0601 -D_WIN32_WINNT=0x0601'",
+        "CFLAGS='-g0 -O2'",
+        "CXXFLAGS='-g0 -O2'",
+        "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib'",
+        "--host=$mingwHost",
+        '--enable-http',
+        '--disable-ftp',
+        '--enable-file',
+        '--disable-ldap',
+        '--disable-ldaps',
+        '--disable-rtsp',
+        '--enable-proxy',
+        '--disable-ipfs',
+        '--disable-dict',
+        '--disable-telnet',
+        '--disable-tftp',
+        '--disable-pop3',
+        '--disable-imap',
+        '--disable-smb',
+        '--disable-smtp',
+        '--disable-gopher',
+        '--disable-mqtt',
+        '--disable-manual',
+        '--disable-docs',
+        '--enable-ipv6',
+        '--enable-windows-unicode',
+        '--disable-cookies',
+        '--with-schannel',
+        '--without-openssl',
+        '--without-wolfssl',
+        '--without-libpsl',
+        '--with-winidn',
+        '--disable-dependency-tracking',
+        "--prefix=$cygwinInstalledPath"
+    )
+    $buildJsonCVersion = '0.18'
+    $buildJsonCCMakeArgs = @(
+        '-DCMAKE_BUILD_TYPE=Release',
+        "'-DCMAKE_INSTALL_PREFIX=$cygwinInstalledPath'",
+        '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
+        '-DBUILD_TESTING=OFF',
+        "-DCMAKE_C_COMPILER=$mingwHost-gcc",
+        "-DCMAKE_C_FLAGS='-g0 -O2'"
+    )
+    switch ($Link) {
+        'shared' {
+            $buildLibcurlConfigureArgs += '--enable-shared'
+            $buildLibcurlConfigureArgs += '--disable-static'
+            $buildJsonCCMakeArgs += '-DBUILD_SHARED_LIBS=ON'
+            $buildJsonCCMakeArgs += '-DBUILD_STATIC_LIBS=OFF'
+        }
+        'static' {
+            $cFlags = "$cFlags -DCURL_STATICLIB"
+            $buildLibcurlConfigureArgs += '--enable-static'
+            $buildLibcurlConfigureArgs += '--disable-shared'
+            $buildJsonCCMakeArgs += '-DBUILD_STATIC_LIBS=ON'
+            $buildJsonCCMakeArgs += '-DBUILD_SHARED_LIBS=OFF'
+            $configureLibs = "$configureLibs -lws2_32"
+        }
+    }
+}
+
 if ($gettextVersion -lt [Version]'0.26' -or $env:GETTEXT_VERSION -eq '0.26-pre1') {
     # We use -fno-threadsafe-statics because:
     # - otherwise xgettext would use the the __cxa_guard_acquire and __cxa_guard_release functions of lib-stdc++
@@ -121,11 +212,13 @@ $configureArgs = @(
     # The C/C++ preprocessor flags
     "CPPFLAGS='-I$cygwinInstalledPath/include -I/usr/$mingwHost/sys-root/mingw/include -DWINVER=0x0601 -D_WIN32_WINNT=0x0601'",
     # The flags for the C compiler
-    "CFLAGS='-g0 -O2'",
+    "CFLAGS='$cFlags'",
     # The flags for the C++ compiler
     "CXXFLAGS='$cxxFlags'",
     # The flags for the linker
     "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib'",
+    # The libraries to link against
+    "LIBS='$configureLibs'",
     "--host=$mingwHost",
     '--enable-relocatable',
     '--config-cache',
@@ -163,7 +256,7 @@ if ($gettextVersion -le [Version]'0.22.5') {
     } catch {
         $dotnetCommand = $null
     }
-    if (-not($dotnetCommand) || -not($dotnetCommand.Path)) {
+    if (-not($dotnetCommand) -or -not($dotnetCommand.Path)) {
         throw 'Failed to find dotnet.exe'
     }
     $dotnetCommandPath = (Get-Item -Path ($dotnetCommand.Path)).Directory.FullName
@@ -339,12 +432,16 @@ if ($Link -eq 'shared' -and $gettextVersion -lt [Version]'0.23') {
 }
 
 Export-Variable -Name 'cygwin-mirror' -Value $cygwinMirror
-Export-Variable -Name 'cygwin-packages' -Value "wget,file,make,unzip,dos2unix,patch,mingw64-$architecture-gcc-core,mingw64-$architecture-gcc-g++,mingw64-$architecture-headers,mingw64-$architecture-runtime"
+Export-Variable -Name 'cygwin-packages' -Value $($cygwinPackages -join ',')
 Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
 Export-Variable -Name 'mingw-host' -Value $mingwHost
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
 Export-Variable -Name 'configure-args-gettext' -Value $($gettextConfigureArgs -join ' ')
 Export-Variable -Name 'iconv-source-url' -Value $iconvSourceUrl
+Export-Variable -Name 'build-libcurl-version' -Value $buildLibcurlVersion
+Export-Variable -Name 'build-libcurl-configure-args' -Value $($buildLibcurlConfigureArgs -join ' ')
+Export-Variable -Name 'build-json-c-version' -Value $buildJsonCVersion
+Export-Variable -Name 'build-json-c-cmake-args' -Value $($buildJsonCCMakeArgs -join ' ')
 Export-Variable -Name 'gettext-source-url' -Value $gettextSourceUrl
 Export-Variable -Name 'gettext-ignore-tests-c' -Value $($gettextIgnoreTestsC -join ' ')
 Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests -join ' ')
