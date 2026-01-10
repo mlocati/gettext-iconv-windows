@@ -107,6 +107,9 @@ $cygwinPackages = @(
     "mingw64-$architecture-runtime"
 )
 
+$cFlags = '-g0 -O2'
+$cxxFlags = '-g0 -O2'
+
 $buildLibcurlVersion = ''
 $buildLibcurlConfigureArgs = @()
 $buildJsonCVersion = ''
@@ -173,6 +176,7 @@ if ($gettextVersion -ge [Version]'1.0') {
             $buildJsonCCMakeArgs += '-DBUILD_STATIC_LIBS=OFF'
         }
         'static' {
+            $cFlags = "$cFlags -DCURL_STATICLIB"
             $buildLibcurlConfigureArgs += '--enable-static'
             $buildLibcurlConfigureArgs += '--disable-shared'
             $buildJsonCCMakeArgs += '-DBUILD_STATIC_LIBS=ON'
@@ -181,7 +185,6 @@ if ($gettextVersion -ge [Version]'1.0') {
     }
 }
 
-$cxxFlags = '-g0 -O2'
 if ($gettextVersion -lt [Version]'0.26' -or $env:GETTEXT_VERSION -eq '0.26-pre1') {
     # We use -fno-threadsafe-statics because:
     # - otherwise xgettext would use the the __cxa_guard_acquire and __cxa_guard_release functions of lib-stdc++
@@ -207,7 +210,7 @@ $configureArgs = @(
     # The C/C++ preprocessor flags
     "CPPFLAGS='-I$cygwinInstalledPath/include -I/usr/$mingwHost/sys-root/mingw/include -DWINVER=0x0601 -D_WIN32_WINNT=0x0601'",
     # The flags for the C compiler
-    "CFLAGS='-g0 -O2'",
+    "CFLAGS='$cFlags'",
     # The flags for the C++ compiler
     "CXXFLAGS='$cxxFlags'",
     # The flags for the linker
