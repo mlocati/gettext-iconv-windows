@@ -315,16 +315,18 @@ jobs:
         if: steps.vars.outputs.build-libcurl-version
         working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}
         run: |
-          ./configure ${{ steps.vars.outputs.build-libcurl-configure-args }}
+          mkdir build
+          cd build
+          ../configure ${{ steps.vars.outputs.build-libcurl-configure-args }}
       -
         name: Install cURL - libcurl
         if: steps.vars.outputs.build-libcurl-version
-        working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}\lib
+        working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}\build\lib
         run: make --jobs=$(nproc) install-strip
       -
         name: Install cURL - include
         if: steps.vars.outputs.build-libcurl-version
-        working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}\include
+        working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}\build\include
         run: make --jobs=$(nproc) install-strip
       -
         name: Prepare JSON-C
@@ -435,6 +437,12 @@ jobs:
           mkdir build-log
           if [ -d src/libiconv-$ICONV_VERSION/build ]; then
             tar c -J -f build-log/iconv.tar.xz src/libiconv-$ICONV_VERSION/build
+          fi
+          if [ -d src/curl-${{ steps.vars.outputs.build-libcurl-version }}/build ]; then
+            tar c -J -f build-log/curl.tar.xz src/curl-${{ steps.vars.outputs.build-libcurl-version }}/build
+          fi
+          if [ -d src/json-c-${{ steps.vars.outputs.build-json-c-version }}/build ]; then
+            tar c -J -f build-log/json-c.tar.xz src/json-c-${{ steps.vars.outputs.build-json-c-version }}/build
           fi
           if [ -d src/gettext-$GETTEXT_VERSION/build ]; then
             tar c -J -f build-log/gettext.tar.xz src/gettext-$GETTEXT_VERSION/build
