@@ -109,6 +109,7 @@ $cygwinPackages = @(
 
 $cFlags = '-g0 -O2'
 $cxxFlags = '-g0 -O2'
+$configureLibs = ''
 
 $buildLibcurlVersion = ''
 $buildLibcurlConfigureArgs = @()
@@ -181,6 +182,7 @@ if ($gettextVersion -ge [Version]'1.0') {
             $buildLibcurlConfigureArgs += '--disable-shared'
             $buildJsonCCMakeArgs += '-DBUILD_STATIC_LIBS=ON'
             $buildJsonCCMakeArgs += '-DBUILD_SHARED_LIBS=OFF'
+            $configureLibs = "$configureLibs -lws2_32"
         }
     }
 }
@@ -215,6 +217,8 @@ $configureArgs = @(
     "CXXFLAGS='$cxxFlags'",
     # The flags for the linker
     "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib'",
+    # The libraries to link against
+    "LIBS='$configureLibs'",
     "--host=$mingwHost",
     '--enable-relocatable',
     '--config-cache',
