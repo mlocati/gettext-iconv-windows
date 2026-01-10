@@ -109,6 +109,7 @@ $cygwinPackages = @(
 
 $cFlags = '-g0 -O2'
 $cxxFlags = '-g0 -O2'
+$configureGettextLibs = ''
 
 $buildLibcurlVersion = ''
 $buildLibcurlConfigureArgs = @()
@@ -181,6 +182,7 @@ if ($gettextVersion -ge [Version]'1.0') {
             $buildLibcurlConfigureArgs += '--disable-shared'
             $buildJsonCCMakeArgs += '-DBUILD_STATIC_LIBS=ON'
             $buildJsonCCMakeArgs += '-DBUILD_SHARED_LIBS=OFF'
+            $configureGettextLibs = "$configureGettextLibs -lcurl -lws2_32 -lbcrypt -liphlpapi -lsecur32 -lcrypt32"
         }
     }
 }
@@ -243,6 +245,9 @@ $gettextConfigureArgs = @(
     '--without-bzip2',
     '--without-xz'
 )
+if ($configureGettextLibs.Trim() -ne '') {
+    $gettextConfigureArgs += "LIBS='$($configureGettextLibs.Trim())'"
+}
 if ($gettextVersion -le [Version]'0.22.5') {
     $gettextConfigureArgs += '--disable-csharp'
 } else {
