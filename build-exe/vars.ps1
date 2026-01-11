@@ -153,10 +153,13 @@ if ($gettextVersion -ge [Version]'1.0') {
         '--enable-windows-unicode',
         '--disable-cookies',
         '--with-schannel',
+        '--without-gnutls',
         '--without-openssl',
+        '--without-rustls'
         '--without-wolfssl',
         '--without-libpsl',
         '--with-winidn',
+        '--disable-threaded-resolver',
         '--disable-dependency-tracking',
         "--prefix=$cygwinInstalledPath"
     )
