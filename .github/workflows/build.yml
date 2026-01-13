@@ -209,7 +209,7 @@ jobs:
             Write-Host -Object 'Downloaded'
           }
       -
-        name: Download cURL
+        name: Download curl
         if: steps.vars.outputs.build-libcurl-version
         working-directory: src\downloads
         shell: pwsh
@@ -260,7 +260,7 @@ jobs:
           tar x -C src -z -f src/downloads/libiconv-$ICONV_VERSION.tar.gz
           cp src/libiconv-$ICONV_VERSION/COPYING installed/license-iconv.txt
       -
-        name: Extract cURL
+        name: Extract curl
         if: steps.vars.outputs.build-libcurl-version
         run: |
           tar x -C src -z -f src/downloads/curl-${{ steps.vars.outputs.build-libcurl-version }}.tar.gz
@@ -311,7 +311,7 @@ jobs:
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
         run: make --jobs=$(nproc) install-strip
       -
-        name: Configure cURL
+        name: Configure curl
         if: steps.vars.outputs.build-libcurl-version
         id: curl-configure
         working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}
@@ -319,16 +319,21 @@ jobs:
           mkdir build
           cd build
           ../configure ${{ steps.vars.outputs.build-libcurl-configure-args }}
-          printf 'libs=%s\n' "$(./curl-config ${{ steps.vars.outputs.build-libcurl-curlconfig-arg }})" >>"$GITHUB_OUTPUT"
+          if [ "$(./curl-config --built-shared)" = yes ]; then
+            libs="$(./curl-config --libs)"
+          else
+            libs="$(./curl-config --static-libs)"
+          fi
+          echo "libs=$libs" >>"$GITHUB_OUTPUT"
           echo 'OUTPUTS:'
           cat "$GITHUB_OUTPUT"
       -
-        name: Install cURL - libcurl
+        name: Install curl - libcurl
         if: steps.vars.outputs.build-libcurl-version
         working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}\build\lib
         run: make --jobs=$(nproc) install-strip
       -
-        name: Install cURL - include
+        name: Install curl - include
         if: steps.vars.outputs.build-libcurl-version
         working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}\build\include
         run: make --jobs=$(nproc) install-strip

@@ -112,7 +112,6 @@ $cxxFlags = '-g0 -O2'
 
 $buildLibcurlVersion = ''
 $buildLibcurlConfigureArgs = @()
-$buildLibcurlCurlconfigArg = ''
 $buildJsonCVersion = ''
 $buildJsonCCMakeArgs = @()
 
@@ -176,7 +175,6 @@ if ($gettextVersion -ge [Version]'1.0') {
         'shared' {
             $buildLibcurlConfigureArgs += '--enable-shared'
             $buildLibcurlConfigureArgs += '--disable-static'
-            $buildLibcurlCurlconfigArg = '--libs'
             $buildJsonCCMakeArgs += '-DBUILD_SHARED_LIBS=ON'
             $buildJsonCCMakeArgs += '-DBUILD_STATIC_LIBS=OFF'
         }
@@ -184,7 +182,6 @@ if ($gettextVersion -ge [Version]'1.0') {
             $cFlags = "$cFlags -DCURL_STATICLIB"
             $buildLibcurlConfigureArgs += '--enable-static'
             $buildLibcurlConfigureArgs += '--disable-shared'
-            $buildLibcurlCurlconfigArg = '--static-libs'
             $buildJsonCCMakeArgs += '-DBUILD_STATIC_LIBS=ON'
             $buildJsonCCMakeArgs += '-DBUILD_SHARED_LIBS=OFF'
         }
@@ -442,7 +439,6 @@ Export-Variable -Name 'configure-args-gettext' -Value $($gettextConfigureArgs -j
 Export-Variable -Name 'iconv-source-url' -Value $iconvSourceUrl
 Export-Variable -Name 'build-libcurl-version' -Value $buildLibcurlVersion
 Export-Variable -Name 'build-libcurl-configure-args' -Value $($buildLibcurlConfigureArgs -join ' ')
-Export-Variable -Name 'build-libcurl-curlconfig-arg' -Value $buildLibcurlCurlconfigArg
 Export-Variable -Name 'build-json-c-version' -Value $buildJsonCVersion
 Export-Variable -Name 'build-json-c-cmake-args' -Value $($buildJsonCCMakeArgs -join ' ')
 Export-Variable -Name 'gettext-source-url' -Value $gettextSourceUrl
