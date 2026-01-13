@@ -81,6 +81,12 @@ switch ($Bits) {
     }
 }
 
+if ($Bits -eq 32 -and $Link -eq 'shared') {
+    $ldFlags = '-static-libgcc'
+} else {
+    $ldFlags = ''
+}
+
 $mingwHost = "$architecture-w64-mingw32"
 
 $cygwinPath = @(
@@ -127,7 +133,7 @@ if ($gettextVersion -ge [Version]'1.0') {
         "CPPFLAGS='-I$cygwinInstalledPath/include -I/usr/$mingwHost/sys-root/mingw/include -DWINVER=0x0601 -D_WIN32_WINNT=0x0601'",
         "CFLAGS='-g0 -O2'",
         "CXXFLAGS='-g0 -O2'",
-        "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib'",
+        "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib $ldFlags'",
         "--host=$mingwHost",
         '--enable-http',
         '--disable-ftp',
@@ -178,7 +184,8 @@ if ($gettextVersion -ge [Version]'1.0') {
         '-DDISABLE_THREAD_LOCAL_STORAGE=ON',
         '-DENABLE_THREADING=OFF',
         '-DBUILD_APPS=OFF',
-        '-DCMAKE_SYSTEM_NAME=Windows'
+        '-DCMAKE_SYSTEM_NAME=Windows',
+        "-DCMAKE_SHARED_LINKER_FLAGS='$ldFlags'"
     )
     switch ($Link) {
         'shared' {
@@ -226,7 +233,7 @@ $configureArgs = @(
     # The flags for the C++ compiler
     "CXXFLAGS='$cxxFlags'",
     # The flags for the linker
-    "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib'",
+    "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib $ldFlags'",
     "--host=$mingwHost",
     '--enable-relocatable',
     '--config-cache',
