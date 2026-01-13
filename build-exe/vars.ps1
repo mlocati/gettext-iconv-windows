@@ -159,6 +159,11 @@ if ($gettextVersion -ge [Version]'1.0') {
         '--without-libpsl',
         '--with-winidn',
         '--disable-threaded-resolver',
+        '--disable-kerberos-auth',
+        '--disable-ntlm',
+        '--disable-negotiate-auth',
+        '--disable-sspi',
+        '--disable-unix-sockets',
         '--disable-dependency-tracking',
         "--prefix=$cygwinInstalledPath"
     )
