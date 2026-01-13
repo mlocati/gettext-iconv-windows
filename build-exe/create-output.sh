@@ -85,8 +85,7 @@ done
 if [ -d "$SOURCE/lib/" ]; then
     find "$SOURCE/lib/" -type f -print0 | while IFS= read -r -d '' i; do
         case "$i" in
-            *.a | *.la) ;;
-            *)
+            *.dll | *.exe)
                 copyFile "$i"
                 ;;
         esac
