@@ -176,7 +176,8 @@ if ($gettextVersion -ge [Version]'1.0') {
         "-DCMAKE_C_COMPILER=$mingwHost-gcc",
         "-DCMAKE_C_FLAGS='-g0 -O2'",
         '-DDISABLE_THREAD_LOCAL_STORAGE=ON',
-        '-DENABLE_THREADING=OFF'
+        '-DENABLE_THREADING=OFF',
+        '-DBUILD_APPS=OFF'
     )
     switch ($Link) {
         'shared' {
