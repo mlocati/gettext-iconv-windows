@@ -354,7 +354,7 @@ jobs:
         name: Install JSON-C
         if: steps.vars.outputs.build-json-c-version
         working-directory: src\json-c-${{ steps.vars.outputs.build-json-c-version }}\build
-        run: make install
+        run: make install/strip
       -
         name: Configure gettext
         id: gettext-configure
