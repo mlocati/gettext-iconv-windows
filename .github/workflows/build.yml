@@ -313,11 +313,15 @@ jobs:
       -
         name: Configure cURL
         if: steps.vars.outputs.build-libcurl-version
+        id: curl-configure
         working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}
         run: |
           mkdir build
           cd build
           ../configure ${{ steps.vars.outputs.build-libcurl-configure-args }}
+          printf 'libs=%s\n' "$(./curl-config ${{ steps.vars.outputs.build-libcurl-curlconfig-arg }})" >>"$GITHUB_OUTPUT"
+          echo 'OUTPUTS:'
+          cat "$GITHUB_OUTPUT"
       -
         name: Install cURL - libcurl
         if: steps.vars.outputs.build-libcurl-version
@@ -353,7 +357,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          ../configure ${{ steps.vars.outputs.configure-args }} ${{ steps.vars.outputs.configure-args-gettext }}
+          ../configure ${{ steps.vars.outputs.configure-args }} ${{ steps.vars.outputs.configure-args-gettext }} LIBS='${{ steps.curl-configure.outputs.libs }}'
       -
         name: Ignore gettext C tests
         if: steps.vars.outputs.gettext-ignore-tests-c
