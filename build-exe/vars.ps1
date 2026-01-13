@@ -154,7 +154,7 @@ if ($gettextVersion -ge [Version]'1.0') {
         '--with-schannel',
         '--without-gnutls',
         '--without-openssl',
-        '--without-rustls'
+        '--without-rustls',
         '--without-wolfssl',
         '--without-libpsl',
         '--with-winidn',
