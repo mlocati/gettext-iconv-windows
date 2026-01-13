@@ -174,7 +174,9 @@ if ($gettextVersion -ge [Version]'1.0') {
         '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
         '-DBUILD_TESTING=OFF',
         "-DCMAKE_C_COMPILER=$mingwHost-gcc",
-        "-DCMAKE_C_FLAGS='-g0 -O2'"
+        "-DCMAKE_C_FLAGS='-g0 -O2'",
+        '-DDISABLE_THREAD_LOCAL_STORAGE=ON',
+        '-DENABLE_THREADING=OFF'
     )
     switch ($Link) {
         'shared' {
