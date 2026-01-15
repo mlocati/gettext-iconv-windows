@@ -138,7 +138,6 @@ if ($gettextVersion -ge [Version]'1.0') {
         '--enable-http',
         '--disable-file',
         '--disable-ftp',
-        '--enable-file',
         '--disable-ldap',
         '--disable-ldaps',
         '--disable-rtsp',
