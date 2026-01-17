@@ -114,7 +114,7 @@ $cygwinPackages = @(
 )
 
 $cFlags = '-g0 -O2'
-$cxxFlags = '-g0 -O2'
+$cxxFlags = '-g0 -O2 -fno-exceptions -fno-rtti'
 
 $buildLibcurlVersion = ''
 $buildLibcurlConfigureArgs = @()
@@ -132,7 +132,7 @@ if ($gettextVersion -ge [Version]'1.0') {
         "STRIP='$mingwHost-strip'",
         "CPPFLAGS='-I$cygwinInstalledPath/include -I/usr/$mingwHost/sys-root/mingw/include -DWINVER=0x0601 -D_WIN32_WINNT=0x0601'",
         "CFLAGS='-g0 -O2'",
-        "CXXFLAGS='-g0 -O2'",
+        "CXXFLAGS='-g0 -O2 -fno-exceptions -fno-rtti'",
         "LDFLAGS='-L$cygwinInstalledPath/lib -L/usr/$mingwHost/sys-root/mingw/lib $ldFlags'",
         "--host=$mingwHost",
         '--enable-http',
@@ -186,6 +186,7 @@ if ($gettextVersion -ge [Version]'1.0') {
         '-DENABLE_THREADING=OFF',
         '-DBUILD_APPS=OFF',
         '-DCMAKE_SYSTEM_NAME=Windows',
+        "-DCMAKE_CXX_FLAGS='-fno-exceptions -fno-rtti'",
         "-DCMAKE_SHARED_LINKER_FLAGS='$ldFlags'"
     )
     switch ($Link) {
