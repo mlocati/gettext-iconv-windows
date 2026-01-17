@@ -575,6 +575,7 @@ jobs:
           output-artifact-directory: files-signed
           parameters: |
             iconvPEVersion: "${{ steps.versoninfos.outputs.iconv-peversion }}"
+            curlPEVersion: "${{ steps.versoninfos.outputs.curl-peversion }}"
             gettextPEVersion: "${{ steps.versoninfos.outputs.gettext-peversion }}"
             gettextPENameLibGettextLib: "${{ steps.versoninfos.outputs.libgettextlib-pename }}"
             gettextPEVersionLibGettextLib: "${{ steps.versoninfos.outputs.libgettextlib-peversion }}"

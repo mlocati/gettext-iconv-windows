@@ -33,6 +33,8 @@ if (-not(Test-Path -LiteralPath $RootPath -PathType Container)) {
 }
 
 $script:iconvPEVersion = ''
+$script:curlPEVersion = ''
+# $script:jsonCPEVersion = '' # DISABLED - SEE https://github.com/json-c/json-c/issues/912
 $script:gettextPEVersion = ''
 $script:libgettextlibPEName = ''
 $script:libgettextlibPEVersion = ''
@@ -49,6 +51,12 @@ foreach ($file in $files) {
         $versionVariableName = 'iconvPEVersion'
     } elseif ($file.Name -like 'libiconv-*.dll') {
         $versionVariableName = 'iconvPEVersion'
+    } elseif ($file.Name -like 'libcurl*.dll') {
+        $versionVariableName = 'curlPEVersion'
+    <# DISABLED - SEE https://github.com/json-c/json-c/issues/912
+    } elseif ($file.Name -like 'libjson-c*.dll') {
+        $versionVariableName = 'jsonCPEVersion'
+    #>
     } elseif ($file.Name -like 'envsubst.exe') {
         $versionVariableName = 'gettextPEVersion'
     } elseif ($file.Name -like 'gettext.exe') {
@@ -87,6 +95,8 @@ foreach ($file in $files) {
         $versionVariableName = 'gettextPEVersion'
     } elseif ($file.Name -like 'msgmerge.exe') {
         $versionVariableName = 'gettextPEVersion'
+    } elseif ($file.Name -like 'msgpre.exe') {
+        $versionVariableName = 'gettextPEVersion'
     } elseif ($file.Name -like 'msgunfmt.exe') {
         $versionVariableName = 'gettextPEVersion'
     } elseif ($file.Name -like 'msguniq.exe') {
@@ -98,6 +108,8 @@ foreach ($file in $files) {
     } elseif ($file.Name -like 'printf_ngettext.exe') {
         $versionVariableName = 'gettextPEVersion'
     } elseif ($file.Name -like 'recode-sr-latin.exe') {
+        $versionVariableName = 'gettextPEVersion'
+    } elseif ($file.Name -like 'spit.exe') {
         $versionVariableName = 'gettextPEVersion'
     } elseif ($file.Name -like 'xgettext.exe') {
         $versionVariableName = 'gettextPEVersion'
@@ -126,6 +138,8 @@ foreach ($file in $files) {
 }
 
 Export-Variable -Name 'iconv-peversion' -Value $script:iconvPEVersion
+Export-Variable -Name 'curl-peversion' -Value $script:curlPEVersion
+# Export-Variable -Name 'json-c-peversion' -Value $script:jsonCPEVersion # DISABLED - SEE https://github.com/json-c/json-c/issues/912
 Export-Variable -Name 'gettext-peversion' -Value $script:gettextPEVersion
 Export-Variable -Name 'libgettextlib-pename' -Value $script:libgettextlibPEName
 Export-Variable -Name 'libgettextlib-peversion' -Value $script:libgettextlibPEVersion

@@ -312,8 +312,10 @@ switch ($Sign) {
 
 if ($gettextVersion -le [Version]'0.22.5') {
     $signpathArtifactConfigurationFiles = 'gh_sign_files-0.22'
-} else {
+} elseif ($gettextVersion -le [Version]'0.99.99') {
     $signpathArtifactConfigurationFiles = 'gh_sign_files-0.23'
+} else {
+    $signpathArtifactConfigurationFiles = 'gh_sign_files-1.0'
 }
 
 $gettextIgnoreTestsC = @()
