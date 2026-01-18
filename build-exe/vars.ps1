@@ -287,7 +287,7 @@ if ($gettextVersion -le [Version]'0.22.5') {
 if ($env:GITHUB_REPOSITORY -ne 'mlocati/gettext-iconv-windows') {
     Write-Host -Object "Using -Sign no because the current repository ($($env:GITHUB_REPOSITORY)) is not the upstream one`n"
     $Sign = 'no'
-} elseif ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+} elseif ($env:GITHUB_EVENT_NAME -eq 'pull_requestX') {
     Write-Host -Object "Using -Sign no because the current event is $($env:GITHUB_EVENT_NAME)`n"
     $Sign = 'no'
 } elseif (-not($Sign)) {
