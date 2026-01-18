@@ -11,8 +11,8 @@
         <parameter name="gettextPEVersionLibGettextLib" required="false" />
         <parameter name="gettextPENameLibGettextSrc" required="false" />
         <parameter name="gettextPEVersionLibGettextSrc" required="false" />
-        <parameter name="gettextPEVersionLibIntl" required="true" />
-        <parameter name="gettextPEVersionLibTextStyle" required="true" />
+        <parameter name="gettextPEVersionLibIntl" required="false" />
+        <parameter name="gettextPEVersionLibTextStyle" required="false" />
     </parameters>
     <zip-file>
         <pe-file-set>
