@@ -477,7 +477,7 @@ jobs:
           -MinGWPath C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
       -
         name: Extract version infos
-        id: versoninfos
+        id: versioninfos
         shell: pwsh
         run: ./build-exe/extract-versiononfos.ps1 -RootPath '.\files-unsigned'
       -
@@ -573,16 +573,7 @@ jobs:
           github-artifact-id: ${{ steps.upload-files-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: files-signed
-          parameters: |
-            iconvPEVersion: "${{ steps.versoninfos.outputs.iconv-peversion }}"
-            curlPEVersion: "${{ steps.versoninfos.outputs.curl-peversion }}"
-            gettextPEVersion: "${{ steps.versoninfos.outputs.gettext-peversion }}"
-            gettextPENameLibGettextLib: "${{ steps.versoninfos.outputs.libgettextlib-pename }}"
-            gettextPEVersionLibGettextLib: "${{ steps.versoninfos.outputs.libgettextlib-peversion }}"
-            gettextPENameLibGettextSrc: "${{ steps.versoninfos.outputs.libgettextsrc-pename }}"
-            gettextPEVersionLibGettextSrc: "${{ steps.versoninfos.outputs.libgettextsrc-peversion }}"
-            gettextPEVersionLibIntl: "${{ steps.versoninfos.outputs.libintl-peversion }}"
-            gettextPEVersionLibTextStyle: "${{ steps.versoninfos.outputs.libtextstyle-peversion }}"
+          parameters: ${{ steps.versioninfos.outputs.signpath-parameters }}
       -
         name: Check signatures
         if: steps.vars.outputs.signpath-signing-policy
