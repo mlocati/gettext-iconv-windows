@@ -29,6 +29,8 @@ function Test-MustFileBeSigned()
         'libgettextsrc-*.dll',
         'msgfmt.net.exe',
         'msgunfmt.net.exe',
+        # - see https://github.com/json-c/json-c/issues/912
+        'libjson-c*.dll',
         # MinGW-w64 files:
         # - see https://signpath.org/terms#conditions-for-what-can-be-signed
         # - see https://signpath.org/terms#signpath-configuration-requirements
