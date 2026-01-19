@@ -27,77 +27,162 @@ $files = Get-ChildItem -LiteralPath $RootPath -File -Recurse -Include *.exe,*.dl
 foreach ($file in $files) {
     $nameParameterName = ''
     $versionParameterName = ''
-    if ($file.Name -like 'iconv.exe') {
-        $versionParameterName = 'iconvPEVersion'
-    } elseif ($file.Name -like 'libiconv-*.dll') {
-        $versionParameterName = 'iconvPEVersion'
-    } elseif ($file.Name -like 'libcurl*.dll') {
-        $versionParameterName = 'curlPEVersion'
-    } elseif ($file.Name -like 'libjson-c*.dll') {
-        $versionParameterName = 'jsonCPEVersion'
-    } elseif ($file.Name -like 'envsubst.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'gettext.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'libgettextlib-*.dll') {
-        $nameParameterName = 'gettextPENameLibGettextLib'
-        $versionParameterName = 'gettextPEVersionLibGettextLib'
-    } elseif ($file.Name -like 'libgettextsrc-*.dll') {
-        $nameParameterName = 'gettextPENameLibGettextSrc'
-        $versionParameterName = 'gettextPEVersionLibGettextSrc'
-    } elseif ($file.Name -like 'libintl-*.dll') {
-        $versionParameterName = 'gettextPEVersionLibIntl'
-    } elseif ($file.Name -like 'libtextstyle-*.dll') {
-        $versionParameterName = 'gettextPEVersionLibTextStyle'
-    } elseif ($file.Name -like 'msgattrib.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgcat.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgcmp.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgcomm.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgconv.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgen.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgexec.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgfilter.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgfmt.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msggrep.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msginit.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgmerge.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgpre.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgunfmt.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msguniq.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'ngettext.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'printf_gettext.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'printf_ngettext.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'recode-sr-latin.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'spit.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'xgettext.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'cldr-plurals.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'hostname.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'urlget.exe') {
-        $versionParameterName = 'gettextPEVersion'
-    } else {
+    switch -Wildcard ($file.Name) {
+        # Iconf
+        'iconv.exe' {
+            $versionParameterName = 'iconvPEVersion'
+        }
+        'libiconv-*.dll' {
+            $versionParameterName = 'iconvPEVersion'
+        }
+        # curl
+        'libcurl*.dll' {
+            $versionParameterName = 'curlPEVersion'
+        }
+        # JSON-C
+        'libjson-c*.dll' {
+            $versionParameterName = 'jsonCPEVersion'
+        }
+        # Gettext
+        'envsubst.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'gettext.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'libgettextlib-*.dll' {
+            $nameParameterName = 'gettextPENameLibGettextLib'
+            $versionParameterName = 'gettextPEVersionLibGettextLib'
+        }
+        'libgettextsrc-*.dll' {
+            $nameParameterName = 'gettextPENameLibGettextSrc'
+            $versionParameterName = 'gettextPEVersionLibGettextSrc'
+        }
+        'libintl-*.dll' {
+            $versionParameterName = 'gettextPEVersionLibIntl'
+        }
+        'libtextstyle-*.dll' {
+            $versionParameterName = 'gettextPEVersionLibTextStyle'
+        }
+        'msgattrib.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgcat.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgcmp.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgcomm.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgconv.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgen.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgexec.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgfilter.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgfmt.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msggrep.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msginit.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgmerge.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgpre.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgunfmt.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msguniq.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'ngettext.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'printf_gettext.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'printf_ngettext.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'recode-sr-latin.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'spit.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'xgettext.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'cldr-plurals.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'hostname.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'urlget.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        # Files missing details
+        # - see https://signpath.org/terms#signpath-configuration-requirements
+        # - see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00049.html
+        # - see https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00058.html
+        'csharpexec-test.exe' {
+            continue
+        }
+        'GNU.Gettext.dll' {
+            continue
+        }
+        'libasprintf-*.dll' {
+            continue
+        }
+        'libcharset-*.dll' {
+            continue
+        }
+        'libgettextpo-*.dll' {
+            continue
+        }
+        'msgfmt.net.exe' {
+            continue
+        }
+        'msgunfmt.net.exe' {
+            continue
+        }
+        # MinGW-w64 files:
+        # - see https://signpath.org/terms#conditions-for-what-can-be-signed
+        # - see https://signpath.org/terms#signpath-configuration-requirements
+        # - see https://sourceforge.net/p/mingw-w64/mailman/message/58822390/
+        # - see https://github.com/niXman/mingw-builds/issues/684
+        'libgcc_s_seh-*.dll' {
+            continue
+        }
+        'libgcc_s_sjlj-*.dll' {
+            continue
+        }
+        'libstdc++-*.dll' {
+            continue
+        }
+        'libwinpthread-*.dll' {
+            continue
+        }
+        default {
+            throw "Unexpected file name: $($file.Name)"
+        }
+    }
+    if ($versionParameterName -eq '' -and $nameParameterName -eq '') {
         continue
     }
     Write-Output "## File: $($file.Name)"
