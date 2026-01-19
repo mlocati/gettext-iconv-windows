@@ -550,6 +550,51 @@ jobs:
             Write-Output -InputObject "As expected, even with GETTEXTCLDRDIR there isn't a Plural-Forms header in the .po file for the locale $lang."
           }
       -
+        name: Start fake ollama server
+        if: steps.vars.outputs.check-spit-exe == 'yes'
+        id: start-fake-ollama-server
+        shell: pwsh
+        run: |
+          $process = Start-Process pwsh -ArgumentList '.\build-exe\run-fake-ollama-server.ps1' -WindowStyle Hidden -PassThru
+          Start-Sleep -Seconds 2
+          $process.Refresh()
+          if ($process.HasExited) {
+            throw 'Failed to start fake ollama server'
+          }
+          Write-Host "Started fake ollama server (process ID: $($process.Id))"
+          "pid=$($process.Id)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      -
+        name: Check spit executable
+        if: steps.vars.outputs.check-spit-exe == 'yes'
+        shell: pwsh
+        run: |
+          $spitPath = '.\files-unsigned\bin\spit.exe'
+          if (-not(Test-Path -LiteralPath $spitPath -PathType Leaf)) {
+            throw "spit.exe not found at expected path: $spitPath"
+          }
+          $stdout = Write-Output 'Test' | & $spitPath --model=llama3.2:3b --to=fr
+          if (-not($?)) {
+            throw "spit.exe failed"
+          }
+          $stdout = $stdout -join "`n"
+          if ($stdout -ne "Ollama answer to prompt Translate into French:`nTest") {
+            throw "spit.exe output is unexpected.`nIts output is:`n$stdout"
+          }
+          Write-Host "spit.exe executed correctly.`nIts output is`n$stdout"
+      -
+        name: Stop fake ollama server
+        if: (success() || failure()) && steps.start-fake-ollama-server.outcome == 'success'
+        shell: pwsh
+        run: |
+          try {
+            $process = Get-Process -Id ${{ steps.start-fake-ollama-server.outputs.pid }}
+          } catch {
+            $process = $null
+          }
+          if ($null -ne $process) {
+            $process.Kill($true)
+          }
+      -
         name: Upload unsigned files
         if: steps.vars.outputs.signpath-signing-policy
         id: upload-files-unsigned

@@ -122,9 +122,11 @@ $buildLibcurlVersion = ''
 $buildLibcurlConfigureArgs = @()
 $buildJsonCVersion = ''
 $buildJsonCCMakeArgs = @()
+$checkSpitExe = $false
 
 if ($gettextVersion -ge [Version]'1.0') {
     # The spit program (introduced in gettext 1.0) requires libcurl and json-c (otherwise gettext builds a Python script)
+    $checkSpitExe = $true
     $cygwinPackages += 'cmake'
     $buildLibcurlVersion = '8.18.0'
     $buildLibcurlConfigureArgs = @(
@@ -472,6 +474,7 @@ Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
 # See https://savannah.gnu.org/bugs/?func=detailitem&item_id=66378
 Export-Variable -Name 'simplify-plurals-xml' -Value $(if ($simplifyPluralsXml) { 'yes' } else { 'no' })
+Export-Variable -Name 'check-spit-exe' -Value $(if ($checkSpitExe) { 'yes' } else { 'no' })
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
