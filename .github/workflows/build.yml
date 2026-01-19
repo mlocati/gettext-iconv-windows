@@ -251,7 +251,7 @@ jobs:
           unzip -p src/downloads/cldr-$CLDR_VERSION.zip common/supplemental/plurals.xml >installed/lib/gettext/common/supplemental/plurals.xml
       -
         name: Simplify CLDR plurals.xml
-        if: steps.vars.outputs.simplify-plurals-xml
+        if: steps.vars.outputs.simplify-plurals-xml == 'yes'
         shell: pwsh
         run: ./build-exe/simplify-plurals-xml.ps1 installed/lib/gettext/common/supplemental/plurals.xml
       -

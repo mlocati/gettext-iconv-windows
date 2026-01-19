@@ -65,6 +65,8 @@ if (-not($env:CLDR_VERSION)) {
 }
 $cldrMajorVersion = [int][regex]::Match($env:CLDR_VERSION, '^\d+').Value
 
+$simplifyPluralsXml = $cldrMajorVersion -ge 38 -and $gettextVersion -lt [Version]'1.0'
+
 $absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
 $match = Select-String -InputObject $absoluteInstalledPath -Pattern '^([A-Za-z]):(\\.*?)\\?$'
 if (!$match) {
@@ -469,7 +471,7 @@ Export-Variable -Name 'signpath-artifactconfiguration-files' -Value $signpathArt
 Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
 # See https://savannah.gnu.org/bugs/?func=detailitem&item_id=66378
-Export-Variable -Name 'simplify-plurals-xml' -Value ($cldrMajorVersion -ge 38 ? 'true' : '')
+Export-Variable -Name 'simplify-plurals-xml' -Value $(if ($simplifyPluralsXml) { 'yes' } else { 'no' })
 
 Write-Output '## Outputs'
 Get-Content -LiteralPath $env:GITHUB_OUTPUT
