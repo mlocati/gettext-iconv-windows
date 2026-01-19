@@ -41,7 +41,7 @@ jobs:
     name: Test bash scripts
     runs-on: ubuntu-latest
     container:
-      image: mvdan/shfmt:v3.9.0-alpine
+      image: mvdan/shfmt:v3.12.0-alpine
       options: --entrypoint /bin/sh
     steps:
       -
@@ -72,7 +72,7 @@ jobs:
     steps:
       -
         name: Install PSScriptAnalyzer
-        run: Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.23.0 -Force -SkipPublisherCheck -Verbose
+        run: Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.24.0 -Force -SkipPublisherCheck -Verbose
       -
         name: Checkout
         uses: actions/checkout@v6
@@ -103,6 +103,7 @@ jobs:
       - test-pwsh-scripts
     runs-on: windows-2022
     strategy:
+      fail-fast: false
       matrix:
         bits:
           - 32
@@ -208,6 +209,30 @@ jobs:
             Write-Host -Object 'Downloaded'
           }
       -
+        name: Download curl
+        if: steps.vars.outputs.build-libcurl-version
+        working-directory: src\downloads
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath "curl-${{ steps.vars.outputs.build-libcurl-version }}.tar.gz" -PathType Leaf) {
+            Write-Host -Object 'Already downloaded'
+          } else {
+            Invoke-WebRequest -Uri "https://curl.se/download/curl-${{ steps.vars.outputs.build-libcurl-version }}.tar.gz" -OutFile "curl-${{ steps.vars.outputs.build-libcurl-version }}.tar.gz"
+            Write-Host -Object 'Downloaded'
+          }
+      -
+        name: Download JSON-C
+        if: steps.vars.outputs.build-json-c-version
+        working-directory: src\downloads
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath "json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz" -PathType Leaf) {
+            Write-Host -Object 'Already downloaded'
+          } else {
+            Invoke-WebRequest -Uri "https://s3.amazonaws.com/json-c_releases/releases/json-c-${{ steps.vars.outputs.build-json-c-version }}-nodoc.tar.gz" -OutFile "json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz"
+            Write-Host -Object 'Downloaded'
+          }
+      -
         name: Download gettext
         working-directory: src\downloads
         shell: pwsh
@@ -226,7 +251,7 @@ jobs:
           unzip -p src/downloads/cldr-$CLDR_VERSION.zip common/supplemental/plurals.xml >installed/lib/gettext/common/supplemental/plurals.xml
       -
         name: Simplify CLDR plurals.xml
-        if: steps.vars.outputs.simplify-plurals-xml
+        if: steps.vars.outputs.simplify-plurals-xml == 'yes'
         shell: pwsh
         run: ./build-exe/simplify-plurals-xml.ps1 installed/lib/gettext/common/supplemental/plurals.xml
       -
@@ -234,6 +259,18 @@ jobs:
         run: |
           tar x -C src -z -f src/downloads/libiconv-$ICONV_VERSION.tar.gz
           cp src/libiconv-$ICONV_VERSION/COPYING installed/license-iconv.txt
+      -
+        name: Extract curl
+        if: steps.vars.outputs.build-libcurl-version
+        run: |
+          tar x -C src -z -f src/downloads/curl-${{ steps.vars.outputs.build-libcurl-version }}.tar.gz
+          cp src/curl-${{ steps.vars.outputs.build-libcurl-version }}/COPYING installed/license-curl.txt
+      -
+        name: Extract JSON-C
+        if: steps.vars.outputs.build-json-c-version
+        run: |
+          tar x -C src -z -f src/downloads/json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz
+          cp src/json-c-${{ steps.vars.outputs.build-json-c-version }}/COPYING installed/license-json-c.txt
       -
         name: Extract gettext
         run: |
@@ -274,13 +311,58 @@ jobs:
         working-directory: src\libiconv-${{ env.ICONV_VERSION }}\build
         run: make --jobs=$(nproc) install-strip
       -
+        name: Configure curl
+        if: steps.vars.outputs.build-libcurl-version
+        id: curl-configure
+        working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}
+        run: |
+          mkdir build
+          cd build
+          ../configure ${{ steps.vars.outputs.build-libcurl-configure-args }}
+          if [ "$(./curl-config --built-shared)" = yes ]; then
+            libs="$(./curl-config --libs)"
+          else
+            libs="$(./curl-config --static-libs)"
+          fi
+          echo "libs=$libs" >>"$GITHUB_OUTPUT"
+          echo 'OUTPUTS:'
+          cat "$GITHUB_OUTPUT"
+      -
+        name: Install curl - libcurl
+        if: steps.vars.outputs.build-libcurl-version
+        working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}\build\lib
+        run: make --jobs=$(nproc) install-strip
+      -
+        name: Install curl - include
+        if: steps.vars.outputs.build-libcurl-version
+        working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}\build\include
+        run: make --jobs=$(nproc) install-strip
+      -
+        name: Prepare JSON-C
+        if: steps.vars.outputs.build-json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.build-json-c-version }}
+        run: |
+          mkdir build
+          cd build
+          cmake ${{ steps.vars.outputs.build-json-c-cmake-args }} ../
+      -
+        name: Build JSON-C
+        if: steps.vars.outputs.build-json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.build-json-c-version }}\build
+        run: make --jobs=$(nproc) all
+      -
+        name: Install JSON-C
+        if: steps.vars.outputs.build-json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.build-json-c-version }}\build
+        run: make install/strip
+      -
         name: Configure gettext
         id: gettext-configure
         working-directory: src\gettext-${{ env.GETTEXT_VERSION }}
         run: |
           mkdir build
           cd build
-          ../configure ${{ steps.vars.outputs.configure-args }} ${{ steps.vars.outputs.configure-args-gettext }}
+          ../configure ${{ steps.vars.outputs.configure-args }} ${{ steps.vars.outputs.configure-args-gettext }} LIBS='${{ steps.curl-configure.outputs.libs }}'
       -
         name: Ignore gettext C tests
         if: steps.vars.outputs.gettext-ignore-tests-c
@@ -365,6 +447,12 @@ jobs:
           if [ -d src/libiconv-$ICONV_VERSION/build ]; then
             tar c -J -f build-log/iconv.tar.xz src/libiconv-$ICONV_VERSION/build
           fi
+          if [ -d src/curl-${{ steps.vars.outputs.build-libcurl-version }}/build ]; then
+            tar c -J -f build-log/curl.tar.xz src/curl-${{ steps.vars.outputs.build-libcurl-version }}/build
+          fi
+          if [ -d src/json-c-${{ steps.vars.outputs.build-json-c-version }}/build ]; then
+            tar c -J -f build-log/json-c.tar.xz src/json-c-${{ steps.vars.outputs.build-json-c-version }}/build
+          fi
           if [ -d src/gettext-$GETTEXT_VERSION/build ]; then
             tar c -J -f build-log/gettext.tar.xz src/gettext-$GETTEXT_VERSION/build
           fi
@@ -389,7 +477,7 @@ jobs:
           -MinGWPath C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
       -
         name: Extract version infos
-        id: versoninfos
+        id: versioninfos
         shell: pwsh
         run: ./build-exe/extract-versiononfos.ps1 -RootPath '.\files-unsigned'
       -
@@ -462,6 +550,51 @@ jobs:
             Write-Output -InputObject "As expected, even with GETTEXTCLDRDIR there isn't a Plural-Forms header in the .po file for the locale $lang."
           }
       -
+        name: Start fake ollama server
+        if: steps.vars.outputs.check-spit-exe == 'yes'
+        id: start-fake-ollama-server
+        shell: pwsh
+        run: |
+          $process = Start-Process pwsh -ArgumentList '.\build-exe\run-fake-ollama-server.ps1' -WindowStyle Hidden -PassThru
+          Start-Sleep -Seconds 2
+          $process.Refresh()
+          if ($process.HasExited) {
+            throw 'Failed to start fake ollama server'
+          }
+          Write-Host "Started fake ollama server (process ID: $($process.Id))"
+          "pid=$($process.Id)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      -
+        name: Check spit executable
+        if: steps.vars.outputs.check-spit-exe == 'yes'
+        shell: pwsh
+        run: |
+          $spitPath = '.\files-unsigned\bin\spit.exe'
+          if (-not(Test-Path -LiteralPath $spitPath -PathType Leaf)) {
+            throw "spit.exe not found at expected path: $spitPath"
+          }
+          $stdout = Write-Output 'Test' | & $spitPath --model=llama3.2:3b --to=fr
+          if (-not($?)) {
+            throw "spit.exe failed"
+          }
+          $stdout = $stdout -join "`n"
+          if ($stdout -ne "Ollama answer to prompt Translate into French:`nTest") {
+            throw "spit.exe output is unexpected.`nIts output is:`n$stdout"
+          }
+          Write-Host "spit.exe executed correctly.`nIts output is`n$stdout"
+      -
+        name: Stop fake ollama server
+        if: (success() || failure()) && steps.start-fake-ollama-server.outcome == 'success'
+        shell: pwsh
+        run: |
+          try {
+            $process = Get-Process -Id ${{ steps.start-fake-ollama-server.outputs.pid }}
+          } catch {
+            $process = $null
+          }
+          if ($null -ne $process) {
+            $process.Kill($true)
+          }
+      -
         name: Upload unsigned files
         if: steps.vars.outputs.signpath-signing-policy
         id: upload-files-unsigned
@@ -485,15 +618,7 @@ jobs:
           github-artifact-id: ${{ steps.upload-files-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: files-signed
-          parameters: |
-            iconvPEVersion: "${{ steps.versoninfos.outputs.iconv-peversion }}"
-            gettextPEVersion: "${{ steps.versoninfos.outputs.gettext-peversion }}"
-            gettextPENameLibGettextLib: "${{ steps.versoninfos.outputs.libgettextlib-pename }}"
-            gettextPEVersionLibGettextLib: "${{ steps.versoninfos.outputs.libgettextlib-peversion }}"
-            gettextPENameLibGettextSrc: "${{ steps.versoninfos.outputs.libgettextsrc-pename }}"
-            gettextPEVersionLibGettextSrc: "${{ steps.versoninfos.outputs.libgettextsrc-peversion }}"
-            gettextPEVersionLibIntl: "${{ steps.versoninfos.outputs.libintl-peversion }}"
-            gettextPEVersionLibTextStyle: "${{ steps.versoninfos.outputs.libtextstyle-peversion }}"
+          parameters: ${{ steps.versioninfos.outputs.signpath-parameters }}
       -
         name: Check signatures
         if: steps.vars.outputs.signpath-signing-policy

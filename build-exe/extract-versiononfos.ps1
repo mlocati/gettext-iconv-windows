@@ -12,102 +12,177 @@ function Export-Variable()
         [Parameter(Mandatory = $false)]
         [string] $Value
     )
-    "$Name=$Value" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-}
-
-function Set-ScriptVar {
-    param (
-        [string]$Name,
-        [string]$Value
-    )
-    $oldValue = Get-Variable -Name $Name -Scope Script -ValueOnly
-    if ($oldValue -eq '') {
-        Set-Variable -Name $Name -Value $Value -Scope Script
-    } elseif ($oldValue -ne $Value) {
-        throw "'$Name' was previously defined to be '$oldValue', but now we're trying to set it to '$Value'."
-    }
+    "$Name<<EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+    $Value | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+    "EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 }
 
 if (-not(Test-Path -LiteralPath $RootPath -PathType Container)) {
     throw "Unable to find the directory $RootPath"
 }
 
-$script:iconvPEVersion = ''
-$script:gettextPEVersion = ''
-$script:libgettextlibPEName = ''
-$script:libgettextlibPEVersion = ''
-$script:libgettextsrcPEName = ''
-$script:libgettextsrcPEVersion = ''
-$script:libintlPEVersion = ''
-$script:libtextstylePEVersion = ''
+$collectedData = @{}
 
 $files = Get-ChildItem -LiteralPath $RootPath -File -Recurse -Include *.exe,*.dll
 foreach ($file in $files) {
-    $nameVariableName = ''
-    $versionVariableName = ''
-    if ($file.Name -like 'iconv.exe') {
-        $versionVariableName = 'iconvPEVersion'
-    } elseif ($file.Name -like 'libiconv-*.dll') {
-        $versionVariableName = 'iconvPEVersion'
-    } elseif ($file.Name -like 'envsubst.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'gettext.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'libgettextlib-*.dll') {
-        $nameVariableName = 'libgettextlibPEName'
-        $versionVariableName = 'libgettextlibPEVersion'
-    } elseif ($file.Name -like 'libgettextsrc-*.dll') {
-        $nameVariableName = 'libgettextsrcPEName'
-        $versionVariableName = 'libgettextsrcPEVersion'
-    } elseif ($file.Name -like 'libintl-*.dll') {
-        $versionVariableName = 'libintlPEVersion'
-    } elseif ($file.Name -like 'libtextstyle-*.dll') {
-        $versionVariableName = 'libtextstylePEVersion'
-    } elseif ($file.Name -like 'msgattrib.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgcat.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgcmp.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgcomm.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgconv.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgen.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgexec.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgfilter.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgfmt.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msggrep.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msginit.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgmerge.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msgunfmt.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'msguniq.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'ngettext.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'printf_gettext.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'printf_ngettext.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'recode-sr-latin.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'xgettext.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'cldr-plurals.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'hostname.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } elseif ($file.Name -like 'urlget.exe') {
-        $versionVariableName = 'gettextPEVersion'
-    } else {
+    $nameParameterName = ''
+    $versionParameterName = ''
+    switch -Wildcard ($file.Name) {
+        # Iconf
+        'iconv.exe' {
+            $versionParameterName = 'iconvPEVersion'
+        }
+        'libiconv-*.dll' {
+            $versionParameterName = 'iconvPEVersion'
+        }
+        # curl
+        'libcurl*.dll' {
+            $versionParameterName = 'curlPEVersion'
+        }
+        # JSON-C
+        'libjson-c*.dll' {
+            $versionParameterName = 'jsonCPEVersion'
+        }
+        # Gettext
+        'envsubst.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'gettext.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'libgettextlib-*.dll' {
+            $nameParameterName = 'gettextPENameLibGettextLib'
+            $versionParameterName = 'gettextPEVersionLibGettextLib'
+        }
+        'libgettextsrc-*.dll' {
+            $nameParameterName = 'gettextPENameLibGettextSrc'
+            $versionParameterName = 'gettextPEVersionLibGettextSrc'
+        }
+        'libintl-*.dll' {
+            $versionParameterName = 'gettextPEVersionLibIntl'
+        }
+        'libtextstyle-*.dll' {
+            $versionParameterName = 'gettextPEVersionLibTextStyle'
+        }
+        'msgattrib.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgcat.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgcmp.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgcomm.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgconv.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgen.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgexec.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgfilter.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgfmt.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msggrep.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msginit.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgmerge.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgpre.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msgunfmt.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'msguniq.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'ngettext.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'printf_gettext.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'printf_ngettext.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'recode-sr-latin.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'spit.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'xgettext.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'cldr-plurals.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'hostname.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        'urlget.exe' {
+            $versionParameterName = 'gettextPEVersion'
+        }
+        # Files missing details
+        # - see https://signpath.org/terms#signpath-configuration-requirements
+        # - see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00049.html
+        # - see https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00058.html
+        'csharpexec-test.exe' {
+            continue
+        }
+        'GNU.Gettext.dll' {
+            continue
+        }
+        'libasprintf-*.dll' {
+            continue
+        }
+        'libcharset-*.dll' {
+            continue
+        }
+        'libgettextpo-*.dll' {
+            continue
+        }
+        'msgfmt.net.exe' {
+            continue
+        }
+        'msgunfmt.net.exe' {
+            continue
+        }
+        # MinGW-w64 files:
+        # - see https://signpath.org/terms#conditions-for-what-can-be-signed
+        # - see https://signpath.org/terms#signpath-configuration-requirements
+        # - see https://sourceforge.net/p/mingw-w64/mailman/message/58822390/
+        # - see https://github.com/niXman/mingw-builds/issues/684
+        'libgcc_s_seh-*.dll' {
+            continue
+        }
+        'libgcc_s_sjlj-*.dll' {
+            continue
+        }
+        'libstdc++-*.dll' {
+            continue
+        }
+        'libwinpthread-*.dll' {
+            continue
+        }
+        default {
+            throw "Unexpected file name: $($file.Name)"
+        }
+    }
+    if ($versionParameterName -eq '' -and $nameParameterName -eq '') {
         continue
     }
     Write-Output "## File: $($file.Name)"
@@ -115,24 +190,44 @@ foreach ($file in $files) {
     if (-not($versionInfo)) {
         throw 'No version information found!'
     }
-    if ($nameVariableName -ne '') {
-        Write-Output "- $($versionInfo.ProductName) => $nameVariableName"
-        Set-ScriptVar -Name $nameVariableName -Value $versionInfo.ProductName
+    if ($nameParameterName -ne '') {
+        $value = if ($versionInfo -and $versionInfo.ProductName) { $versionInfo.ProductName } else { '' }
+        if ($value -eq '') {
+            throw 'ProductName not found!'
+        }
+        Write-Output "- '$value' => $nameParameterName"
+        if ($collectedData.ContainsKey($nameParameterName)) {
+            if ($collectedData[$nameParameterName] -ne $value) {
+                throw "Conflicting values collected for '$nameParameterName': '$($collectedData[$nameParameterName])' vs '$value'"
+            }
+        } else {
+            $collectedData[$nameParameterName] = $value
+        }
     }
-    if ($versionVariableName -ne '') {
-        Write-Output "- $($versionInfo.ProductVersion) => $versionVariableName"
-        Set-ScriptVar -Name $versionVariableName -Value $versionInfo.ProductVersion
+    if ($versionParameterName -ne '') {
+        $value = if ($versionInfo -and $versionInfo.ProductVersion) { $versionInfo.ProductVersion } else { '' }
+        if ($value -eq '') {
+            throw 'ProductVersion not found!'
+        }
+        Write-Output "- '$value' => $versionParameterName"
+        if ($collectedData.ContainsKey($versionParameterName)) {
+            if ($collectedData[$versionParameterName] -ne $value) {
+                throw "Conflicting values collected for '$versionParameterName': '$($collectedData[$versionParameterName])' vs '$value'"
+            }
+        } else {
+            $collectedData[$versionParameterName] = $value
+        }
     }
 }
 
-Export-Variable -Name 'iconv-peversion' -Value $script:iconvPEVersion
-Export-Variable -Name 'gettext-peversion' -Value $script:gettextPEVersion
-Export-Variable -Name 'libgettextlib-pename' -Value $script:libgettextlibPEName
-Export-Variable -Name 'libgettextlib-peversion' -Value $script:libgettextlibPEVersion
-Export-Variable -Name 'libgettextsrc-pename' -Value $script:libgettextsrcPEName
-Export-Variable -Name 'libgettextsrc-peversion' -Value $script:libgettextsrcPEVersion
-Export-Variable -Name 'libintl-peversion' -Value $script:libintlPEVersion
-Export-Variable -Name 'libtextstyle-peversion' -Value $script:libtextstylePEVersion
+$serializedLines = @()
+foreach ($key in $collectedData.Keys) {
+    $value = $collectedData[$key]
+    if ($value -ne '') {
+        $serializedLines += $key + ': ' + (ConvertTo-Json $value)
+    }
+}
 
-Write-Output '## Outputs'
-Get-Content -LiteralPath $env:GITHUB_OUTPUT
+$serializedParameters = ($serializedLines | Sort-Object) -join "`n"
+Write-Output "`n## Collected parameters:`n$serializedParameters`n"
+Export-Variable -Name 'signpath-parameters' -Value $serializedParameters
