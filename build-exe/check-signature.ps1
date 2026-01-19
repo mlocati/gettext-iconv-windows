@@ -71,7 +71,7 @@ function Test-File()
         'None' {
             if (Test-MustFileBeSigned -File $File) {
                 $errors += "$($File.FullName) is not signed"
-            } else {}
+            } else {
                 Write-Host -Object 'skipped.'
             }
         }
