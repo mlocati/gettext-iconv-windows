@@ -41,7 +41,7 @@ jobs:
     name: Test bash scripts
     runs-on: ubuntu-latest
     container:
-      image: mvdan/shfmt:v3.9.0-alpine
+      image: mvdan/shfmt:v3.12.0-alpine
       options: --entrypoint /bin/sh
     steps:
       -
@@ -72,7 +72,7 @@ jobs:
     steps:
       -
         name: Install PSScriptAnalyzer
-        run: Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.23.0 -Force -SkipPublisherCheck -Verbose
+        run: Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.24.0 -Force -SkipPublisherCheck -Verbose
       -
         name: Checkout
         uses: actions/checkout@v6
