@@ -58,34 +58,44 @@ function Test-File()
     Write-Host -Object "$($File.Name)... " -NoNewLine
     $signature = Get-AuthenticodeSignature -FilePath $File.FullName
     $signatureType = $signature.SignatureType
+    $errors = @()
     switch ($signatureType) {
         { 'Authenticode', 'Catalog' -eq $_ }  {
             $signatureStatus = $signature.Status
             if ($signatureStatus -ne 'Valid' -and -not($CanBeInvalid)) {
-                throw $signature.StatusMessage
+                $errors += "$($File.FullName) has an invalid signature ($signatureStatus)"
+            } else {
+                Write-Host -Object "signed ($signatureType, $signatureStatus)"
             }
-            Write-Host -Object "signed ($signatureType, $signatureStatus)"
         }
         'None' {
             if (Test-MustFileBeSigned -File $File) {
-                throw "$($File.FullName) is not signed"
+                $errors += "$($File.FullName) is not signed"
+            } else {}
+                Write-Host -Object 'skipped.'
             }
-            Write-Host -Object 'skipped.'
         }
         default {
-            throw "$($File.FullName) has an unknown signature ($signatureType)"
+            $errors += "$($File.FullName) has an unknown signature ($signatureType)"
         }
     }
+    return $errors
 }
 
+$errors = @()
 if (Test-Path -LiteralPath $Path -PathType Leaf) {
     $file = Get-Item -LiteralPath $Path
-    Test-File -File $file
+    $errors += Test-File -File $file
 } elseif (Test-Path -LiteralPath $Path -PathType Container) {
     $files = Get-ChildItem -LiteralPath $Path -File -Recurse -Include *.exe,*.dll
     foreach ($file in $files) {
-        Test-File -File $file
+        $errors += Test-File -File $file
     }
 } else {
-    throw "Unable to find the file or directory $Path"
+    $errors += "Unable to find the file or directory $Path"
+}
+
+if ($errors.Count -gt 0) {
+    Write-Host -Object "`nErrors found:`n$($errors -join "`n")`n"
+    exit 1
 }
