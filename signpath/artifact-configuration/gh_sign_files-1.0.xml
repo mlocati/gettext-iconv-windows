@@ -7,10 +7,7 @@
     <parameters>
         <parameter name="iconvPEVersion" required="true" />
         <parameter name="curlPEVersion" required="false" />
-        <!--
-        DISABLED - SEE https://github.com/json-c/json-c/issues/912
         <parameter name="jsonCPEVersion" required="false" />
-        -->
         <parameter name="gettextPEVersion" required="true" />
         <parameter name="gettextPENameLibGettextLib" required="false" />
         <parameter name="gettextPEVersionLibGettextLib" required="false" />
@@ -26,11 +23,8 @@
             <include path="bin/libiconv-*.dll" min-matches="0" max-matches="1" product-name="libiconv: character set conversion library" product-version="${iconvPEVersion}" />
             <!-- curl -->
             <include path="bin/libcurl*.dll" min-matches="0" max-matches="1" product-name="The curl library" product-version="${curlPEVersion}" />
-            <!-- json-c -->
-            <!--
-            DISABLED - SEE https://github.com/json-c/json-c/issues/912
-            <include path="bin/libjson-c*.dll" min-matches="0" max-matches="1" product-name="?" product-version="${jsonCPEVersion}" />
-            -->
+            <!-- JSON-C -->
+            <include path="bin/libjson-c*.dll" min-matches="0" max-matches="1" product-name="JSON-C" product-version="${jsonCPEVersion}" />
             <!-- gettext -->
             <include path="bin/envsubst.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/gettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />

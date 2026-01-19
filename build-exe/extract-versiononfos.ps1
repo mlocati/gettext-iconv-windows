@@ -25,7 +25,6 @@ $collectedData = @{}
 
 $files = Get-ChildItem -LiteralPath $RootPath -File -Recurse -Include *.exe,*.dll
 foreach ($file in $files) {
-    $required = $true
     $nameParameterName = ''
     $versionParameterName = ''
     if ($file.Name -like 'iconv.exe') {
@@ -36,7 +35,6 @@ foreach ($file in $files) {
         $versionParameterName = 'curlPEVersion'
     } elseif ($file.Name -like 'libjson-c*.dll') {
         $versionParameterName = 'jsonCPEVersion'
-        $required = $false # See https://github.com/json-c/json-c/issues/912
     } elseif ($file.Name -like 'envsubst.exe') {
         $versionParameterName = 'gettextPEVersion'
     } elseif ($file.Name -like 'gettext.exe') {
@@ -104,15 +102,15 @@ foreach ($file in $files) {
     }
     Write-Output "## File: $($file.Name)"
     $versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($file.FullName)
-    if (-not($versionInfo) -and $required) {
+    if (-not($versionInfo)) {
         throw 'No version information found!'
     }
     if ($nameParameterName -ne '') {
         $value = if ($versionInfo -and $versionInfo.ProductName) { $versionInfo.ProductName } else { '' }
-        Write-Output "- '$value' => $nameParameterName"
-        if ($value -eq '' -and $required) {
+        if ($value -eq '') {
             throw 'ProductName not found!'
         }
+        Write-Output "- '$value' => $nameParameterName"
         if ($collectedData.ContainsKey($nameParameterName)) {
             if ($collectedData[$nameParameterName] -ne $value) {
                 throw "Conflicting values collected for '$nameParameterName': '$($collectedData[$nameParameterName])' vs '$value'"
@@ -123,10 +121,10 @@ foreach ($file in $files) {
     }
     if ($versionParameterName -ne '') {
         $value = if ($versionInfo -and $versionInfo.ProductVersion) { $versionInfo.ProductVersion } else { '' }
-        Write-Output "- '$value' => $versionParameterName"
-        if ($value -eq '' -and $required) {
+        if ($value -eq '') {
             throw 'ProductVersion not found!'
         }
+        Write-Output "- '$value' => $versionParameterName"
         if ($collectedData.ContainsKey($versionParameterName)) {
             if ($collectedData[$versionParameterName] -ne $value) {
                 throw "Conflicting values collected for '$versionParameterName': '$($collectedData[$versionParameterName])' vs '$value'"
