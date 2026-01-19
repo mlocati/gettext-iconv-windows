@@ -170,11 +170,12 @@ jobs:
           mkdir -p installed/bin
           mkdir -p installed/include
           mkdir -p installed/lib
+          mkdir -p installed/licenses
           mkdir files-unsigned
           mkdir files-signed
           mkdir installer-unsigned
           mkdir installer-signed
-          cp build-exe/license-for-distribution.txt installed/license.txt
+          cp ./LICENSE.txt installed/license.txt
           mkdir -p "$HOME"
           printf "\nPATH='${{ steps.vars.outputs.cygwin-path }}'\nexport PATH\n" >>$HOME/.bash_profile
       -
@@ -244,9 +245,13 @@ jobs:
             Write-Host -Object 'Downloaded'
           }
       -
+        name: Add GCC Runtime license
+        run: |
+          cp '${{ steps.vars.outputs.gcc-runtime-license }}' installed/licenses/gcc.txt
+      -
         name: Extract CLDR
         run: |
-          unzip -p src/downloads/cldr-$CLDR_VERSION.zip LICENSE > installed/license-cldr.txt
+          unzip -p src/downloads/cldr-$CLDR_VERSION.zip LICENSE > installed/licenses/cldr.txt
           mkdir -p installed/lib/gettext/common/supplemental
           unzip -p src/downloads/cldr-$CLDR_VERSION.zip common/supplemental/plurals.xml >installed/lib/gettext/common/supplemental/plurals.xml
       -
@@ -258,24 +263,24 @@ jobs:
         name: Extract iconv
         run: |
           tar x -C src -z -f src/downloads/libiconv-$ICONV_VERSION.tar.gz
-          cp src/libiconv-$ICONV_VERSION/COPYING installed/license-iconv.txt
+          cp src/libiconv-$ICONV_VERSION/COPYING installed/licenses/iconv.txt
       -
         name: Extract curl
         if: steps.vars.outputs.build-libcurl-version
         run: |
           tar x -C src -z -f src/downloads/curl-${{ steps.vars.outputs.build-libcurl-version }}.tar.gz
-          cp src/curl-${{ steps.vars.outputs.build-libcurl-version }}/COPYING installed/license-curl.txt
+          cp src/curl-${{ steps.vars.outputs.build-libcurl-version }}/COPYING installed/licenses/curl.txt
       -
         name: Extract JSON-C
         if: steps.vars.outputs.build-json-c-version
         run: |
           tar x -C src -z -f src/downloads/json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz
-          cp src/json-c-${{ steps.vars.outputs.build-json-c-version }}/COPYING installed/license-json-c.txt
+          cp src/json-c-${{ steps.vars.outputs.build-json-c-version }}/COPYING installed/licenses/json-c.txt
       -
         name: Extract gettext
         run: |
           tar x -C src -z -f src/downloads/gettext-$GETTEXT_VERSION.tar.gz
-          cp src/gettext-$GETTEXT_VERSION/COPYING installed/license-gettext.txt
+          cp src/gettext-$GETTEXT_VERSION/COPYING installed/licenses/gettext.txt
       -
         name: Apply patches
         run: |

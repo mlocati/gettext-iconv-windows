@@ -37,7 +37,7 @@ copyFile()
     mkdir -p "$(dirname "$destinationPath")"
     case "$fileType" in
         text)
-            printf 'Copying text file %s (converting line endings)... ' "$relativePath"
+            printf -- '- %s (converting line endings)... ' "$relativePath"
             local unix2dosOutput
             if ! unix2dosOutput="$(unix2dos -n "$sourcePath" "$destinationPath" 2>&1)"; then
                 printf 'unix2dos failed!\n%s\n' "$unix2dosOutput"
@@ -46,7 +46,7 @@ copyFile()
             printf 'done.\n'
             ;;
         *)
-            printf 'Copying file %s... ' "$relativePath"
+            printf -- '- %s... ' "$relativePath"
             cp "$sourcePath" "$destinationPath"
             printf 'done.\n'
             ;;
@@ -76,7 +76,13 @@ fi
 
 mkdir -p "$DESTINATION/share/gettext"
 
-find "$SOURCE" -maxdepth 1 -type f -name license*.txt -print0 | while IFS= read -r -d '' i; do
+echo '::group::Contents of input directory'
+find "$SOURCE" -type f | sort | sed "s|^$SOURCE/||"
+echo '::endgroup::'
+
+echo '::group::Copying files'
+copyFile "$SOURCE/license.txt" text
+find "$SOURCE/licenses/" -type f -print0 | while IFS= read -r -d '' i; do
     copyFile "$i" text
 done
 find "$SOURCE/bin/" -type f \( -name '*.exe' -o -name '*.dll' \) -print0 | while IFS= read -r -d '' i; do
@@ -124,3 +130,8 @@ fi
 if [ -f "$SOURCE/lib/gettext/common/supplemental/plurals.xml" ]; then
     copyFile "$SOURCE/lib/gettext/common/supplemental/plurals.xml"
 fi
+echo '::endgroup::'
+
+echo '::group::Contents of output directory'
+find "$DESTINATION" -type f | sort | sed "s|^$DESTINATION/|- |"
+echo '::endgroup::'

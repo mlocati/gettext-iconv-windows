@@ -1,6 +1,7 @@
 # Script that process the "output directory, so that:
 # - there are no unused DLLs
 # - the required MinGW-w64 DLLs are included
+# - the license.txt file is updated accordingly
 
 [Diagnostics.CodeAnalysis.SuppressMessage('PSReviewUnusedParameter', 'Bits', Justification = 'False positive as rule does not scan child scopes')]
 [Diagnostics.CodeAnalysis.SuppressMessage('PSReviewUnusedParameter', 'Link', Justification = 'Unused at the moment, but may be used in the future')]
@@ -149,6 +150,10 @@ class Binaries
 
     [string[]] $MinGWFilesAdded = @()
 
+    [bool] $CurlFilesPresent = $false
+
+    [bool] $JsonCFilesPresent = $false
+
     [Binary[]] $Items
 
     Binaries([string] $Path)
@@ -158,6 +163,12 @@ class Binaries
         foreach ($file in Get-ChildItem -LiteralPath $this.Root.FullName -Recurse -File -Include *.exe,*.dll) {
             if ($file.Extension -ne '.dll' -and $file.Extension -ne '.exe') {
                 continue;
+            }
+            if ($file.Name -match '^libcurl.*\.dll$') {
+                $this.CurlFilesPresent = $true
+            }
+            if ($file.Name -match '^libjson-c.*\.dll$') {
+                $this.JsonCFilesPresent = $true
             }
             $binary = [Binary]::new($file, $this.Root)
             $this.Add($binary)
@@ -270,17 +281,79 @@ class Binaries
     }
 }
 
+function Add-LicenseText()
+{
+    param (
+        [Parameter(Mandatory = $true)]
+        [ValidateLength(1, [int]::MaxValue)]
+        [string] $Text
+    )
+    $licenseFilePath = Join-Path -Path $Path -ChildPath 'license.txt'
+    $Text.TrimEnd() + "`n" | Out-File -FilePath $licenseFilePath -Encoding UTF8 -Append -NoNewline
+}
+
 $dumpbin = Find-Dumpbin
 $mingwBinPath = Join-Path -Path $MinGWPath -ChildPath 'sys-root\mingw\bin'
 $binaries = [Binaries]::new($Path)
 
 $binaries.RemoveUnusedDlls()
 $binaries.AddMingwDlls($mingwBinPath)
-if ($binaries.MinGWFilesAdded) {
-    Write-Host -Object "Adding MinGW-w64 license"
-    $mingwLicenseFile = Join-Path -Path $Path -ChildPath 'license-mingw-w64.txt'
-    $mingwLicense = $(Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/niXman/mingw-builds/refs/heads/develop/COPYING.TXT').ToString()
-    $mingwLicense -replace "`r`n","`n" -replace "`n","`r`n" | Set-Content -LiteralPath $mingwLicenseFile -NoNewline -Encoding utf8
-}
 
 $binaries.Dump()
+
+
+Add-LicenseText @'
+
+
+This project was compiled using the mingw-w64 ( https://www.mingw-w64.org/ ) toolchain
+under the Cygwin environment ( https://www.cygwin.com/ ).
+
+This project includes the following third-party components:
+
+- iconv ( https://www.gnu.org/software/libiconv/ )
+  See license in the file licenses/iconv.txt
+- gettext ( https://www.gnu.org/software/gettext/ )
+  See license in the file licenses/gettext.txt
+- Unicode CLDR ( https://cldr.unicode.org/ )
+  See license in the file licenses/cldr.txt
+'@
+
+if ($binaries.MinGWFilesAdded.Count -gt 0) {
+    Add-LicenseText @'
+- The GCC ( https://gcc.gnu.org/ ) runtime libraries provided by mingw-w64
+  See license in the file licenses/gcc.txt
+'@
+} else {
+    Remove-Item -LiteralPath $(Join-Path -Path $Path -ChildPath 'licenses/gcc.txt')
+}
+$license = Join-Path -Path $Path -ChildPath 'licenses/curl.txt'
+if (Test-Path -LiteralPath $license -PathType Leaf) {
+    if ($binaries.CurlFilesPresent) {
+        Add-LicenseText @'
+- curl ( https://curl.se/ )
+  See license in the file licenses/curl.txt
+'@
+    } else {
+        Remove-Item -LiteralPath $license
+        Add-LicenseText @'
+- curl ( https://curl.se/ )
+  Used in source form
+'@
+    }
+}
+$license = Join-Path -Path $Path -ChildPath 'licenses/json-c.txt'
+    if (Test-Path -LiteralPath $license -PathType Leaf) {
+    if ($binaries.JsonCFilesPresent) {
+        Add-LicenseText @'
+- JSON-C ( https://github.com/json-c/json-c )
+  See license in the file licenses/json-c.txt
+'@
+    } else {
+        Remove-Item -LiteralPath $license
+        Add-LicenseText @'
+- JSON-C ( https://github.com/json-c/json-c )
+  Used in source form
+
+'@
+    }
+}

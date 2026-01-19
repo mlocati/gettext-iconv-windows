@@ -90,6 +90,7 @@ if ($Bits -eq 32 -and $Link -eq 'shared') {
 }
 
 $mingwHost = "$architecture-w64-mingw32"
+$gccRuntimeLicense = "/usr/share/doc/mingw64-$architecture-gcc/COPYING"
 
 $cygwinPath = @(
     "$cygwinInstalledPath/bin",
@@ -458,6 +459,7 @@ Export-Variable -Name 'cygwin-mirror' -Value $cygwinMirror
 Export-Variable -Name 'cygwin-packages' -Value $($cygwinPackages -join ',')
 Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
 Export-Variable -Name 'mingw-host' -Value $mingwHost
+Export-Variable -Name 'gcc-runtime-license' -Value $gccRuntimeLicense
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
 Export-Variable -Name 'configure-args-gettext' -Value $($gettextConfigureArgs -join ' ')
 Export-Variable -Name 'iconv-source-url' -Value $iconvSourceUrl
