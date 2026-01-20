@@ -35,6 +35,14 @@ on:
         description: Gettext Version
         type: string
         required: false
+      curl-version:
+        description: Curl Version
+        type: string
+        required: false
+      json-c-version:
+        description: JSON-C Version
+        type: string
+        required: false
 
 jobs:
   test-bash-scripts:
@@ -147,6 +155,8 @@ jobs:
           -CLDRVersion '${{ github.event.inputs.cldr-version }}'
           -IconvVersion '${{ github.event.inputs.iconv-version }}'
           -GettextVersion '${{ github.event.inputs.gettext-version }}'
+          -CurlVersion '${{ github.event.inputs.curl-version }}'
+          -JsonCVersion '${{ github.event.inputs.json-c-version }}'
       -
         name: Install Cygwin
         uses: cygwin/cygwin-install-action@v6
@@ -206,26 +216,26 @@ jobs:
           }
       -
         name: Download curl
-        if: steps.vars.outputs.build-libcurl-version
+        if: steps.vars.outputs.curl-version
         working-directory: src\downloads
         shell: pwsh
         run: |
-          if (Test-Path -LiteralPath curl-${{ steps.vars.outputs.build-libcurl-version }}.tar.gz -PathType Leaf) {
+          if (Test-Path -LiteralPath curl-${{ steps.vars.outputs.curl-version }}.tar.gz -PathType Leaf) {
             Write-Host -Object 'Already downloaded'
           } else {
-            Invoke-WebRequest -Uri https://curl.se/download/curl-${{ steps.vars.outputs.build-libcurl-version }}.tar.gz -OutFile curl-${{ steps.vars.outputs.build-libcurl-version }}.tar.gz
+            Invoke-WebRequest -Uri https://curl.se/download/curl-${{ steps.vars.outputs.curl-version }}.tar.gz -OutFile curl-${{ steps.vars.outputs.curl-version }}.tar.gz
             Write-Host -Object 'Downloaded'
           }
       -
         name: Download JSON-C
-        if: steps.vars.outputs.build-json-c-version
+        if: steps.vars.outputs.json-c-version
         working-directory: src\downloads
         shell: pwsh
         run: |
-          if (Test-Path -LiteralPath json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz -PathType Leaf) {
+          if (Test-Path -LiteralPath json-c-${{ steps.vars.outputs.json-c-version }}.tar.gz -PathType Leaf) {
             Write-Host -Object 'Already downloaded'
           } else {
-            Invoke-WebRequest -Uri https://s3.amazonaws.com/json-c_releases/releases/json-c-${{ steps.vars.outputs.build-json-c-version }}-nodoc.tar.gz -OutFile json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz
+            Invoke-WebRequest -Uri https://s3.amazonaws.com/json-c_releases/releases/json-c-${{ steps.vars.outputs.json-c-version }}-nodoc.tar.gz -OutFile json-c-${{ steps.vars.outputs.json-c-version }}.tar.gz
             Write-Host -Object 'Downloaded'
           }
       -
@@ -261,16 +271,16 @@ jobs:
           cp src/libiconv-${{ steps.vars.outputs.iconv-version }}/COPYING installed/licenses/iconv.txt
       -
         name: Extract curl
-        if: steps.vars.outputs.build-libcurl-version
+        if: steps.vars.outputs.curl-version
         run: |
-          tar x -C src -z -f src/downloads/curl-${{ steps.vars.outputs.build-libcurl-version }}.tar.gz
-          cp src/curl-${{ steps.vars.outputs.build-libcurl-version }}/COPYING installed/licenses/curl.txt
+          tar x -C src -z -f src/downloads/curl-${{ steps.vars.outputs.curl-version }}.tar.gz
+          cp src/curl-${{ steps.vars.outputs.curl-version }}/COPYING installed/licenses/curl.txt
       -
         name: Extract JSON-C
-        if: steps.vars.outputs.build-json-c-version
+        if: steps.vars.outputs.json-c-version
         run: |
-          tar x -C src -z -f src/downloads/json-c-${{ steps.vars.outputs.build-json-c-version }}.tar.gz
-          cp src/json-c-${{ steps.vars.outputs.build-json-c-version }}/COPYING installed/licenses/json-c.txt
+          tar x -C src -z -f src/downloads/json-c-${{ steps.vars.outputs.json-c-version }}.tar.gz
+          cp src/json-c-${{ steps.vars.outputs.json-c-version }}/COPYING installed/licenses/json-c.txt
       -
         name: Extract gettext
         run: |
@@ -312,9 +322,9 @@ jobs:
         run: make --jobs=$(nproc) install-strip
       -
         name: Configure curl
-        if: steps.vars.outputs.build-libcurl-version
+        if: steps.vars.outputs.curl-version
         id: curl-configure
-        working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}
+        working-directory: src\curl-${{ steps.vars.outputs.curl-version }}
         run: |
           mkdir build
           cd build
@@ -329,31 +339,31 @@ jobs:
           cat "$GITHUB_OUTPUT"
       -
         name: Install curl - libcurl
-        if: steps.vars.outputs.build-libcurl-version
-        working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}\build\lib
+        if: steps.vars.outputs.curl-version
+        working-directory: src\curl-${{ steps.vars.outputs.curl-version }}\build\lib
         run: make --jobs=$(nproc) install-strip
       -
         name: Install curl - include
-        if: steps.vars.outputs.build-libcurl-version
-        working-directory: src\curl-${{ steps.vars.outputs.build-libcurl-version }}\build\include
+        if: steps.vars.outputs.curl-version
+        working-directory: src\curl-${{ steps.vars.outputs.curl-version }}\build\include
         run: make --jobs=$(nproc) install-strip
       -
         name: Prepare JSON-C
-        if: steps.vars.outputs.build-json-c-version
-        working-directory: src\json-c-${{ steps.vars.outputs.build-json-c-version }}
+        if: steps.vars.outputs.json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.json-c-version }}
         run: |
           mkdir build
           cd build
           cmake ${{ steps.vars.outputs.build-json-c-cmake-args }} ../
       -
         name: Build JSON-C
-        if: steps.vars.outputs.build-json-c-version
-        working-directory: src\json-c-${{ steps.vars.outputs.build-json-c-version }}\build
+        if: steps.vars.outputs.json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.json-c-version }}\build
         run: make --jobs=$(nproc) all
       -
         name: Install JSON-C
-        if: steps.vars.outputs.build-json-c-version
-        working-directory: src\json-c-${{ steps.vars.outputs.build-json-c-version }}\build
+        if: steps.vars.outputs.json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.json-c-version }}\build
         run: make install/strip
       -
         name: Configure gettext
@@ -447,11 +457,11 @@ jobs:
           if [ -d src/libiconv-${{ steps.vars.outputs.iconv-version }}/build ]; then
             tar c -J -f build-log/iconv.tar.xz src/libiconv-${{ steps.vars.outputs.iconv-version }}/build
           fi
-          if [ -d src/curl-${{ steps.vars.outputs.build-libcurl-version }}/build ]; then
-            tar c -J -f build-log/curl.tar.xz src/curl-${{ steps.vars.outputs.build-libcurl-version }}/build
+          if [ -d src/curl-${{ steps.vars.outputs.curl-version }}/build ]; then
+            tar c -J -f build-log/curl.tar.xz src/curl-${{ steps.vars.outputs.curl-version }}/build
           fi
-          if [ -d src/json-c-${{ steps.vars.outputs.build-json-c-version }}/build ]; then
-            tar c -J -f build-log/json-c.tar.xz src/json-c-${{ steps.vars.outputs.build-json-c-version }}/build
+          if [ -d src/json-c-${{ steps.vars.outputs.json-c-version }}/build ]; then
+            tar c -J -f build-log/json-c.tar.xz src/json-c-${{ steps.vars.outputs.json-c-version }}/build
           fi
           if [ -d src/gettext-${{ steps.vars.outputs.gettext-version }}/build ]; then
             tar c -J -f build-log/gettext.tar.xz src/gettext-${{ steps.vars.outputs.gettext-version }}/build

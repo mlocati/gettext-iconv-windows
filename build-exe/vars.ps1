@@ -17,7 +17,11 @@ param (
     [Parameter(Mandatory = $false)]
     [string] $IconvVersion,
     [Parameter(Mandatory = $false)]
-    [string] $GettextVersion
+    [string] $GettextVersion,
+    [Parameter(Mandatory = $false)]
+    [string] $CurlVersion,
+    [Parameter(Mandatory = $false)]
+    [string] $JsonCVersion
 )
 
 function Export-Variable()
@@ -80,6 +84,20 @@ if ($GettextVersion) {
 } else {
     $GettextVersion = '0.26'
 }
+if ($CurlVersion) {
+    if (-not($CurlVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
+        throw "Invalid curl version: '$CurlVersion'"
+    }
+} else {
+    $CurlVersion = '8.18.0'
+}
+if ($JsonCVersion) {
+    if (-not($JsonCVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
+        throw "Invalid JSON-C version: '$JsonCVersion'"
+    }
+} else {
+    $JsonCVersion = '0.18'
+}
 
 $cldrMajorVersion = [int][regex]::Match($CLDRVersion, '^\d+').Value
 
@@ -140,9 +158,7 @@ $cygwinPackages = @(
 $cFlags = '-g0 -O2'
 $cxxFlags = '-g0 -O2 -fno-exceptions -fno-rtti'
 
-$buildLibcurlVersion = ''
 $buildLibcurlConfigureArgs = @()
-$buildJsonCVersion = ''
 $buildJsonCCMakeArgs = @()
 $checkSpitExe = $false
 
@@ -150,7 +166,6 @@ if ($gettextVersionObject -ge [Version]'1.0') {
     # The spit program (introduced in gettext 1.0) requires libcurl and json-c (otherwise gettext builds a Python script)
     $checkSpitExe = $true
     $cygwinPackages += 'cmake'
-    $buildLibcurlVersion = '8.18.0'
     $buildLibcurlConfigureArgs = @(
         "CC='$mingwHost-gcc'",
         "CXX='$mingwHost-g++'",
@@ -200,7 +215,6 @@ if ($gettextVersionObject -ge [Version]'1.0') {
         '--disable-dependency-tracking',
         "--prefix=$cygwinInstalledPath"
     )
-    $buildJsonCVersion = '0.18'
     $buildJsonCCMakeArgs = @(
         '-DCMAKE_BUILD_TYPE=Release',
         "'-DCMAKE_INSTALL_PREFIX=$cygwinInstalledPath'",
@@ -230,6 +244,9 @@ if ($gettextVersionObject -ge [Version]'1.0') {
             $buildJsonCCMakeArgs += '-DBUILD_SHARED_LIBS=OFF'
         }
     }
+} else {
+    $CurlVersion = ''
+    $JsonCVersion = ''
 }
 
 if ($gettextVersionObject -lt [Version]'0.26' -or $GettextVersion -eq '0.26-pre1') {
@@ -479,6 +496,8 @@ if ($Link -eq 'shared' -and $gettextVersionObject -lt [Version]'0.23') {
 Export-Variable -Name 'cldr-version' -Value $CLDRVersion
 Export-Variable -Name 'iconv-version' -Value $IconvVersion
 Export-Variable -Name 'gettext-version' -Value $GettextVersion
+Export-Variable -Name 'curl-version' -Value $CurlVersion
+Export-Variable -Name 'json-c-version' -Value $JsonCVersion
 Export-Variable -Name 'cygwin-mirror' -Value $cygwinMirror
 Export-Variable -Name 'cygwin-packages' -Value $($cygwinPackages -join ',')
 Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
@@ -487,9 +506,7 @@ Export-Variable -Name 'gcc-runtime-license' -Value $gccRuntimeLicense
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
 Export-Variable -Name 'configure-args-gettext' -Value $($gettextConfigureArgs -join ' ')
 Export-Variable -Name 'iconv-source-url' -Value $iconvSourceUrl
-Export-Variable -Name 'build-libcurl-version' -Value $buildLibcurlVersion
 Export-Variable -Name 'build-libcurl-configure-args' -Value $($buildLibcurlConfigureArgs -join ' ')
-Export-Variable -Name 'build-json-c-version' -Value $buildJsonCVersion
 Export-Variable -Name 'build-json-c-cmake-args' -Value $($buildJsonCCMakeArgs -join ' ')
 Export-Variable -Name 'gettext-source-url' -Value $gettextSourceUrl
 Export-Variable -Name 'gettext-ignore-tests-c' -Value $($gettextIgnoreTestsC -join ' ')
