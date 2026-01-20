@@ -11,7 +11,13 @@ param (
     [string] $InstalledPath,
     [Parameter(Mandatory = $false)]
     [ValidateSet('', 'no', 'test', 'production')]
-    [string] $Sign
+    [string] $Sign,
+    [Parameter(Mandatory = $false)]
+    [string] $CLDRVersion,
+    [Parameter(Mandatory = $false)]
+    [string] $IconvVersion,
+    [Parameter(Mandatory = $false)]
+    [string] $GettextVersion
 )
 
 function Export-Variable()
@@ -53,19 +59,34 @@ function ConvertTo-CygwinPath()
     return '/cygdrive/' + $match.Matches.Groups[1].Value.ToLowerInvariant() + $match.Matches.Groups[2].Value.Replace('\', '/')
 }
 
-if (-not($env:ICONV_VERSION)) {
-    throw 'Missing ICONV_VERSION environment variable'
+if ($CLDRVersion) {
+    if (-not($CLDRVersion -match '^\d+(\.\d+)?[a-z0-9_\-.]*$')) {
+        throw "Invalid CLDRVersion: '$CLDRVersion'"
+    }
+} else {
+    $CLDRVersion = '48.1'
 }
-if (-not($env:GETTEXT_VERSION)) {
-    throw 'Missing GETTEXT_VERSION environment variable'
+if ($IconvVersion) {
+    if (-not($IconvVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
+        throw "Invalid iconv version: '$IconvVersion'"
+    }
+} else {
+    $IconvVersion = '1.17'
 }
-$gettextVersion = ConvertTo-Version -Version $env:GETTEXT_VERSION
-if (-not($env:CLDR_VERSION)) {
-    throw 'Missing CLDR_VERSION environment variable'
+if ($GettextVersion) {
+    if (-not($GettextVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
+        throw "Invalid gettext version: '$GettextVersion'"
+    }
+} else {
+    $GettextVersion = '0.26'
 }
-$cldrMajorVersion = [int][regex]::Match($env:CLDR_VERSION, '^\d+').Value
 
-$simplifyPluralsXml = $cldrMajorVersion -ge 38 -and $gettextVersion -lt [Version]'1.0'
+$cldrMajorVersion = [int][regex]::Match($CLDRVersion, '^\d+').Value
+
+$gettextVersionObject = ConvertTo-Version -Version $GettextVersion
+
+
+$simplifyPluralsXml = $cldrMajorVersion -ge 38 -and $gettextVersionObject -lt [Version]'1.0'
 
 $absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
 $match = Select-String -InputObject $absoluteInstalledPath -Pattern '^([A-Za-z]):(\\.*?)\\?$'
@@ -125,7 +146,7 @@ $buildJsonCVersion = ''
 $buildJsonCCMakeArgs = @()
 $checkSpitExe = $false
 
-if ($gettextVersion -ge [Version]'1.0') {
+if ($gettextVersionObject -ge [Version]'1.0') {
     # The spit program (introduced in gettext 1.0) requires libcurl and json-c (otherwise gettext builds a Python script)
     $checkSpitExe = $true
     $cygwinPackages += 'cmake'
@@ -211,7 +232,7 @@ if ($gettextVersion -ge [Version]'1.0') {
     }
 }
 
-if ($gettextVersion -lt [Version]'0.26' -or $env:GETTEXT_VERSION -eq '0.26-pre1') {
+if ($gettextVersionObject -lt [Version]'0.26' -or $GettextVersion -eq '0.26-pre1') {
     # We use -fno-threadsafe-statics because:
     # - otherwise xgettext would use the the __cxa_guard_acquire and __cxa_guard_release functions of lib-stdc++
     # - the only tool that uses multi-threading is msgmerge, which is in C (and not C++)
@@ -269,7 +290,7 @@ $gettextConfigureArgs = @(
     '--without-bzip2',
     '--without-xz'
 )
-if ($gettextVersion -le [Version]'0.22.5') {
+if ($gettextVersionObject -le [Version]'0.22.5') {
     $gettextConfigureArgs += '--disable-csharp'
 } else {
     $gettextConfigureArgs += '--enable-csharp=dotnet'
@@ -315,9 +336,9 @@ switch ($Sign) {
     }
 }
 
-if ($gettextVersion -le [Version]'0.22.5') {
+if ($gettextVersionObject -le [Version]'0.22.5') {
     $signpathArtifactConfigurationFiles = 'gh_sign_files-0.22'
-} elseif ($gettextVersion -le [Version]'0.99.99') {
+} elseif ($gettextVersionObject -le [Version]'0.99.99') {
     $signpathArtifactConfigurationFiles = 'gh_sign_files-0.23'
 } else {
     $signpathArtifactConfigurationFiles = 'gh_sign_files-1.0'
@@ -326,13 +347,13 @@ if ($gettextVersion -le [Version]'0.22.5') {
 $gettextIgnoreTestsC = @()
 # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
 $gettextIgnoreTestsC += 'gettext-tools/gnulib-tests/test-asyncsafe-spin2.c'
-if ($gettextVersion -le [Version]'0.22.5') {
+if ($gettextVersionObject -le [Version]'0.22.5') {
     # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
     $gettextIgnoreTestsC += 'gettext-tools/gnulib-tests/test-getopt-gnu.c gettext-tools/gnulib-tests/test-getopt-posix.c'
 }
 
 $gettextXFailTests = @()
-if ($gettextVersion -le [Version]'0.22.5') {
+if ($gettextVersionObject -le [Version]'0.22.5') {
     # see https://savannah.gnu.org/bugs/?66232
     $gettextXFailTests += 'msgexec-1 msgexec-3 msgexec-4 msgexec-5 msgexec-6 msgfilter-6 msgfilter-7 msginit-3'
 }
@@ -408,19 +429,19 @@ See:
 
 $gnuUrlPrefixer = [GnuUrlPrefixer]::new()
 
-$iconvSourceUrlPrefix = if ($env:ICONV_VERSION -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
+$iconvSourceUrlPrefix = if ($IconvVersion -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
     $gnuUrlPrefixer.GetAlphaUrlPrefix()
 } else {
     $gnuUrlPrefixer.GetReleaseUrlPrefix()
 }
-$iconvSourceUrl = "$iconvSourceUrlPrefix/libiconv/libiconv-$env:ICONV_VERSION.tar.gz"
+$iconvSourceUrl = "$iconvSourceUrlPrefix/libiconv/libiconv-$IconvVersion.tar.gz"
 
-$gettextSourceUrlPrefix = if ($env:GETTEXT_VERSION -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
+$gettextSourceUrlPrefix = if ($GettextVersion -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
     $gnuUrlPrefixer.GetAlphaUrlPrefix()
 } else {
     $gnuUrlPrefixer.GetReleaseUrlPrefix()
 }
-$gettextSourceUrl = "$gettextSourceUrlPrefix/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
+$gettextSourceUrl = "$gettextSourceUrlPrefix/gettext/gettext-$GettextVersion.tar.gz"
 
 $gnuUrlPrefixer.WriteWarning()
 
@@ -450,11 +471,14 @@ if (-not($cygwinMirror)) {
 }
 
 $cldrPluralWorks = 'yes'
-if ($Link -eq 'shared' -and $gettextVersion -lt [Version]'0.23') {
+if ($Link -eq 'shared' -and $gettextVersionObject -lt [Version]'0.23') {
     # See https://savannah.gnu.org/bugs/?66356
     $cldrPluralWorks = 'no'
 }
 
+Export-Variable -Name 'cldr-version' -Value $CLDRVersion
+Export-Variable -Name 'iconv-version' -Value $IconvVersion
+Export-Variable -Name 'gettext-version' -Value $GettextVersion
 Export-Variable -Name 'cygwin-mirror' -Value $cygwinMirror
 Export-Variable -Name 'cygwin-packages' -Value $($cygwinPackages -join ',')
 Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
