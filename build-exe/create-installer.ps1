@@ -14,7 +14,13 @@ param (
     [Parameter(Mandatory = $true)]
     [ValidateLength(1, [int]::MaxValue)]
     [ValidateScript({Test-Path -LiteralPath $_ -PathType Container})]
-    [string] $OutputDirectory
+    [string] $OutputDirectory,
+    [Parameter(Mandatory = $true)]
+    [ValidateLength(1, [int]::MaxValue)]
+    [string] $IconvVersion,
+    [Parameter(Mandatory = $true)]
+    [ValidateLength(1, [int]::MaxValue)]
+    [string] $GettextVersion
 )
 
 $SourceDirectory = [System.IO.Path]::GetFullPath($SourceDirectory)
@@ -40,8 +46,8 @@ function New-IssFile()
         } else {
             "#define MyIs64bit false" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
         }
-        "#define MyGettextVer `"$env:GETTEXT_VERSION`"" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
-        "#define MyIconvVer `"$env:ICONV_VERSION`"" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
+        "#define MyGettextVer `"$GettextVersion`"" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
+        "#define MyIconvVer `"$IconvVersion`"" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
         "#define MyCompiledFolderPath `"$SourceDirectory`"" | Out-File -FilePath $temporaryFile -Append -Encoding utf8
         Get-Content -LiteralPath $templateFile -Encoding utf8 | Out-File -FilePath $temporaryFile -Append -Encoding utf8
         $deleteTemporaryFile = $false
@@ -53,13 +59,7 @@ function New-IssFile()
     }
 }
 
-if (-not($env:ICONV_VERSION)) {
-    throw 'Missing ICONV_VERSION environment variable'
-}
-if (-not($env:GETTEXT_VERSION)) {
-    throw 'Missing GETTEXT_VERSION environment variable'
-}
-$outputFile = "gettext$env:GETTEXT_VERSION-iconv$env:ICONV_VERSION-$Link-$Bits"
+$outputFile = "gettext$GettextVersion-iconv$IconvVersion-$Link-$Bits"
 $issFile = New-IssFile
 try {
     & ISCC.exe /O"$OutputDirectory" /F"$outputFile" "$issFile"

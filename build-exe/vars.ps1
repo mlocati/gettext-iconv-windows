@@ -11,7 +11,17 @@ param (
     [string] $InstalledPath,
     [Parameter(Mandatory = $false)]
     [ValidateSet('', 'no', 'test', 'production')]
-    [string] $Sign
+    [string] $Sign,
+    [Parameter(Mandatory = $false)]
+    [string] $CLDRVersion,
+    [Parameter(Mandatory = $false)]
+    [string] $IconvVersion,
+    [Parameter(Mandatory = $false)]
+    [string] $GettextVersion,
+    [Parameter(Mandatory = $false)]
+    [string] $CurlVersion,
+    [Parameter(Mandatory = $false)]
+    [string] $JsonCVersion
 )
 
 function Export-Variable()
@@ -53,19 +63,112 @@ function ConvertTo-CygwinPath()
     return '/cygdrive/' + $match.Matches.Groups[1].Value.ToLowerInvariant() + $match.Matches.Groups[2].Value.Replace('\', '/')
 }
 
-if (-not($env:ICONV_VERSION)) {
-    throw 'Missing ICONV_VERSION environment variable'
+function Get-OptionFromPullRequestCommitMessages()
+{
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $OptionName
+    )
+    if (-not($OptionName -match '^[A-Za-z0-9\-_]+$')) {
+        throw "Invalid OptionName: '$OptionName'"
+    }
+    $searchOptionNames = @(
+        $OptionName,
+        ($OptionName -replace '-', ''),
+        ($OptionName -replace '-', ' ')
+    )
+    if (-not $script:pullRequestCommitMessages) {
+        $script:pullRequestCommitMessages = @()
+        if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+            if (-not(Test-Path -LiteralPath $env:GITHUB_WORKSPACE -PathType Container)) {
+                throw "The GitHub Action path '$env:GITHUB_WORKSPACE' does not exist"
+            }
+            $baseRef = $env:GITHUB_BASE_REF
+            $headRef = $env:GITHUB_HEAD_REF
+            if (-not $baseRef -or -not $headRef) {
+                throw "Invalid GitHub Action refs: base='$baseRef', head='$headRef'"
+            }
+            $mergeBase = git -C "$env:GITHUB_WORKSPACE" merge-base "origin/$baseRef" "origin/$headRef"
+            if (-not $mergeBase) {
+                throw "Unable to find the merge base between 'origin/$baseRef' and 'origin/$headRef'"
+            }
+            $script:pullRequestCommitMessages = git -C "$env:GITHUB_WORKSPACE" log "$mergeBase..origin/$headRef" --pretty=format:'%s%n%b%n'
+            if (-not $script:pullRequestCommitMessages) {
+                throw "Unable to get the commit messages between '$mergeBase' and 'origin/$headRef'"
+            }
+        }
+    }
+    foreach ($message in $script:pullRequestCommitMessages) {
+        foreach ($searchOptionName in $searchOptionNames) {
+            $match = Select-String -InputObject $message -Pattern "^\s*\/$searchOptionName(\s+|\s*:\s*|\s*=\s*)([^\s]+)\s*$"
+            if ($match) {
+                return $match.Matches.Groups[2].Value
+            }
+            if ($message -match "^\s*\/$searchOptionName[\s:=]*$") {
+                return ''
+            }
+        }
+    }
+    return ''
 }
-if (-not($env:GETTEXT_VERSION)) {
-    throw 'Missing GETTEXT_VERSION environment variable'
-}
-$gettextVersion = ConvertTo-Version -Version $env:GETTEXT_VERSION
-if (-not($env:CLDR_VERSION)) {
-    throw 'Missing CLDR_VERSION environment variable'
-}
-$cldrMajorVersion = [int][regex]::Match($env:CLDR_VERSION, '^\d+').Value
 
-$simplifyPluralsXml = $cldrMajorVersion -ge 38 -and $gettextVersion -lt [Version]'1.0'
+if (-not $CLDRVersion) {
+    $CLDRVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'cldr-version'
+}
+if ($CLDRVersion) {
+    if (-not($CLDRVersion -match '^\d+(\.\d+)?[a-z0-9_\-.]*$')) {
+        throw "Invalid CLDRVersion: '$CLDRVersion'"
+    }
+} else {
+    $CLDRVersion = '48.1'
+}
+if (-not $IconvVersion) {
+    $IconvVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'iconv-version'
+}
+if ($IconvVersion) {
+    if (-not($IconvVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
+        throw "Invalid iconv version: '$IconvVersion'"
+    }
+} else {
+    $IconvVersion = '1.17'
+}
+if (-not $GettextVersion) {
+    $GettextVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'gettext-version'
+}
+if ($GettextVersion) {
+    if (-not($GettextVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
+        throw "Invalid gettext version: '$GettextVersion'"
+    }
+} else {
+    $GettextVersion = '0.26'
+}
+if (-not $CurlVersion) {
+    $CurlVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'curl-version'
+}
+if ($CurlVersion) {
+    if (-not($CurlVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
+        throw "Invalid curl version: '$CurlVersion'"
+    }
+} else {
+    $CurlVersion = '8.18.0'
+}
+if (-not $JsonCVersion) {
+    $JsonCVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'json-c-version'
+}
+if ($JsonCVersion) {
+    if (-not($JsonCVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
+        throw "Invalid JSON-C version: '$JsonCVersion'"
+    }
+} else {
+    $JsonCVersion = '0.18'
+}
+
+$cldrMajorVersion = [int][regex]::Match($CLDRVersion, '^\d+').Value
+
+$gettextVersionObject = ConvertTo-Version -Version $GettextVersion
+
+$simplifyPluralsXml = $cldrMajorVersion -ge 38 -and $gettextVersionObject -lt [Version]'1.0'
 
 $absoluteInstalledPath = [System.IO.Path]::Combine($(Get-Location), $InstalledPath)
 $match = Select-String -InputObject $absoluteInstalledPath -Pattern '^([A-Za-z]):(\\.*?)\\?$'
@@ -119,17 +222,14 @@ $cygwinPackages = @(
 $cFlags = '-g0 -O2'
 $cxxFlags = '-g0 -O2 -fno-exceptions -fno-rtti'
 
-$buildLibcurlVersion = ''
 $buildLibcurlConfigureArgs = @()
-$buildJsonCVersion = ''
 $buildJsonCCMakeArgs = @()
 $checkSpitExe = $false
 
-if ($gettextVersion -ge [Version]'1.0') {
+if ($gettextVersionObject -ge [Version]'1.0') {
     # The spit program (introduced in gettext 1.0) requires libcurl and json-c (otherwise gettext builds a Python script)
     $checkSpitExe = $true
     $cygwinPackages += 'cmake'
-    $buildLibcurlVersion = '8.18.0'
     $buildLibcurlConfigureArgs = @(
         "CC='$mingwHost-gcc'",
         "CXX='$mingwHost-g++'",
@@ -179,7 +279,6 @@ if ($gettextVersion -ge [Version]'1.0') {
         '--disable-dependency-tracking',
         "--prefix=$cygwinInstalledPath"
     )
-    $buildJsonCVersion = '0.18'
     $buildJsonCCMakeArgs = @(
         '-DCMAKE_BUILD_TYPE=Release',
         "'-DCMAKE_INSTALL_PREFIX=$cygwinInstalledPath'",
@@ -209,9 +308,12 @@ if ($gettextVersion -ge [Version]'1.0') {
             $buildJsonCCMakeArgs += '-DBUILD_SHARED_LIBS=OFF'
         }
     }
+} else {
+    $CurlVersion = ''
+    $JsonCVersion = ''
 }
 
-if ($gettextVersion -lt [Version]'0.26' -or $env:GETTEXT_VERSION -eq '0.26-pre1') {
+if ($gettextVersionObject -lt [Version]'0.26' -or $GettextVersion -eq '0.26-pre1') {
     # We use -fno-threadsafe-statics because:
     # - otherwise xgettext would use the the __cxa_guard_acquire and __cxa_guard_release functions of lib-stdc++
     # - the only tool that uses multi-threading is msgmerge, which is in C (and not C++)
@@ -269,7 +371,7 @@ $gettextConfigureArgs = @(
     '--without-bzip2',
     '--without-xz'
 )
-if ($gettextVersion -le [Version]'0.22.5') {
+if ($gettextVersionObject -le [Version]'0.22.5') {
     $gettextConfigureArgs += '--disable-csharp'
 } else {
     $gettextConfigureArgs += '--enable-csharp=dotnet'
@@ -288,36 +390,37 @@ if ($gettextVersion -le [Version]'0.22.5') {
 if ($env:GITHUB_REPOSITORY -ne 'mlocati/gettext-iconv-windows') {
     Write-Host -Object "Using -Sign no because the current repository ($($env:GITHUB_REPOSITORY)) is not the upstream one`n"
     $Sign = 'no'
-} elseif ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
-    Write-Host -Object "Using -Sign no because the current event is $($env:GITHUB_EVENT_NAME)`n"
-    $Sign = 'no'
-} elseif (-not($Sign)) {
-    Write-Host -Object "Using -Sign test`n"
-    $Sign = 'test'
+} elseif (-not $Sign) {
+    if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+        $Sign = Get-OptionFromPullRequestCommitMessages -OptionName 'sign'
+        if (-not $Sign) {
+            $Sign = 'no'
+        }
+    } else {
+        $Sign = 'test'
+    }
 }
+
 $signpathSigningPolicy = ''
-$signaturesCanBeInvalid = 0
+$signaturesCanBeInvalid = $false
 switch ($Sign) {
     'no' {
-        Write-Host "Signing is disabled`n"
     }
     'test' {
         $signpathSigningPolicy = 'test-signing'
-        $signaturesCanBeInvalid = 1
-        Write-Host "SignPath signing policy: $signpathSigningPolicy (self-signed certificate)`n"
+        $signaturesCanBeInvalid = $true
     }
     'production' {
         $signpathSigningPolicy = 'release-signing'
-        Write-Host "SignPath signing policy: $signpathSigningPolicy (production certificate)`n"
     }
     default {
         throw "Invalid value of the -Sign argument ($Sign)"
     }
 }
 
-if ($gettextVersion -le [Version]'0.22.5') {
+if ($gettextVersionObject -le [Version]'0.22.5') {
     $signpathArtifactConfigurationFiles = 'gh_sign_files-0.22'
-} elseif ($gettextVersion -le [Version]'0.99.99') {
+} elseif ($gettextVersionObject -le [Version]'0.99.99') {
     $signpathArtifactConfigurationFiles = 'gh_sign_files-0.23'
 } else {
     $signpathArtifactConfigurationFiles = 'gh_sign_files-1.0'
@@ -326,13 +429,13 @@ if ($gettextVersion -le [Version]'0.22.5') {
 $gettextIgnoreTestsC = @()
 # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
 $gettextIgnoreTestsC += 'gettext-tools/gnulib-tests/test-asyncsafe-spin2.c'
-if ($gettextVersion -le [Version]'0.22.5') {
+if ($gettextVersionObject -le [Version]'0.22.5') {
     # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
     $gettextIgnoreTestsC += 'gettext-tools/gnulib-tests/test-getopt-gnu.c gettext-tools/gnulib-tests/test-getopt-posix.c'
 }
 
 $gettextXFailTests = @()
-if ($gettextVersion -le [Version]'0.22.5') {
+if ($gettextVersionObject -le [Version]'0.22.5') {
     # see https://savannah.gnu.org/bugs/?66232
     $gettextXFailTests += 'msgexec-1 msgexec-3 msgexec-4 msgexec-5 msgexec-6 msgfilter-6 msgfilter-7 msginit-3'
 }
@@ -408,19 +511,19 @@ See:
 
 $gnuUrlPrefixer = [GnuUrlPrefixer]::new()
 
-$iconvSourceUrlPrefix = if ($env:ICONV_VERSION -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
+$iconvSourceUrlPrefix = if ($IconvVersion -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
     $gnuUrlPrefixer.GetAlphaUrlPrefix()
 } else {
     $gnuUrlPrefixer.GetReleaseUrlPrefix()
 }
-$iconvSourceUrl = "$iconvSourceUrlPrefix/libiconv/libiconv-$env:ICONV_VERSION.tar.gz"
+$iconvSourceUrl = "$iconvSourceUrlPrefix/libiconv/libiconv-$IconvVersion.tar.gz"
 
-$gettextSourceUrlPrefix = if ($env:GETTEXT_VERSION -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
+$gettextSourceUrlPrefix = if ($GettextVersion -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
     $gnuUrlPrefixer.GetAlphaUrlPrefix()
 } else {
     $gnuUrlPrefixer.GetReleaseUrlPrefix()
 }
-$gettextSourceUrl = "$gettextSourceUrlPrefix/gettext/gettext-$env:GETTEXT_VERSION.tar.gz"
+$gettextSourceUrl = "$gettextSourceUrlPrefix/gettext/gettext-$GettextVersion.tar.gz"
 
 $gnuUrlPrefixer.WriteWarning()
 
@@ -450,11 +553,16 @@ if (-not($cygwinMirror)) {
 }
 
 $cldrPluralWorks = 'yes'
-if ($Link -eq 'shared' -and $gettextVersion -lt [Version]'0.23') {
+if ($Link -eq 'shared' -and $gettextVersionObject -lt [Version]'0.23') {
     # See https://savannah.gnu.org/bugs/?66356
     $cldrPluralWorks = 'no'
 }
 
+Export-Variable -Name 'cldr-version' -Value $CLDRVersion
+Export-Variable -Name 'iconv-version' -Value $IconvVersion
+Export-Variable -Name 'gettext-version' -Value $GettextVersion
+Export-Variable -Name 'curl-version' -Value $CurlVersion
+Export-Variable -Name 'json-c-version' -Value $JsonCVersion
 Export-Variable -Name 'cygwin-mirror' -Value $cygwinMirror
 Export-Variable -Name 'cygwin-packages' -Value $($cygwinPackages -join ',')
 Export-Variable -Name 'cygwin-path' -Value $($cygwinPath -join ':')
@@ -463,16 +571,14 @@ Export-Variable -Name 'gcc-runtime-license' -Value $gccRuntimeLicense
 Export-Variable -Name 'configure-args' -Value $($configureArgs -join ' ')
 Export-Variable -Name 'configure-args-gettext' -Value $($gettextConfigureArgs -join ' ')
 Export-Variable -Name 'iconv-source-url' -Value $iconvSourceUrl
-Export-Variable -Name 'build-libcurl-version' -Value $buildLibcurlVersion
 Export-Variable -Name 'build-libcurl-configure-args' -Value $($buildLibcurlConfigureArgs -join ' ')
-Export-Variable -Name 'build-json-c-version' -Value $buildJsonCVersion
 Export-Variable -Name 'build-json-c-cmake-args' -Value $($buildJsonCCMakeArgs -join ' ')
 Export-Variable -Name 'gettext-source-url' -Value $gettextSourceUrl
 Export-Variable -Name 'gettext-ignore-tests-c' -Value $($gettextIgnoreTestsC -join ' ')
 Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests -join ' ')
 Export-Variable -Name 'signpath-signing-policy' -Value $signpathSigningPolicy
 Export-Variable -Name 'signpath-artifactconfiguration-files' -Value $signpathArtifactConfigurationFiles
-Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
+Export-Variable -Name 'signatures-canbeinvalid' -Value $(if ($signaturesCanBeInvalid) { '1' } else { '0' })
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
 # See https://savannah.gnu.org/bugs/?func=detailitem&item_id=66378
 Export-Variable -Name 'simplify-plurals-xml' -Value $(if ($simplifyPluralsXml) { 'yes' } else { 'no' })
