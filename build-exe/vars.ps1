@@ -63,12 +63,68 @@ function ConvertTo-CygwinPath()
     return '/cygdrive/' + $match.Matches.Groups[1].Value.ToLowerInvariant() + $match.Matches.Groups[2].Value.Replace('\', '/')
 }
 
+function Get-OptionFromPullRequestCommitMessages()
+{
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $OptionName
+    )
+    if (-not($OptionName -match '^[A-Za-z0-9\-_]+$')) {
+        throw "Invalid OptionName: '$OptionName'"
+    }
+    $searchOptionNames = @(
+        $OptionName,
+        ($OptionName -replace '-', ''),
+        ($OptionName -replace '-', ' ')
+    )
+    if (-not $script:pullRequestCommitMessages) {
+        $script:pullRequestCommitMessages = @()
+        if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+            if (-not(Test-Path -LiteralPath $env:GITHUB_WORKSPACE -PathType Container)) {
+                throw "The GitHub Action path '$env:GITHUB_WORKSPACE' does not exist"
+            }
+            $baseRef = $env:GITHUB_BASE_REF
+            $headRef = $env:GITHUB_HEAD_REF
+            if (-not $baseRef -or -not $headRef) {
+                throw "Invalid GitHub Action refs: base='$baseRef', head='$headRef'"
+            }
+            $mergeBase = git -C "$env:GITHUB_WORKSPACE" merge-base "origin/$baseRef" "origin/$headRef"
+            if (-not $mergeBase) {
+                throw "Unable to find the merge base between 'origin/$baseRef' and 'origin/$headRef'"
+            }
+            $script:pullRequestCommitMessages = git -C "$env:GITHUB_WORKSPACE" log "$mergeBase..origin/$headRef" --pretty=format:'%s%n%b%n'
+            if (-not $script:pullRequestCommitMessages) {
+                throw "Unable to get the commit messages between '$mergeBase' and 'origin/$headRef'"
+            }
+        }
+    }
+    foreach ($message in $script:pullRequestCommitMessages) {
+        foreach ($searchOptionName in $searchOptionNames) {
+            $match = Select-String -InputObject $message -Pattern "^\s*\/$searchOptionName(\s+|\s*:\s*|\s*=\s*)([^\s]+)\s*$"
+            if ($match) {
+                return $match.Matches.Groups[2].Value
+            }
+            if ($message -match "^\s*\/$searchOptionName[\s:=]*$") {
+                return ''
+            }
+        }
+    }
+    return ''
+}
+
+if (-not $CLDRVersion) {
+    $CLDRVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'cldr-version'
+}
 if ($CLDRVersion) {
     if (-not($CLDRVersion -match '^\d+(\.\d+)?[a-z0-9_\-.]*$')) {
         throw "Invalid CLDRVersion: '$CLDRVersion'"
     }
 } else {
     $CLDRVersion = '48.1'
+}
+if (-not $IconvVersion) {
+    $IconvVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'iconv-version'
 }
 if ($IconvVersion) {
     if (-not($IconvVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
@@ -77,6 +133,9 @@ if ($IconvVersion) {
 } else {
     $IconvVersion = '1.17'
 }
+if (-not $GettextVersion) {
+    $GettextVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'gettext-version'
+}
 if ($GettextVersion) {
     if (-not($GettextVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
         throw "Invalid gettext version: '$GettextVersion'"
@@ -84,12 +143,18 @@ if ($GettextVersion) {
 } else {
     $GettextVersion = '0.26'
 }
+if (-not $CurlVersion) {
+    $CurlVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'curl-version'
+}
 if ($CurlVersion) {
     if (-not($CurlVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
         throw "Invalid curl version: '$CurlVersion'"
     }
 } else {
     $CurlVersion = '8.18.0'
+}
+if (-not $JsonCVersion) {
+    $JsonCVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'json-c-version'
 }
 if ($JsonCVersion) {
     if (-not($JsonCVersion -match '^\d+\.\d+?[a-z0-9_\-.]*$')) {
@@ -102,7 +167,6 @@ if ($JsonCVersion) {
 $cldrMajorVersion = [int][regex]::Match($CLDRVersion, '^\d+').Value
 
 $gettextVersionObject = ConvertTo-Version -Version $GettextVersion
-
 
 $simplifyPluralsXml = $cldrMajorVersion -ge 38 -and $gettextVersionObject -lt [Version]'1.0'
 
