@@ -55,6 +55,8 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       -
         name: Check scripts
         run: |
@@ -150,7 +152,7 @@ jobs:
           ./build-exe/vars.ps1
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
-          -InstalledPath installed 
+          -InstalledPath installed
           -Sign '${{ github.event.inputs.sign }}'
           -CLDRVersion '${{ github.event.inputs.cldr-version }}'
           -IconvVersion '${{ github.event.inputs.iconv-version }}'
