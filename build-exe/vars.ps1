@@ -390,27 +390,28 @@ if ($gettextVersionObject -le [Version]'0.22.5') {
 if ($env:GITHUB_REPOSITORY -ne 'mlocati/gettext-iconv-windows') {
     Write-Host -Object "Using -Sign no because the current repository ($($env:GITHUB_REPOSITORY)) is not the upstream one`n"
     $Sign = 'no'
-} elseif ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
-    Write-Host -Object "Using -Sign no because the current event is $($env:GITHUB_EVENT_NAME)`n"
-    $Sign = 'no'
-} elseif (-not($Sign)) {
-    Write-Host -Object "Using -Sign test`n"
-    $Sign = 'test'
+} elseif (-not $Sign) {
+    if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+        $Sign = Get-OptionFromPullRequestCommitMessages -OptionName 'sign'
+        if (-not $Sign) {
+            $Sign = 'no'
+        }
+    } else {
+        $Sign = 'test'
+    }
 }
+
 $signpathSigningPolicy = ''
-$signaturesCanBeInvalid = 0
+$signaturesCanBeInvalid = $false
 switch ($Sign) {
     'no' {
-        Write-Host "Signing is disabled`n"
     }
     'test' {
         $signpathSigningPolicy = 'test-signing'
-        $signaturesCanBeInvalid = 1
-        Write-Host "SignPath signing policy: $signpathSigningPolicy (self-signed certificate)`n"
+        $signaturesCanBeInvalid = $true
     }
     'production' {
         $signpathSigningPolicy = 'release-signing'
-        Write-Host "SignPath signing policy: $signpathSigningPolicy (production certificate)`n"
     }
     default {
         throw "Invalid value of the -Sign argument ($Sign)"
@@ -577,7 +578,7 @@ Export-Variable -Name 'gettext-ignore-tests-c' -Value $($gettextIgnoreTestsC -jo
 Export-Variable -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests -join ' ')
 Export-Variable -Name 'signpath-signing-policy' -Value $signpathSigningPolicy
 Export-Variable -Name 'signpath-artifactconfiguration-files' -Value $signpathArtifactConfigurationFiles
-Export-Variable -Name 'signatures-canbeinvalid' -Value $signaturesCanBeInvalid
+Export-Variable -Name 'signatures-canbeinvalid' -Value $(if ($signaturesCanBeInvalid) { '1' } else { '0' })
 Export-Variable -Name 'cldr-plural-works' -Value $cldrPluralWorks
 # See https://savannah.gnu.org/bugs/?func=detailitem&item_id=66378
 Export-Variable -Name 'simplify-plurals-xml' -Value $(if ($simplifyPluralsXml) { 'yes' } else { 'no' })
