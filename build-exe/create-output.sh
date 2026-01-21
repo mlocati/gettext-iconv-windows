@@ -127,8 +127,8 @@ fi
 if [ -f "$SOURCE/share/gettext/msgunfmt.tcl" ]; then
     copyFile "$SOURCE/share/gettext/msgunfmt.tcl"
 fi
-if [ -f "$SOURCE/lib/gettext/common/supplemental/plurals.xml" ]; then
-    copyFile "$SOURCE/lib/gettext/common/supplemental/plurals.xml"
+if [ -f "$SOURCE/share/cldr/common/supplemental/plurals.xml" ]; then
+    copyFile "$SOURCE/share/cldr/common/supplemental/plurals.xml"
 fi
 echo '::endgroup::'
 
