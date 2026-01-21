@@ -113,7 +113,9 @@ function Get-OptionFromPullRequestCommitMessages()
     return ''
 }
 
-if (-not $CLDRVersion) {
+if ($CLDRVersion) {
+    $CLDRVersion = $CLDRVersion.Trim()
+} else {
     $CLDRVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'cldr-version'
 }
 if ($CLDRVersion) {
@@ -123,7 +125,9 @@ if ($CLDRVersion) {
 } else {
     $CLDRVersion = '48.1'
 }
-if (-not $IconvVersion) {
+if ($IconvVersion) {
+    $IconvVersion = $IconvVersion.Trim()
+} else {
     $IconvVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'iconv-version'
 }
 if ($IconvVersion) {
@@ -133,7 +137,9 @@ if ($IconvVersion) {
 } else {
     $IconvVersion = '1.17'
 }
-if (-not $GettextVersion) {
+if ($GettextVersion) {
+    $GettextVersion = $GettextVersion.Trim()
+} else {
     $GettextVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'gettext-version'
 }
 if ($GettextVersion) {
@@ -143,7 +149,9 @@ if ($GettextVersion) {
 } else {
     $GettextVersion = '0.26'
 }
-if (-not $CurlVersion) {
+if ($CurlVersion) {
+    $CurlVersion = $CurlVersion.Trim()
+} else {
     $CurlVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'curl-version'
 }
 if ($CurlVersion) {
@@ -153,7 +161,9 @@ if ($CurlVersion) {
 } else {
     $CurlVersion = '8.18.0'
 }
-if (-not $JsonCVersion) {
+if ($JsonCVersion) {
+    $JsonCVersion = $JsonCVersion.Trim()
+} else {
     $JsonCVersion = Get-OptionFromPullRequestCommitMessages -OptionName 'json-c-version'
 }
 if ($JsonCVersion) {
