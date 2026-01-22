@@ -261,13 +261,13 @@ jobs:
         name: Extract CLDR
         run: |
           unzip -p src/downloads/cldr-${{ steps.vars.outputs.cldr-version }}.zip LICENSE > installed/licenses/cldr.txt
-          mkdir -p installed/share/cldr/common/supplemental
-          unzip -p src/downloads/cldr-${{ steps.vars.outputs.cldr-version }}.zip common/supplemental/plurals.xml >installed/share/cldr/common/supplemental/plurals.xml
+          mkdir -p installed/share/gettext/cldr/common/supplemental
+          unzip -p src/downloads/cldr-${{ steps.vars.outputs.cldr-version }}.zip common/supplemental/plurals.xml >installed/share/gettext/cldr/common/supplemental/plurals.xml
       -
         name: Simplify CLDR plurals.xml
         if: steps.vars.outputs.simplify-plurals-xml == 'yes'
         shell: pwsh
-        run: ./build-exe/simplify-plurals-xml.ps1 installed/share/cldr/common/supplemental/plurals.xml
+        run: ./build-exe/simplify-plurals-xml.ps1 installed/share/gettext/cldr/common/supplemental/plurals.xml
       -
         name: Extract iconv
         run: |
@@ -549,7 +549,7 @@ jobs:
           }
           Write-Output -InputObject "As expected, without GETTEXTCLDRDIR there isn't a Plural-Forms header in the .po file for the locale $lang."
 
-          $env:GETTEXTCLDRDIR = "$PWD\files-unsigned\share\cldr"
+          $env:GETTEXTCLDRDIR = "$PWD\files-unsigned\share\gettext\cldr"
           $po = $pot | & .\files-unsigned\bin\msginit.exe --input=- --output-file=- --locale="$lang"
           $rule = $po -match "Plural-Forms:"
           if ('${{ steps.vars.outputs.cldr-plural-works }}' -eq 'yes') {
