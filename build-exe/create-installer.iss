@@ -61,7 +61,7 @@ end;
 
 function EnvCLDRDir(): String;
 begin
-	Result := ExpandConstant('{app}\share\cldr');
+	Result := ExpandConstant('{app}\share\gettext\cldr');
 end;
 
 
