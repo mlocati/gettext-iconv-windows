@@ -147,7 +147,7 @@ if ($GettextVersion) {
         throw "Invalid gettext version: '$GettextVersion'"
     }
 } else {
-    $GettextVersion = '0.26'
+    $GettextVersion = '1.0'
 }
 if ($CurlVersion) {
     $CurlVersion = $CurlVersion.Trim()
