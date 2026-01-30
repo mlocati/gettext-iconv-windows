@@ -318,9 +318,6 @@ jobs:
           artifact-ids: ${{ needs.build-iconv-tarball.outputs.artifact-id }}
           path: src/downloads/
       -
-        name: TEST
-        run: ls -R src/downloads
-      -
         name: Download iconv
         if: ${{ !needs.versions.outputs.iconv-tarball-from-commit }}
         working-directory: src\downloads

@@ -99,7 +99,8 @@ if ($JsonCVersion) {
 
 # See https://savannah.gnu.org/bugs/?func=detailitem&item_id=66378
 $cldrSimplifyPluralsXml = (Compare-Versions $CLDRVersion '38') -ge 0 -and (Compare-Versions $GettextVersion '1.0') -lt 0
-$cldrPluralWorks = $Link -ne 'shared' -or (Compare-Versions $GettextVersion '0.23') -lt 0
+# See https://savannah.gnu.org/bugs/?66356
+$cldrPluralWorks = ($Link -ne 'shared') -or (Compare-Versions $GettextVersion '0.23') -ge 0
 
 
 # iconv configuration
@@ -207,8 +208,8 @@ if ($CurlVersion) {
 $jsonCCMakeArgs = @()
 if ($JsonCVersion) {
     $jsonCCMakeArgs = @(
-        "-DCMAKE_C_FLAGS='$cFlags'"
-        "-DCMAKE_CXX_FLAGS='$cxxFlags'"
+        "-DCMAKE_C_FLAGS='$cFlags $cppFlags'"
+        "-DCMAKE_CXX_FLAGS='$cxxFlags $cppFlags'"
         "-DCMAKE_SHARED_LINKER_FLAGS='$ldFlags'"
         '-DCMAKE_SYSTEM_NAME=Windows'
         "-DCMAKE_C_COMPILER=$mingwHost-gcc"
