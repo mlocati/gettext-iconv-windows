@@ -166,7 +166,7 @@ jobs:
         if: needs.versions.outputs.iconv-tarball-from-commit
         run: >
           apt-get install -qy --no-install-recommends
-          ca-certificates git gcc libc6-dev autoconf automake m4 gperf groff perl make python3 patch autotools-dev curl gettext xz-utils
+          ca-certificates git curl xz-utils make python3 patch autoconf gcc libc6-dev gperf groff gettext
       -
         name: Install automake 1.18
         if: needs.versions.outputs.iconv-tarball-from-commit
