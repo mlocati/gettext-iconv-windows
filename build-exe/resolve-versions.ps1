@@ -156,7 +156,7 @@ if ($IconvVersion) {
         throw "Invalid iconv version: '$IconvVersion'"
     }
 } else {
-    $IconvVersion = '1.17'
+    $IconvVersion = '1.18'
 }
 $IconvTarballFromCommit = ''
 if ((Compare-Versions $IconvVersion '1.18') -eq 0) {

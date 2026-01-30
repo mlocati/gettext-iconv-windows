@@ -109,9 +109,9 @@ jobs:
 
   versions:
     name: Resolve versions
-    #needs:
-      #- test-bash-scripts
-      #- test-pwsh-scripts
+    needs:
+      - test-bash-scripts
+      - test-pwsh-scripts
     outputs:
       cygwin-mirror: ${{ steps.resolve.outputs.cygwin-mirror }}
       cldr-version: ${{ steps.resolve.outputs.cldr-version }}
