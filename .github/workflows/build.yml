@@ -271,6 +271,7 @@ jobs:
         with:
           packages: ${{ steps.vars.outputs.cygwin-packages }}
           install-dir: C:\cygwin
+          work-vol: C:
           site: ${{ needs.versions.outputs.cygwin-mirror }}
           add-to-path: false
       -
