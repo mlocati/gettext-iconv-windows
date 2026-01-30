@@ -158,6 +158,10 @@ if ($IconvVersion) {
 } else {
     $IconvVersion = '1.17'
 }
+$IconvTarballFromCommit = ''
+if ((Compare-Versions $IconvVersion '1.18') -eq 0) {
+    $IconvTarballFromCommit = '30fc26493e4c6457000172d49b526be0919e34c6'
+}
 
 if ($GettextVersion) {
     $GettextVersion = $GettextVersion.Trim()
@@ -298,6 +302,7 @@ if ((Compare-Versions $GettextVersion '1.0') -ge 0) {
 Add-GithubOutput -Name 'cygwin-mirror' -Value $cygwinMirror
 Add-GithubOutput -Name 'cldr-version' -Value $CLDRVersion
 Add-GithubOutput -Name 'iconv-version' -Value $IconvVersion
+Add-GithubOutput -Name 'iconv-tarball-from-commit' -Value $IconvTarballFromCommit
 Add-GithubOutput -Name 'iconv-source-url' -Value $iconvSourceUrl
 Add-GithubOutput -Name 'curl-version' -Value $CurlVersion
 Add-GithubOutput -Name 'json-c-version' -Value $JsonCVersion
