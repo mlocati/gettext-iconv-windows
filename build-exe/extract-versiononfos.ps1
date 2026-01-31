@@ -4,18 +4,7 @@ param (
     [Parameter(Mandatory = $true)] [ValidateLength(1, [int]::MaxValue)] [string] $RootPath
 )
 
-function Export-Variable()
-{
-    param(
-        [Parameter(Mandatory = $true)]
-        [string] $Name,
-        [Parameter(Mandatory = $false)]
-        [string] $Value
-    )
-    "$Name<<EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-    $Value | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-    "EOF" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-}
+. "$PSScriptRoot/../service/functions.ps1"
 
 if (-not(Test-Path -LiteralPath $RootPath -PathType Container)) {
     throw "Unable to find the directory $RootPath"
@@ -229,5 +218,8 @@ foreach ($key in $collectedData.Keys) {
 }
 
 $serializedParameters = ($serializedLines | Sort-Object) -join "`n"
-Write-Output "`n## Collected parameters:`n$serializedParameters`n"
-Export-Variable -Name 'signpath-parameters' -Value $serializedParameters
+
+Add-GithubOutput -Name 'signpath-parameters' -Value $serializedParameters
+
+Write-Output '## Outputs'
+Get-GitHubOutputs
