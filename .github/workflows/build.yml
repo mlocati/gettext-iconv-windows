@@ -691,7 +691,7 @@ jobs:
           "pid=$($process.Id)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
       -
         name: Check spit executable
-        if: needs.versions.outputs.check-spit-exe == 'yes'
+        if: steps.vars.outputs.check-spit-exe == 'yes'
         shell: pwsh
         run: |
           $spitPath = '.\files-unsigned\bin\spit.exe'
