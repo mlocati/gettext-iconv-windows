@@ -233,7 +233,7 @@ jobs:
       CHERE_INVOKING: 1
     defaults:
       run:
-        shell: C:\cygwin\bin\bash.exe --login -o igncr -o errexit -o pipefail {0}
+        shell: D:\cygwin\bin\bash.exe --login -o igncr -o errexit -o pipefail {0}
     steps:
       -
         name: Configure git
@@ -249,7 +249,7 @@ jobs:
         with:
           key: build-exe-${{ matrix.link }}-${{ matrix.bits }}
           path: |
-            C:\cygwin-packages
+            D:\cygwin-packages
       -
         name: Set case-specific variables
         id: vars
@@ -270,8 +270,8 @@ jobs:
         timeout-minutes: 60
         with:
           packages: ${{ steps.vars.outputs.cygwin-packages }}
-          install-dir: C:\cygwin
-          work-vol: 'C:'
+          install-dir: D:\cygwin
+          work-vol: 'D:'
           site: ${{ needs.versions.outputs.cygwin-mirror }}
           add-to-path: false
       -
@@ -600,7 +600,7 @@ jobs:
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
           -Path files-unsigned
-          -MinGWPath C:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
+          -MinGWPath D:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
       -
         name: Extract version infos
         id: versioninfos
@@ -860,4 +860,4 @@ jobs:
         with:
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
           path: |
-            C:\cygwin-packages
+            D:\cygwin-packages
