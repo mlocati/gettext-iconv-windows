@@ -38,7 +38,7 @@ checkBits()
     local checkMe="$1"
     local expectedBits
     case "$(basename "$checkMe")" in
-        GNU.Gettext.dll | msgfmt.net.exe | msgunfmt.net.exe)
+        GNU.Gettext.dll | msgfmt.net.exe | msgunfmt.net.exe | csharpexec-test.exe)
             expectedBits=32
             ;;
         *)

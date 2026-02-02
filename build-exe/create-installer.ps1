@@ -23,6 +23,9 @@ param (
     [string] $GettextVersion
 )
 
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
 $SourceDirectory = [System.IO.Path]::GetFullPath($SourceDirectory)
 $OutputDirectory = [System.IO.Path]::GetFullPath($OutputDirectory)
 

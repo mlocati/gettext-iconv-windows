@@ -99,3 +99,261 @@ function Get-GitHubOutputs()
         Get-Content -LiteralPath $env:GITHUB_OUTPUT
     }
 }
+
+function Find-DumpbinPath
+{
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet(32, 64)]
+        [int] $Bits
+    )
+    $vsPath = & vswhere.exe -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+    if (-not($?)) {
+        throw "vswhere failed"
+    }
+    if (-not($vsPath) -or -not(Test-Path -LiteralPath $vsPath -PathType Container)) {
+        throw "Visual Studio with C++ tools not found"
+    }
+    $vcToolsVersion = Get-Content -LiteralPath "$vsPath\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" -TotalCount 1
+    switch ($Bits) {
+        32 {
+            $result = "$vsPath\VC\Tools\MSVC\$vcToolsVersion\bin\Hostx86\x86\dumpbin.exe"
+        }
+        64 {
+            $result = "$vsPath\VC\Tools\MSVC\$vcToolsVersion\bin\Hostx64\x64\dumpbin.exe"
+        }
+    }
+    if (-not(Test-Path -LiteralPath $result -PathType Leaf)) {
+        throw "$result`ndoes not exist"
+    }
+    $result
+}
+
+class BinaryFile
+{
+    [System.IO.FileInfo] $File
+
+    [string] $RelativePath
+
+    [string[]] $Dependencies
+
+    BinaryFile([System.IO.FileInfo] $file, [System.IO.DirectoryInfo] $root, [string[]] $dependencies)
+    {
+        $this.File = $file
+        if (!$file.FullName.StartsWith($root.FullName + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "File out of path: $($file.FullName)"
+        }
+        $this.RelativePath = $file.FullName.Substring($root.FullName.Length + 1).Replace([System.IO.Path]::DirectorySeparatorChar, '/')
+        $this.Dependencies = $dependencies
+    }
+}
+
+class BinaryFileCollection
+{
+    hidden [string] $DumpbinPath;
+
+    [System.IO.DirectoryInfo] $RootDir;
+
+    [string[]] $MinGWFilesAdded = @()
+
+    [bool] $CurlFilesPresent = $false
+
+    [bool] $JsonCFilesPresent = $false
+
+    [BinaryFile[]] $Items
+
+    BinaryFileCollection([int] $bits, [string] $rootDirPath)
+    {
+        $this.DumpbinPath = Find-DumpbinPath -Bits $bits
+        $this.RootDir = Get-Item -LiteralPath $rootDirPath
+        $this.Items = @()
+        foreach ($file in Get-ChildItem -LiteralPath $this.RootDir.FullName -Recurse -File -Include *.exe,*.dll) {
+            if ($file.Extension -ne '.dll' -and $file.Extension -ne '.exe') {
+                continue;
+            }
+            if ($file.Name -match '^libcurl.*\.dll$') {
+                $this.CurlFilesPresent = $true
+            }
+            if ($file.Name -match '^libjson-c.*\.dll$') {
+                $this.JsonCFilesPresent = $true
+            }
+            $this.Add([BinaryFile]::new($file, $this.RootDir, $this.GetDependencies($file)))
+        }
+    }
+
+    hidden [string[]] GetDependencies([System.IO.FileInfo] $file)
+    {
+        $dumpbinResult = & $this.DumpbinPath /NOLOGO /DEPENDENTS $file.FullName
+        if (-not($?)) {
+            throw "dumpbin failed to analyze the file $($file.FullName)"
+        }
+        [string[]] $dependencies = @()
+        $started = $false
+        foreach ($line in $dumpbinResult) {
+            $line = $line.Trim()
+            if (-not($line)) {
+                continue;
+            }
+            if ($started) {
+                if ($line -eq 'Summary') {
+                    break
+                }
+                $dependencies += $line.ToLowerInvariant()
+            } elseif ($line -eq 'Image has the following dependencies:') {
+                $started = $true
+            }
+        }
+        return $dependencies | Sort-Object
+    }
+
+    hidden [void] Add([BinaryFile] $binaryFile)
+    {
+        if ($this.GetBinaryByRelativePath($binaryFile.RelativePath)) {
+            throw "Duplicated binary file name $($binaryFile.RelativePath)"
+        }
+        $this.Items += $binaryFile
+    }
+
+    hidden [BinaryFile] GetBinaryByRelativePath([string] $relativePath)
+    {
+        foreach ($item in $this.Items) {
+            if ($relativePath -eq $item.RelativePath) {
+                return $item
+            }
+        }
+        return $null
+    }
+
+    [int] RemoveUnusedDlls()
+    {
+        $removedCount = 0
+        do {
+            $repeat = $false
+            foreach ($binaryFile in $this.Items) {
+                if (-not($binaryFile.RelativePath -match '^bin/[^/]+\.dll$')) {
+                    continue
+                }
+                $name = $binaryFile.File.Name.ToLowerInvariant()
+                $unused = $true
+                foreach ($other in $this.Items) {
+                    if ($other -ne $binaryFile -and $other.Dependencies -contains $name) {
+                        $unused = $false
+                        break
+                    }
+                }
+                if ($unused) {
+                    Write-Host -Object "$($binaryFile.RelativePath) is never used: deleting it"
+                    $binaryFile.File.Delete()
+                    $this.Items = $this.Items | Where-Object { $_ -ne $binaryFile }
+                    $removedCount++
+                    $repeat = $true
+                    break
+                }
+            }
+        } while ($repeat)
+        return $removedCount
+    }
+
+    [void] AddMingwDlls([string] $mingwBinPath)
+    {
+        $checkedDeps = @()
+        for ($index = 0; $index -lt $this.Items.Count; $index++) {
+            $binaryFile = $this.Items[$index]
+            foreach ($dependency in $binaryFile.Dependencies) {
+                if ($checkedDeps -contains $dependency) {
+                    continue
+                }
+                $checkedDeps += $dependency
+                if ($this.GetBinaryByRelativePath("bin/$dependency")) {
+                    continue
+                }
+                $mingwDllPath = Join-Path -Path $mingwBinPath -ChildPath $dependency
+                if (-not(Test-Path -LiteralPath $mingwDllPath -PathType Leaf)) {
+                    continue
+                }
+                Write-Host -Object "Adding MinGW-w64 DLL $dependency"
+                Copy-Item -LiteralPath $mingwDllPath -Destination $(Join-Path -Path $this.RootDir.FullName -ChildPath bin)
+                $newFilePath = Join-Path -Path $this.RootDir.FullName -ChildPath "bin/$dependency"
+                $newFile = Get-Item -LiteralPath $newFilePath
+                $newBinary = [BinaryFile]::new($newFile, $this.RootDir, $this.GetDependencies($newFile))
+                $this.Add($newBinary)
+                $this.MinGWFilesAdded += $dependency
+            }
+        }
+    }
+
+    hidden [string[]] ListImportedFunctions([System.IO.FileInfo] $importer, [string] $dllName)
+    {
+        $dumpbinResult = & $this.DumpbinPath /NOLOGO /DEPENDENTS $importer.FullName "/IMPORTS:$dllName"
+        if (-not($?)) {
+            throw "dumpbin failed to analyze the file $($importer)"
+        }
+        $state = 0
+        $result = @()
+        foreach ($line in $dumpbinResult) {
+            if ($line -eq '') {
+                continue
+            }
+            if ($line -match '^ *Summary$') {
+                break;
+            }
+            if ($state -eq 0) {
+                if ($line -match '^\s*Section contains the following imports:\s*$') {
+                    $state = 1
+                }
+            } elseif ($state -eq 1) {
+                if ($line -like "* $dllName") {
+                    $state = 2
+                }
+            } elseif (-not($line -match '^       .*')) {
+                break
+            } elseif ($state -eq 2) {
+                if ($line -match '^\s*\d+\s+Index of first forwarder reference$') {
+                    $state = 3
+                }
+            } else {
+                if ($state -ne 3)  {
+                    throw 'Processing failed'
+                }
+                if (-not($line -match '^\s*[0-9A-Fa-f]+\s*(\w+)$')) {
+                    throw 'Processing failed'
+                }
+                $result += $matches[1]
+            }
+        }
+        return $result
+    }
+
+    [void] Dump()
+    {
+        $binaries = $this.Items | Sort-Object -Property {  $_.RelativePath }
+        foreach ($binaryFile in $binaries) {
+            Write-Host -Object "Dependencies of $($binaryFile.RelativePath)"
+            if ($binaryFile.Dependencies) {
+                foreach ($dependency in $binaryFile.Dependencies) {
+                    Write-Host -Object "  - $dependency"
+                }
+            } else {
+                Write-Host -Object '  (none)'
+            }
+        }
+        if ($this.MinGWFilesAdded) {
+            Write-Host -Object ''
+            foreach ($minGWFileAdded in $this.MinGWFilesAdded) {
+                Write-Host -Object "$minGWFileAdded added because:"
+                foreach ($binaryFile in $binaries) {
+                    $functions = $this.ListImportedFunctions($binaryFile.File, $minGWFileAdded)
+                    if (-not($functions)) {
+                        continue
+                    }
+                    if ($this.MinGWFilesAdded -contains $binaryFile.File.Name.ToLowerInvariant()) {
+                        Write-Host -Object "  - $($binaryFile.File.Name) requires it"
+                    } else {
+                        Write-Host -Object "  - $($binaryFile.File.Name) uses its functions: $($functions -join ', ')"
+                    }
+                }
+            }
+        }
+    }
+}
