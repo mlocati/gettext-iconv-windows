@@ -177,31 +177,33 @@ jobs:
           ./configure
           make install
       -
-        name: Configure git
-        run: git config --global --add safe.directory "$(pwd)"
-      -
         name: Download iconv source code
         if: needs.versions.outputs.iconv-tarball-from-commit
-        run: git clone https://git.savannah.gnu.org/git/libiconv.git .
+        run: git clone https://git.savannah.gnu.org/git/libiconv.git
       -
         name: Checkout commit ${{ needs.versions.outputs.iconv-tarball-from-commit }}
         if: needs.versions.outputs.iconv-tarball-from-commit
+        working-directory: libiconv
         run: git checkout ${{ needs.versions.outputs.iconv-tarball-from-commit }}
       -
         name: Pull git dependencies
         if: needs.versions.outputs.iconv-tarball-from-commit
+        working-directory: libiconv
         run: ./autopull.sh
       -
         name: Autogenerate build system
         if: needs.versions.outputs.iconv-tarball-from-commit
+        working-directory: libiconv
         run: ./autogen.sh
       -
         name: Configure
         if: needs.versions.outputs.iconv-tarball-from-commit
+        working-directory: libiconv
         run: ./configure
       -
         name: Build tarball
         if: needs.versions.outputs.iconv-tarball-from-commit
+        working-directory: libiconv
         run: make dist
       -
         name: Upload tarball
@@ -210,7 +212,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: iconv-tarball
-          path: libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz
+          path: libiconv/libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz
           if-no-files-found: error
           retention-days: 1
 
