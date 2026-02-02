@@ -106,6 +106,7 @@ $cldrPluralWorks = ($Link -ne 'shared') -or (Compare-Versions $GettextVersion '0
 # iconv configuration
 
 $iconvConfigureArgs = @(
+    '--enable-option-checking'
     "CPPFLAGS='$cppFlags'"
     "CFLAGS='$cFlags'"
     "CXXFLAGS='$cxxFlags'"
@@ -141,6 +142,7 @@ switch ($Link) {
 $curlConfigureArgs = @()
 if ($CurlVersion) {
     $curlConfigureArgs = @(
+        '--enable-option-checking'
         "CPPFLAGS='$cppFlags'"
         "CFLAGS='$cFlags'"
         "CXXFLAGS='$cxxFlags'"
@@ -246,6 +248,7 @@ if ($CurlVersion -and $Link -eq 'static') {
     $gettextCPPFlags += ' -DCURL_STATICLIB'
 }
 $gettextConfigureArgs = @(
+    '--enable-option-checking'
     "CPPFLAGS='$gettextCPPFlags'"
     "CFLAGS='$cFlags'"
     "CXXFLAGS='$cxxFlags'"
@@ -256,6 +259,7 @@ $gettextConfigureArgs = @(
     '--disable-dependency-tracking'
     '--enable-relocatable'
     '--disable-rpath'
+    '--enable-year2038'
     '--enable-nls'
     '--disable-acl'
     '--enable-threads=windows'
