@@ -212,6 +212,7 @@ jobs:
           name: iconv-tarball
           path: libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz
           if-no-files-found: error
+          retention-days: 1
 
   exe:
     name: ${{ matrix.bits}}-bit ${{ matrix.link }} executables
