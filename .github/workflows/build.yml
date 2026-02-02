@@ -254,7 +254,7 @@ jobs:
           path: |
             D:\cygwin-packages
       -
-        name: Set case-specific variables
+        name: Set variables
         id: vars
         shell: pwsh
         run: >
@@ -473,7 +473,8 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ${{ steps.vars.outputs.json-c-cmake-args }} ../
+          cmake ${{ steps.vars.outputs.json-c-cmake-args }} \
+            ../
       -
         name: Build JSON-C
         if: needs.versions.outputs.json-c-version
@@ -491,7 +492,8 @@ jobs:
         run: |
           mkdir build
           cd build
-          ../configure ${{ steps.vars.outputs.gettext-configure-args }} LIBS='${{ steps.curl-configure.outputs.libs }}'
+          ../configure \
+            LIBS='${{ steps.curl-configure.outputs.libs }}' ${{ steps.vars.outputs.gettext-configure-args }}
       -
         name: Ignore gettext C tests
         if: steps.vars.outputs.gettext-ignore-c-tests

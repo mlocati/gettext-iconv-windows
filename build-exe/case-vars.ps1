@@ -26,6 +26,20 @@ param (
 
 . "$PSScriptRoot/../service/functions.ps1"
 
+function Join-Arguments {
+    [OutputType([string])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string[]] $Arguments
+    )
+    if ($Arguments.Count -eq 0) {
+        return ''
+    }
+    if ($Arguments.Count -eq 1) {
+        return $Arguments[0]
+    }
+    return "\`n  " + ($Arguments -join " \`n  ")
+}
 
 # General configuration
 
@@ -106,13 +120,13 @@ $cldrPluralWorks = ($Link -ne 'shared') -or (Compare-Versions $GettextVersion '0
 # iconv configuration
 
 $iconvConfigureArgs = @(
-    '--enable-option-checking'
     "CPPFLAGS='$cppFlags'"
     "CFLAGS='$cFlags'"
     "CXXFLAGS='$cxxFlags'"
     "LDFLAGS='$ldFlags'"
     "--host=$mingwHost"
     "--prefix=$cygwinInstalledPath"
+    '--enable-option-checking'
     '--config-cache'
     '--disable-dependency-tracking'
     '--enable-relocatable'
@@ -142,13 +156,13 @@ switch ($Link) {
 $curlConfigureArgs = @()
 if ($CurlVersion) {
     $curlConfigureArgs = @(
-        '--enable-option-checking'
         "CPPFLAGS='$cppFlags'"
         "CFLAGS='$cFlags'"
         "CXXFLAGS='$cxxFlags'"
         "LDFLAGS='$ldFlags'"
         "--host=$mingwHost"
         "--prefix=$cygwinInstalledPath"
+        '--enable-option-checking'
         '--enable-http'
         '--disable-file'
         '--disable-ftp'
@@ -216,7 +230,7 @@ if ($JsonCVersion) {
         '-DCMAKE_SYSTEM_NAME=Windows'
         "-DCMAKE_C_COMPILER=$mingwHost-gcc"
         "-DCMAKE_CXX_COMPILER=$mingwHost-g++"
-        "'-DCMAKE_INSTALL_PREFIX=$cygwinInstalledPath'"
+        "-DCMAKE_INSTALL_PREFIX=$cygwinInstalledPath"
         '-DCMAKE_BUILD_TYPE=Release'
         '-DCMAKE_POLICY_VERSION_MINIMUM=3.5'
         '-DBUILD_TESTING=OFF'
@@ -248,13 +262,13 @@ if ($CurlVersion -and $Link -eq 'static') {
     $gettextCPPFlags += ' -DCURL_STATICLIB'
 }
 $gettextConfigureArgs = @(
-    '--enable-option-checking'
     "CPPFLAGS='$gettextCPPFlags'"
     "CFLAGS='$cFlags'"
     "CXXFLAGS='$cxxFlags'"
     "LDFLAGS='$ldFlags'"
     "--host=$mingwHost"
     "--prefix=$cygwinInstalledPath"
+    '--enable-option-checking'
     '--config-cache'
     '--disable-dependency-tracking'
     '--enable-relocatable'
@@ -324,10 +338,10 @@ Add-GithubOutput -Name 'mingw-architecture' -Value $mingwArchitecture
 Add-GithubOutput -Name 'mingw-host' -Value $mingwHost
 Add-GithubOutput -Name 'cldr-plural-works' -Value $(if ($cldrPluralWorks) { 'yes' } else { 'no' })
 Add-GithubOutput -Name 'cldr-simplify-plurals-xml' -Value $(if ($cldrSimplifyPluralsXml) { 'yes' } else { 'no' })
-Add-GithubOutput -Name 'iconv-configure-args' -Value $($iconvConfigureArgs -join ' ')
-Add-GithubOutput -Name 'curl-configure-args' -Value $($curlConfigureArgs -join ' ')
-Add-GithubOutput -Name 'json-c-cmake-args' -Value $($jsonCCMakeArgs -join ' ')
-Add-GithubOutput -Name 'gettext-configure-args' -Value $($gettextConfigureArgs -join ' ')
+Add-GithubOutput -Name 'iconv-configure-args' -Value $(Join-Arguments $iconvConfigureArgs)
+Add-GithubOutput -Name 'curl-configure-args' -Value $(Join-Arguments $curlConfigureArgs)
+Add-GithubOutput -Name 'json-c-cmake-args' -Value $(Join-Arguments $jsonCCMakeArgs)
+Add-GithubOutput -Name 'gettext-configure-args' -Value $(Join-Arguments $gettextConfigureArgs)
 Add-GithubOutput -Name 'gettext-ignore-c-tests' -Value $($gettextIgnoreCTests -join ' ')
 Add-GithubOutput -Name 'gettext-xfail-gettext-tools' -Value $($gettextXFailTests -join ' ')
 Add-GithubOutput -Name 'check-spit-exe' -Value $(if ($checkSpitExe) { 'yes' } else { 'no' })
