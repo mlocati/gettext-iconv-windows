@@ -289,7 +289,7 @@ jobs:
           mkdir -p installed/licenses
           mkdir output-exe
           mkdir output-dev
-          mkdir installer
+          mkdir assets
           cp ./LICENSE.txt installed/license.txt
           mkdir -p "$HOME"
           printf "\nPATH='${{ steps.vars.outputs.cygwin-path }}'\nexport PATH\n" >>$HOME/.bash_profile
@@ -628,15 +628,7 @@ jobs:
         shell: pwsh
         working-directory: output-dev
         run: |
-          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}-dev-gcc.zip
-      -
-        name: Upload developer files archive
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-files-dev-gcc
-          path: gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}-dev-gcc.zip
-          if-no-files-found: error
-          compression-level: 0
+          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\assets\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}-dev-gcc.zip
       -
         name: Copy built executables
         shell: pwsh
@@ -650,15 +642,7 @@ jobs:
         shell: pwsh
         working-directory: output-exe
         run: |
-          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.zip
-      -
-        name: Upload executable files archive
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-files
-          path: gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.zip
-          if-no-files-found: error
-          compression-level: 0
+          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\assets\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.zip
       -
         name: Prepare build log
         id: prepare-build-log
@@ -805,12 +789,12 @@ jobs:
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
           -SourceDirectory output-exe
-          -OutputDirectory installer
+          -OutputDirectory assets
           -IconvVersion ${{ needs.versions.outputs.iconv-version }}
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
       -
         name: Check bitness
-        run: ./build-exe/check-bits.sh 32 installer/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+        run: ./build-exe/check-bits.sh 32 assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
       -
         name: Upload unsigned installer
         if: needs.versions.outputs.signpath-signing-policy
@@ -818,7 +802,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-installer-unsigned
-          path: installer\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          path: assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           if-no-files-found: error
           compression-level: 0
           retention-days: 1
@@ -835,7 +819,7 @@ jobs:
           artifact-configuration-slug: gh_sign_installer
           github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
           wait-for-completion: true
-          output-artifact-directory: installer
+          output-artifact-directory: assets
       -
         name: Check signature
         if: needs.versions.outputs.signpath-signing-policy
@@ -843,14 +827,14 @@ jobs:
         run: >
           ./build-exe/check-signature.ps1
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
-          -Path installer
+          -Path assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
       -
-        name: Upload installer
+        name: Upload assets
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-installer
-          path: installer/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          name: ${{ matrix.link }}-${{ matrix.bits }}
+          path: assets/*
           if-no-files-found: error
           compression-level: 0
       -
