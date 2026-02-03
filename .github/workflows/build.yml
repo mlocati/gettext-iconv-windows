@@ -172,7 +172,7 @@ jobs:
         if: needs.versions.outputs.iconv-tarball-from-commit
         working-directory: /tmp
         run: |
-          curl -sSL https://ftp.gnu.org/gnu/automake/automake-1.18.tar.xz | tar -xJ
+          curl -sSL https://ftp.gnu.org/gnu/automake/automake-1.18.1.tar.xz | tar -xJ
           cd automake-*
           ./configure
           make install
@@ -288,6 +288,7 @@ jobs:
           mkdir -p installed/lib
           mkdir -p installed/licenses
           mkdir output-exe
+          mkdir output-dev
           mkdir installer
           cp ./LICENSE.txt installed/license.txt
           mkdir -p "$HOME"
@@ -619,8 +620,27 @@ jobs:
           -Path installed
           -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
       -
+        name: Copy built developer files
+        shell: pwsh
+        run: ./build-exe/copy-output.ps1 -Type dev -From installed -To output-dev
+      -
+        name: Create developer files archive
+        shell: pwsh
+        working-directory: output-dev
+        run: |
+          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}-dev-gcc.zip
+      -
+        name: Upload developer files archive
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.link }}-${{ matrix.bits }}-files-dev-gcc
+          path: gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}-dev-gcc.zip
+          if-no-files-found: error
+          compression-level: 0
+      -
         name: Copy built executables
-        run: ./build-exe/copy-output-exe.sh installed output-exe
+        shell: pwsh
+        run: ./build-exe/copy-output.ps1 -Type exe -From installed -To output-exe
       -
         name: Delete unused dependencies
         shell: pwsh
