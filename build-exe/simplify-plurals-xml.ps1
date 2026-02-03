@@ -9,6 +9,9 @@ param (
     [string] $OutputPath
 )
 
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
 $xml = Get-Content -LiteralPath $InputPath -Raw -Encoding utf8NoBOM
 
 # for gettext we can assume that c (compact decimal exponent value) and e (a deprecated synonym for 'c')

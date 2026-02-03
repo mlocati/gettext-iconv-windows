@@ -172,7 +172,7 @@ jobs:
         if: needs.versions.outputs.iconv-tarball-from-commit
         working-directory: /tmp
         run: |
-          curl -sSL https://ftp.gnu.org/gnu/automake/automake-1.18.tar.xz | tar -xJ
+          curl -sSL https://ftp.gnu.org/gnu/automake/automake-1.18.1.tar.xz | tar -xJ
           cd automake-*
           ./configure
           make install
@@ -287,10 +287,9 @@ jobs:
           mkdir -p installed/include
           mkdir -p installed/lib
           mkdir -p installed/licenses
-          mkdir files-unsigned
-          mkdir files-signed
-          mkdir installer-unsigned
-          mkdir installer-signed
+          mkdir output-exe
+          mkdir output-dev
+          mkdir assets
           cp ./LICENSE.txt installed/license.txt
           mkdir -p "$HOME"
           printf "\nPATH='${{ steps.vars.outputs.cygwin-path }}'\nexport PATH\n" >>$HOME/.bash_profile
@@ -570,6 +569,81 @@ jobs:
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         run: make --jobs=$(nproc) install-strip
       -
+        name: Finalize install dir
+        shell: pwsh
+        run: >
+          ./build-exe/finalize-installed.ps1
+          -Bits ${{ matrix.bits }}
+          -Link ${{ matrix.link }}
+          -Path installed
+          -MinGWPath D:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
+      -
+        name: Extract version infos
+        id: versioninfos
+        shell: pwsh
+        run: ./build-exe/extract-versiononfos.ps1 -RootPath installed
+      -
+        name: Check bitness
+        run: ./build-exe/check-bits.sh ${{ matrix.bits }} installed
+      -
+        name: Upload unsigned files
+        if: needs.versions.outputs.signpath-signing-policy
+        id: upload-installed-unsigned
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.link }}-${{ matrix.bits }}-installed-unsigned
+          path: installed
+          if-no-files-found: error
+          retention-days: 1
+      -
+        name: Sign files
+        if: needs.versions.outputs.signpath-signing-policy
+        id: sign-files
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
+          project-slug: gettext-iconv-windows
+          signing-policy-slug: '${{ needs.versions.outputs.signpath-signing-policy }}'
+          artifact-configuration-slug: ${{ needs.versions.outputs.signpath-artifactconfiguration-files }}
+          github-artifact-id: ${{ steps.upload-installed-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: installed
+          parameters: ${{ steps.versioninfos.outputs.signpath-parameters }}
+      -
+        name: Check signatures
+        if: needs.versions.outputs.signpath-signing-policy
+        shell: pwsh
+        run: >
+          ./build-exe/check-signature.ps1
+          -GettextVersion ${{ needs.versions.outputs.gettext-version }}
+          -Path installed
+          -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
+      -
+        name: Copy built developer files
+        shell: pwsh
+        run: ./build-exe/copy-output.ps1 -Type dev -From installed -To output-dev
+      -
+        name: Create developer files archive
+        shell: pwsh
+        working-directory: output-dev
+        run: |
+          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\assets\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}-dev-gcc.zip
+      -
+        name: Copy built executables
+        shell: pwsh
+        run: ./build-exe/copy-output.ps1 -Type exe -From installed -To output-exe
+      -
+        name: Delete unused dependencies
+        shell: pwsh
+        run: ./build-exe/delete-unused-dependencies.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -Path output-exe
+      -
+        name: Create executable files archive
+        shell: pwsh
+        working-directory: output-exe
+        run: |
+          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\assets\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.zip
+      -
         name: Prepare build log
         id: prepare-build-log
         if: (success() || failure()) && steps.iconv-configure.outcome == 'success'
@@ -587,39 +661,21 @@ jobs:
           if [ -d src/gettext-${{ needs.versions.outputs.gettext-version }}/build ]; then
             tar c -J -f build-log/gettext.tar.xz src/gettext-${{ needs.versions.outputs.gettext-version }}/build
           fi
-          if find installed -mindepth 1 -maxdepth 1 | read; then
-            tar c -J -f build-log/installed.tar.xz installed
+          if [ -d installed ]; then
+            if find installed -mindepth 1 -maxdepth 1 | read; then
+              tar c -J -f build-log/installed.tar.xz installed
+            fi
           fi
           ls -al build-log
       -
-        name: Copy built assets
-        run: ./build-exe/create-output.sh installed files-unsigned
-      -
         name: Delete install directory
         run: rm -rf installed
-      -
-        name: Process dependencies
-        shell: pwsh
-        run: >
-          ./build-exe/process-dependencies.ps1
-          -Bits ${{ matrix.bits }}
-          -Link ${{ matrix.link }}
-          -Path files-unsigned
-          -MinGWPath D:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
-      -
-        name: Extract version infos
-        id: versioninfos
-        shell: pwsh
-        run: ./build-exe/extract-versiononfos.ps1 -RootPath '.\files-unsigned'
-      -
-        name: Check bitness
-        run: ./build-exe/check-bits.sh ${{ matrix.bits }} files-unsigned
       -
         name: Check if iconv program load translations correctly
         shell: pwsh
         run: |
           $env:LANGUAGE = 'it'
-          $stdout = & .\files-unsigned\bin\iconv.exe --help
+          $stdout = & .\output-exe\bin\iconv.exe --help
           if (-not($?)) {
             throw "iconv.exe failed"
           }
@@ -633,7 +689,7 @@ jobs:
         shell: pwsh
         run: |
           $env:LANGUAGE = 'it'
-          $stdout = & .\files-unsigned\bin\xgettext.exe --help
+          $stdout = & .\output-exe\bin\xgettext.exe --help
           if (-not($?)) {
             throw "xgettext.exe failed"
           }
@@ -659,15 +715,15 @@ jobs:
           $lang = 'zu'
 
           Remove-Item -LiteralPath Env:GETTEXTCLDRDIR -ErrorAction SilentlyContinue
-          $po = $pot | & .\files-unsigned\bin\msginit.exe --input=- --output-file=- --locale="$lang"
+          $po = $pot | & .\output-exe\bin\msginit.exe --input=- --output-file=- --locale="$lang"
           $rule = $po -match "Plural-Forms:"
           if ($rule) {
             throw "Without GETTEXTCLDRDIR there shouldn't be a Plural-Forms header in the .po file for the locale $lang, but we found it: $rule"
           }
           Write-Output -InputObject "As expected, without GETTEXTCLDRDIR there isn't a Plural-Forms header in the .po file for the locale $lang."
 
-          $env:GETTEXTCLDRDIR = "$PWD\files-unsigned\share\gettext\cldr"
-          $po = $pot | & .\files-unsigned\bin\msginit.exe --input=- --output-file=- --locale="$lang"
+          $env:GETTEXTCLDRDIR = "$PWD\output-exe\share\gettext\cldr"
+          $po = $pot | & .\output-exe\bin\msginit.exe --input=- --output-file=- --locale="$lang"
           $rule = $po -match "Plural-Forms:"
           if ('${{ steps.vars.outputs.cldr-plural-works }}' -eq 'yes') {
             if (-not($rule)) {
@@ -699,7 +755,7 @@ jobs:
         if: steps.vars.outputs.check-spit-exe == 'yes'
         shell: pwsh
         run: |
-          $spitPath = '.\files-unsigned\bin\spit.exe'
+          $spitPath = '.\output-exe\bin\spit.exe'
           if (-not(Test-Path -LiteralPath $spitPath -PathType Leaf)) {
             throw "spit.exe not found at expected path: $spitPath"
           }
@@ -726,78 +782,19 @@ jobs:
             $process.Kill($true)
           }
       -
-        name: Upload unsigned files
-        if: needs.versions.outputs.signpath-signing-policy
-        id: upload-files-unsigned
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-files-unsigned
-          path: files-unsigned
-          if-no-files-found: error
-          retention-days: 1
-      -
-        name: Sign files
-        if: needs.versions.outputs.signpath-signing-policy
-        id: sign-files
-        uses: signpath/github-action-submit-signing-request@v2
-        with:
-          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
-          organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
-          project-slug: gettext-iconv-windows
-          signing-policy-slug: '${{ needs.versions.outputs.signpath-signing-policy }}'
-          artifact-configuration-slug: ${{ needs.versions.outputs.signpath-artifactconfiguration-files }}
-          github-artifact-id: ${{ steps.upload-files-unsigned.outputs.artifact-id }}
-          wait-for-completion: true
-          output-artifact-directory: files-signed
-          parameters: ${{ steps.versioninfos.outputs.signpath-parameters }}
-      -
-        name: Check signatures
-        if: needs.versions.outputs.signpath-signing-policy
-        shell: pwsh
-        run: >
-          ./build-exe/check-signature.ps1
-          -Path files-signed
-          -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
-      -
-        name: Create files archive
-        shell: pwsh
-        run: |
-          if ('${{ needs.versions.outputs.signpath-signing-policy }}') {
-            Set-Location -LiteralPath 'files-signed'
-          } else {
-            Set-Location -LiteralPath 'files-unsigned'
-          }
-          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.zip
-      -
-        name: Upload files archive
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-files
-          path: gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.zip
-          if-no-files-found: error
-          compression-level: 0
-      -
-        name: Prepare installer files
-        run: |
-          if [ -n '${{ needs.versions.outputs.signpath-signing-policy }}' ]; then
-            mv files-signed installer-files
-          else
-            mv files-unsigned installer-files
-          fi
-      -
         name: Create installer
         shell: pwsh
         run: >
           ./build-exe/create-installer.ps1
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
-          -SourceDirectory installer-files
-          -OutputDirectory installer-unsigned
+          -SourceDirectory output-exe
+          -OutputDirectory assets
           -IconvVersion ${{ needs.versions.outputs.iconv-version }}
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
       -
         name: Check bitness
-        run: ./build-exe/check-bits.sh 32 installer-unsigned/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+        run: ./build-exe/check-bits.sh 32 assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
       -
         name: Upload unsigned installer
         if: needs.versions.outputs.signpath-signing-policy
@@ -805,7 +802,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-installer-unsigned
-          path: installer-unsigned\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          path: assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           if-no-files-found: error
           compression-level: 0
           retention-days: 1
@@ -822,29 +819,22 @@ jobs:
           artifact-configuration-slug: gh_sign_installer
           github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
           wait-for-completion: true
-          output-artifact-directory: installer-signed
+          output-artifact-directory: assets
       -
         name: Check signature
         if: needs.versions.outputs.signpath-signing-policy
         shell: pwsh
         run: >
           ./build-exe/check-signature.ps1
-          -Path installer-signed
+          -GettextVersion ${{ needs.versions.outputs.gettext-version }}
+          -Path assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
       -
-        name: Move installer
-        run: |
-          if [ -n '${{ needs.versions.outputs.signpath-signing-policy }}' ]; then
-            mv installer-signed/*.exe .
-          else
-            mv installer-unsigned/*.exe .
-          fi
-      -
-        name: Upload installer
+        name: Upload assets
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-installer
-          path: gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          name: ${{ matrix.link }}-${{ matrix.bits }}
+          path: assets/*
           if-no-files-found: error
           compression-level: 0
       -

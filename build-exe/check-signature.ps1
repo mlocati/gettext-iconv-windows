@@ -1,14 +1,49 @@
 # Script that checks if a file (or the files in a directory) is signed
 
 [Diagnostics.CodeAnalysis.SuppressMessage('PSReviewUnusedParameter', 'CanBeInvalid', Justification = 'False positive as rule does not scan child scopes')]
-
 param (
+    [Parameter(Mandatory = $true)]
+    [ValidateLength(1, [int]::MaxValue)]
+    [string] $GettextVersion,
     [Parameter(Mandatory = $true)]
     [ValidateLength(1, [int]::MaxValue)]
     [string] $Path,
     [Parameter(Mandatory = $true)]
     [bool] $CanBeInvalid
 )
+
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+. "$PSScriptRoot/../service/functions.ps1"
+
+$script:excludedNames = @(
+    # Files missing details
+    # - see https://signpath.org/terms#signpath-configuration-requirements
+    # - see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00049.html
+    # - see https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00058.html
+    'GNU.Gettext.dll'
+    'libcharset-*.dll'
+    'msgfmt.net.exe'
+    'msgunfmt.net.exe'
+    'csharpexec-test.exe'
+    # MinGW-w64 files:
+    # - see https://signpath.org/terms#conditions-for-what-can-be-signed
+    # - see https://signpath.org/terms#signpath-configuration-requirements
+    # - see https://sourceforge.net/p/mingw-w64/mailman/message/58822390/
+    # - see https://github.com/niXman/mingw-builds/issues/684
+    'libgcc_s_seh-*.dll' # mingw64-x86_64-gcc-core
+    'libgcc_s_sjlj-*.dll' # mingw64-i686-gcc-core
+    'libstdc++-*.dll' # mingw64-i686-gcc-core
+    'libwinpthread-*.dll' # mingw64-i686-winpthreads, mingw64-x86_64-winpthreads
+)
+if ((Compare-Versions $GettextVersion '1.0') -lt 0) {
+    $script:excludedNames += @(
+        'libgettextlib-*.dll'
+        'libgettextpo-*.dll'
+        'libgettextsrc-*.dll'
+    )
+}
 
 function Test-MustFileBeSigned()
 {
@@ -17,28 +52,7 @@ function Test-MustFileBeSigned()
         [Parameter(Mandatory = $true)]
         [System.IO.FileInfo] $File
     )
-    $excludedNames = @(
-        # Files missing details
-        # - see https://signpath.org/terms#signpath-configuration-requirements
-        # - see https://lists.gnu.org/archive/html/bug-gettext/2024-09/msg00049.html
-        # - see https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00058.html
-        'GNU.Gettext.dll',
-        'libcharset-*.dll',
-        'libgettextlib-*.dll',
-        'libgettextpo-*.dll',
-        'libgettextsrc-*.dll',
-        'msgfmt.net.exe',
-        'msgunfmt.net.exe',
-        # MinGW-w64 files:
-        # - see https://signpath.org/terms#conditions-for-what-can-be-signed
-        # - see https://signpath.org/terms#signpath-configuration-requirements
-        # - see https://sourceforge.net/p/mingw-w64/mailman/message/58822390/
-        # - see https://github.com/niXman/mingw-builds/issues/684
-        'libgcc_s_seh-*.dll', # mingw64-x86_64-gcc-core
-        'libgcc_s_sjlj-*.dll', # mingw64-i686-gcc-core
-        'libwinpthread-*.dll' # mingw64-i686-winpthreads, mingw64-x86_64-winpthreads
-    )
-    foreach ($excludedName in $excludedNames) {
+    foreach ($excludedName in $script:excludedNames) {
         if ($File.Name -like $excludedName) {
             return $false
         }

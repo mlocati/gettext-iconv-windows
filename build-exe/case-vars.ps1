@@ -24,6 +24,9 @@ param (
     [string] $JsonCVersion
 )
 
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
 . "$PSScriptRoot/../service/functions.ps1"
 
 function Join-Arguments {

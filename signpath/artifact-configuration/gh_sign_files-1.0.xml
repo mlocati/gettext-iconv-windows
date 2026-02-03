@@ -9,8 +9,10 @@
         <parameter name="curlPEVersion" required="false" />
         <parameter name="jsonCPEVersion" required="false" />
         <parameter name="gettextPEVersion" required="true" />
+        <parameter name="gettextPEVersionLibAsprintf" required="false" />
         <parameter name="gettextPENameLibGettextLib" required="false" />
         <parameter name="gettextPEVersionLibGettextLib" required="false" />
+        <parameter name="gettextPEVersionLibGettextPo" required="false" />
         <parameter name="gettextPENameLibGettextSrc" required="false" />
         <parameter name="gettextPEVersionLibGettextSrc" required="false" />
         <parameter name="gettextPEVersionLibIntl" required="false" />
@@ -20,6 +22,9 @@
         <pe-file-set>
             <!-- iconv -->
             <include path="bin/iconv.exe" min-matches="1" max-matches="1" product-name="iconv: character set conversion program" product-version="${iconvPEVersion}" />
+            <!-- Missing metadata
+            <include path="bin/libcharset-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
+            -->
             <include path="bin/libiconv-*.dll" min-matches="0" max-matches="1" product-name="libiconv: character set conversion library" product-version="${iconvPEVersion}" />
             <!-- curl -->
             <include path="bin/libcurl*.dll" min-matches="0" max-matches="1" product-name="The curl library" product-version="${curlPEVersion}" />
@@ -28,7 +33,9 @@
             <!-- gettext -->
             <include path="bin/envsubst.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/gettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/libasprintf-*.dll" min-matches="0" max-matches="1" product-name="GNU libasprintf: automatic formatted output" product-version="${gettextPEVersionLibAsprintf}" />
             <include path="bin/libgettextlib-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextLib}" product-version="${gettextPEVersionLibGettextLib}" />
+            <include path="bin/libgettextpo-*.dll" min-matches="0" max-matches="1" product-name="GNU libgettextpo: public API for PO files" product-version="${gettextPEVersionLibGettextPo}" />
             <include path="bin/libgettextsrc-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextSrc}" product-version="${gettextPEVersionLibGettextSrc}" />
             <include path="bin/libintl-*.dll" min-matches="0" max-matches="1" product-name="GNU libintl: accessing NLS message catalogs" product-version="${gettextPEVersionLibIntl}" />
             <include path="bin/libtextstyle-*.dll" min-matches="0" max-matches="1" product-name="GNU libtextstyle: Text styling library" product-version="${gettextPEVersionLibTextStyle}" />

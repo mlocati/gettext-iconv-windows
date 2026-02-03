@@ -14,7 +14,12 @@ param (
     [string] $Sign
 )
 
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
 . "$PSScriptRoot/../service/functions.ps1"
+
+$script:pullRequestCommitMessages = $null
 
 function Get-OptionFromPullRequestCommitMessages()
 {
@@ -31,7 +36,7 @@ function Get-OptionFromPullRequestCommitMessages()
         ($OptionName -replace '-', '')
         ($OptionName -replace '-', ' ')
     )
-    if (-not $script:pullRequestCommitMessages) {
+    if ($null -eq $script:pullRequestCommitMessages) {
         $script:pullRequestCommitMessages = @()
         if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
             if (-not(Test-Path -LiteralPath $env:GITHUB_WORKSPACE -PathType Container)) {

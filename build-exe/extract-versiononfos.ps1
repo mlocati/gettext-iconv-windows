@@ -4,6 +4,9 @@ param (
     [Parameter(Mandatory = $true)] [ValidateLength(1, [int]::MaxValue)] [string] $RootPath
 )
 
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
 . "$PSScriptRoot/../service/functions.ps1"
 
 if (-not(Test-Path -LiteralPath $RootPath -PathType Container)) {
@@ -16,6 +19,7 @@ $files = Get-ChildItem -LiteralPath $RootPath -File -Recurse -Include *.exe,*.dl
 foreach ($file in $files) {
     $nameParameterName = ''
     $versionParameterName = ''
+    $required = $true
     switch -Wildcard ($file.Name) {
         # Iconf
         'iconv.exe' {
@@ -39,9 +43,17 @@ foreach ($file in $files) {
         'gettext.exe' {
             $versionParameterName = 'gettextPEVersion'
         }
+        'libasprintf-*.dll' {
+            $required = $false
+            $versionParameterName = 'gettextPEVersionLibAsprintf'
+        }
         'libgettextlib-*.dll' {
             $nameParameterName = 'gettextPENameLibGettextLib'
             $versionParameterName = 'gettextPEVersionLibGettextLib'
+        }
+        'libgettextpo-*.dll' {
+            $required = $false
+            $versionParameterName = 'gettextPEVersionLibGettextPo'
         }
         'libgettextsrc-*.dll' {
             $nameParameterName = 'gettextPENameLibGettextSrc'
@@ -135,13 +147,7 @@ foreach ($file in $files) {
         'GNU.Gettext.dll' {
             continue
         }
-        'libasprintf-*.dll' {
-            continue
-        }
         'libcharset-*.dll' {
-            continue
-        }
-        'libgettextpo-*.dll' {
             continue
         }
         'msgfmt.net.exe' {
@@ -177,7 +183,11 @@ foreach ($file in $files) {
     Write-Output "## File: $($file.Name)"
     $versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($file.FullName)
     if (-not($versionInfo)) {
-        throw 'No version information found!'
+        if ($required) {
+            throw 'No version information found!'
+        }
+        Write-Output "- No version information found, but not required."
+        continue
     }
     if ($nameParameterName -ne '') {
         $value = if ($versionInfo -and $versionInfo.ProductName) { $versionInfo.ProductName } else { '' }
