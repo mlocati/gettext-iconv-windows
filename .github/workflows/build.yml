@@ -253,6 +253,7 @@ jobs:
         with:
           key: build-${{ matrix.link }}-${{ matrix.bits }}
           path: |
+            src\downloads
             D:\cygwin-packages
       -
         name: Set variables
