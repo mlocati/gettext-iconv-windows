@@ -593,7 +593,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-installed-unsigned
-          path: installed
+          path: |
+            installed/**/*.dll
+            installed/**/*.exe
           if-no-files-found: error
           retention-days: 1
       -
