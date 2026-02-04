@@ -116,6 +116,7 @@ jobs:
       cygwin-mirror: ${{ steps.resolve.outputs.cygwin-mirror }}
       cldr-version: ${{ steps.resolve.outputs.cldr-version }}
       iconv-version: ${{ steps.resolve.outputs.iconv-version }}
+      iconv-version-base: ${{ steps.resolve.outputs.iconv-version-base }}
       iconv-tarball-from-commit: ${{ steps.resolve.outputs.iconv-tarball-from-commit }}
       iconv-source-url: ${{ steps.resolve.outputs.iconv-source-url }}
       curl-version: ${{ steps.resolve.outputs.curl-version }}
@@ -204,7 +205,7 @@ jobs:
         name: Build tarball
         if: needs.versions.outputs.iconv-tarball-from-commit
         working-directory: libiconv
-        run: make dist
+        run: make dist VERSION=${{ needs.versions.outputs.iconv-version }}
       -
         name: Upload tarball
         if: needs.versions.outputs.iconv-tarball-from-commit
@@ -592,7 +593,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-installed-unsigned
-          path: installed
+          path: |
+            installed/**/*.dll
+            installed/**/*.exe
           if-no-files-found: error
           retention-days: 1
       -
@@ -628,7 +631,7 @@ jobs:
         shell: pwsh
         working-directory: output-dev
         run: |
-          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\assets\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}-dev-gcc.zip
+          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\assets\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}-dev-gcc.zip
       -
         name: Copy built executables
         shell: pwsh
@@ -642,7 +645,7 @@ jobs:
         shell: pwsh
         working-directory: output-exe
         run: |
-          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\assets\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.zip
+          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\assets\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.zip
       -
         name: Prepare build log
         id: prepare-build-log
@@ -790,11 +793,11 @@ jobs:
           -Link ${{ matrix.link }}
           -SourceDirectory output-exe
           -OutputDirectory assets
-          -IconvVersion ${{ needs.versions.outputs.iconv-version }}
+          -IconvVersion ${{ needs.versions.outputs.iconv-version-base }}
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
       -
         name: Check bitness
-        run: ./build-exe/check-bits.sh 32 assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+        run: ./build-exe/check-bits.sh 32 assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
       -
         name: Upload unsigned installer
         if: needs.versions.outputs.signpath-signing-policy
@@ -802,7 +805,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.link }}-${{ matrix.bits }}-installer-unsigned
-          path: assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          path: assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           if-no-files-found: error
           compression-level: 0
           retention-days: 1
@@ -827,7 +830,7 @@ jobs:
         run: >
           ./build-exe/check-signature.ps1
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
-          -Path assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+          -Path assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
       -
         name: Upload assets
