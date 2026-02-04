@@ -7,7 +7,7 @@ param (
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-. "$PSScriptRoot/../service/functions.ps1"
+. "$PSScriptRoot/functions.ps1"
 
 if (-not(Test-Path -LiteralPath $RootPath -PathType Container)) {
     throw "Unable to find the directory $RootPath"

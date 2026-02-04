@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/build.yml
-      - build-exe/**
+      - service/**
   push:
     branches:
       - main
@@ -12,7 +12,7 @@ on:
       - "**"
     paths:
       - .github/workflows/build.yml
-      - build-exe/**
+      - service/**
   workflow_dispatch:
     inputs:
       sign:
@@ -138,7 +138,7 @@ jobs:
         id: resolve
         shell: pwsh
         run: >
-          ./build-exe/resolve-versions.ps1
+          ./service/resolve-versions.ps1
           -CLDRVersion '${{ github.event.inputs.cldr-version }}'
           -IconvVersion '${{ github.event.inputs.iconv-version }}'
           -CurlVersion '${{ github.event.inputs.curl-version }}'
@@ -251,7 +251,7 @@ jobs:
         id: restore-cache
         uses: actions/cache/restore@v5
         with:
-          key: build-exe-${{ matrix.link }}-${{ matrix.bits }}
+          key: build-${{ matrix.link }}-${{ matrix.bits }}
           path: |
             D:\cygwin-packages
       -
@@ -259,7 +259,7 @@ jobs:
         id: vars
         shell: pwsh
         run: >
-          ./build-exe/case-vars.ps1
+          ./service/case-vars.ps1
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
           -InstalledPath installed
@@ -382,7 +382,7 @@ jobs:
         name: Simplify CLDR plurals.xml
         if: steps.vars.outputs.cldr-simplify-plurals-xml == 'yes'
         shell: pwsh
-        run: ./build-exe/simplify-plurals-xml.ps1 installed/share/gettext/cldr/common/supplemental/plurals.xml
+        run: ./service/simplify-plurals-xml.ps1 installed/share/gettext/cldr/common/supplemental/plurals.xml
       -
         name: Extract iconv
         run: |
@@ -573,7 +573,7 @@ jobs:
         name: Finalize install dir
         shell: pwsh
         run: >
-          ./build-exe/finalize-installed.ps1
+          ./service/finalize-installed.ps1
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
           -Path installed
@@ -582,10 +582,10 @@ jobs:
         name: Extract version infos
         id: versioninfos
         shell: pwsh
-        run: ./build-exe/extract-versiononfos.ps1 -RootPath installed
+        run: ./service/extract-versiononfos.ps1 -RootPath installed
       -
         name: Check bitness
-        run: ./build-exe/check-bits.sh ${{ matrix.bits }} installed
+        run: ./service/check-bits.sh ${{ matrix.bits }} installed
       -
         name: Upload unsigned files
         if: needs.versions.outputs.signpath-signing-policy
@@ -618,14 +618,14 @@ jobs:
         if: needs.versions.outputs.signpath-signing-policy
         shell: pwsh
         run: >
-          ./build-exe/check-signature.ps1
+          ./service/check-signature.ps1
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
           -Path installed
           -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
       -
         name: Copy built developer files
         shell: pwsh
-        run: ./build-exe/copy-output.ps1 -Type dev -From installed -To output-dev
+        run: ./service/copy-output.ps1 -Type dev -From installed -To output-dev
       -
         name: Create developer files archive
         shell: pwsh
@@ -635,11 +635,11 @@ jobs:
       -
         name: Copy built executables
         shell: pwsh
-        run: ./build-exe/copy-output.ps1 -Type exe -From installed -To output-exe
+        run: ./service/copy-output.ps1 -Type exe -From installed -To output-exe
       -
         name: Delete unused dependencies
         shell: pwsh
-        run: ./build-exe/delete-unused-dependencies.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -Path output-exe
+        run: ./service/delete-unused-dependencies.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -Path output-exe
       -
         name: Create executable files archive
         shell: pwsh
@@ -745,7 +745,7 @@ jobs:
         id: start-fake-ollama-server
         shell: pwsh
         run: |
-          $process = Start-Process pwsh -ArgumentList '.\build-exe\run-fake-ollama-server.ps1' -WindowStyle Hidden -PassThru
+          $process = Start-Process pwsh -ArgumentList '.\service\run-fake-ollama-server.ps1' -WindowStyle Hidden -PassThru
           Start-Sleep -Seconds 2
           $process.Refresh()
           if ($process.HasExited) {
@@ -788,7 +788,7 @@ jobs:
         name: Create installer
         shell: pwsh
         run: >
-          ./build-exe/create-installer.ps1
+          ./service/create-installer.ps1
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
           -SourceDirectory output-exe
@@ -797,7 +797,7 @@ jobs:
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
       -
         name: Check bitness
-        run: ./build-exe/check-bits.sh 32 assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+        run: ./service/check-bits.sh 32 assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
       -
         name: Upload unsigned installer
         if: needs.versions.outputs.signpath-signing-policy
@@ -828,7 +828,7 @@ jobs:
         if: needs.versions.outputs.signpath-signing-policy
         shell: pwsh
         run: >
-          ./build-exe/check-signature.ps1
+          ./service/check-signature.ps1
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
           -Path assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
