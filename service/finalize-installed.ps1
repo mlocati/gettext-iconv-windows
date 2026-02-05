@@ -66,13 +66,16 @@ This project includes the following third-party components:
   See license in the file licenses/cldr.txt
 '@
 
-if ($binaries.MinGWFilesAdded.Count -gt 0) {
+$license = Join-Path -Path $Path -ChildPath 'licenses/gcc.txt' 
+if (Test-Path -LiteralPath $license -PathType Leaf) {
+  if ($binaries.MinGWFilesAdded.Count -gt 0) {
     Add-LicenseText @'
 - The GCC ( https://gcc.gnu.org/ ) runtime libraries provided by mingw-w64
   See license in the file licenses/gcc.txt
 '@
-} else {
-    Remove-Item -LiteralPath $(Join-Path -Path $Path -ChildPath 'licenses/gcc.txt')
+  } else {
+    Remove-Item -LiteralPath $license
+  }
 }
 $license = Join-Path -Path $Path -ChildPath 'licenses/curl.txt'
 if (Test-Path -LiteralPath $license -PathType Leaf) {
