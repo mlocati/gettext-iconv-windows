@@ -10,9 +10,7 @@ param (
     [ValidateLength(1, [int]::MaxValue)]
     [ValidateScript({Test-Path -LiteralPath $_ -PathType Container})]
     [string] $Path,
-    [Parameter(Mandatory = $true)]
-    [ValidateLength(1, [int]::MaxValue)]
-    [ValidateScript({Test-Path -LiteralPath $_ -PathType Container})]
+    [Parameter(Mandatory = $false)]
     [string] $MinGWPath
 )
 
@@ -32,18 +30,31 @@ function Add-LicenseText()
     $Text.TrimEnd() + "`n" | Out-File -FilePath $licenseFilePath -Encoding UTF8 -Append -NoNewline
 }
 
-$mingwBinPath = Join-Path -Path $MinGWPath -ChildPath 'sys-root\mingw\bin'
 $binaries = [BinaryFileCollection]::new($Bits, $Path)
 
-$binaries.AddMingwDlls($mingwBinPath)
+if ($MinGWPath) {
+  $mingwBinPath = Join-Path -Path $MinGWPath -ChildPath 'sys-root\mingw\bin'
+  $binaries.AddMingwDlls($mingwBinPath)
+}
 
 $binaries.Dump()
 
-Add-LicenseText @'
+if ($MinGWPath) {
+  Add-LicenseText @'
 
 
 This project was compiled using the mingw-w64 ( https://www.mingw-w64.org/ ) toolchain
 under the Cygwin environment ( https://www.cygwin.com/ ).
+'@
+} else {
+  Add-LicenseText @'
+
+
+This project was compiled under the Cygwin environment ( https://www.cygwin.com/ ).
+'@
+}
+
+Add-LicenseText @'
 
 This project includes the following third-party components:
 
