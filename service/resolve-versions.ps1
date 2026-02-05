@@ -17,7 +17,7 @@ param (
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-. "$PSScriptRoot/../service/functions.ps1"
+. "$PSScriptRoot/functions.ps1"
 
 $script:pullRequestCommitMessages = $null
 

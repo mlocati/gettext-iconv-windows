@@ -10,16 +10,14 @@ param (
     [ValidateLength(1, [int]::MaxValue)]
     [ValidateScript({Test-Path -LiteralPath $_ -PathType Container})]
     [string] $Path,
-    [Parameter(Mandatory = $true)]
-    [ValidateLength(1, [int]::MaxValue)]
-    [ValidateScript({Test-Path -LiteralPath $_ -PathType Container})]
+    [Parameter(Mandatory = $false)]
     [string] $MinGWPath
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-. "$PSScriptRoot/../service/functions.ps1"
+. "$PSScriptRoot/functions.ps1"
 
 function Add-LicenseText()
 {
@@ -32,18 +30,31 @@ function Add-LicenseText()
     $Text.TrimEnd() + "`n" | Out-File -FilePath $licenseFilePath -Encoding UTF8 -Append -NoNewline
 }
 
-$mingwBinPath = Join-Path -Path $MinGWPath -ChildPath 'sys-root\mingw\bin'
 $binaries = [BinaryFileCollection]::new($Bits, $Path)
 
-$binaries.AddMingwDlls($mingwBinPath)
+if ($MinGWPath) {
+  $mingwBinPath = Join-Path -Path $MinGWPath -ChildPath 'sys-root\mingw\bin'
+  $binaries.AddMingwDlls($mingwBinPath)
+}
 
 $binaries.Dump()
 
-Add-LicenseText @'
+if ($MinGWPath) {
+  Add-LicenseText @'
 
 
 This project was compiled using the mingw-w64 ( https://www.mingw-w64.org/ ) toolchain
 under the Cygwin environment ( https://www.cygwin.com/ ).
+'@
+} else {
+  Add-LicenseText @'
+
+
+This project was compiled under the Cygwin environment ( https://www.cygwin.com/ ).
+'@
+}
+
+Add-LicenseText @'
 
 This project includes the following third-party components:
 
@@ -55,13 +66,16 @@ This project includes the following third-party components:
   See license in the file licenses/cldr.txt
 '@
 
-if ($binaries.MinGWFilesAdded.Count -gt 0) {
+$license = Join-Path -Path $Path -ChildPath 'licenses/gcc.txt'
+if (Test-Path -LiteralPath $license -PathType Leaf) {
+  if ($binaries.MinGWFilesAdded.Count -gt 0) {
     Add-LicenseText @'
 - The GCC ( https://gcc.gnu.org/ ) runtime libraries provided by mingw-w64
   See license in the file licenses/gcc.txt
 '@
-} else {
-    Remove-Item -LiteralPath $(Join-Path -Path $Path -ChildPath 'licenses/gcc.txt')
+  } else {
+    Remove-Item -LiteralPath $license
+  }
 }
 $license = Join-Path -Path $Path -ChildPath 'licenses/curl.txt'
 if (Test-Path -LiteralPath $license -PathType Leaf) {

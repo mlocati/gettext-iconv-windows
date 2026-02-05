@@ -127,6 +127,12 @@ Get-ChildItem $script:FromDirectory -File -Recurse | ForEach-Object {
             }
             break
         }
+        'bin/*.lib' {
+            if ($Type -eq 'dev') {
+                Copy-SourceFile $relativePath
+            }
+            break
+        }
         'lib/*.dll' {
             Copy-SourceFile $relativePath
             break
@@ -137,12 +143,24 @@ Get-ChildItem $script:FromDirectory -File -Recurse | ForEach-Object {
             }
             break
         }
+        'lib/*.lib' {
+            if ($Type -eq 'dev') {
+                Copy-SourceFile $relativePath
+            }
+            break
+        }
         'libexec/*.dll' {
             Copy-SourceFile $relativePath
             break
         }
         'libexec/*.exe' {
             if ($Type -eq 'exe') {
+                Copy-SourceFile $relativePath
+            }
+            break
+        }
+        'libexec/*.lib' {
+            if ($Type -eq 'dev') {
                 Copy-SourceFile $relativePath
             }
             break

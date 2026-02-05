@@ -24,21 +24,31 @@
             <include path="bin/iconv.exe" min-matches="1" max-matches="1" product-name="iconv: character set conversion program" product-version="${iconvPEVersion}" />
             <!-- Missing metadata
             <include path="bin/libcharset-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
+            <include path="bin/charset-*.dll" min-matches="0" max-matches="1" product-name="" product-version="" />
             -->
             <include path="bin/libiconv-*.dll" min-matches="0" max-matches="1" product-name="libiconv: character set conversion library" product-version="${iconvPEVersion}" />
+            <include path="bin/iconv-*.dll" min-matches="0" max-matches="1" product-name="libiconv: character set conversion library" product-version="${iconvPEVersion}" />
             <!-- curl -->
             <include path="bin/libcurl*.dll" min-matches="0" max-matches="1" product-name="The curl library" product-version="${curlPEVersion}" />
+            <include path="bin/curl*.dll" min-matches="0" max-matches="1" product-name="The curl library" product-version="${curlPEVersion}" />
             <!-- JSON-C -->
             <include path="bin/libjson-c*.dll" min-matches="0" max-matches="1" product-name="JSON-C" product-version="${jsonCPEVersion}" />
+            <include path="bin/json-c*.dll" min-matches="0" max-matches="1" product-name="JSON-C" product-version="${jsonCPEVersion}" />
             <!-- gettext -->
             <include path="bin/envsubst.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/gettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/libasprintf-*.dll" min-matches="0" max-matches="1" product-name="GNU libasprintf: automatic formatted output" product-version="${gettextPEVersionLibAsprintf}" />
+            <include path="bin/asprintf-*.dll" min-matches="0" max-matches="1" product-name="GNU libasprintf: automatic formatted output" product-version="${gettextPEVersionLibAsprintf}" />
             <include path="bin/libgettextlib-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextLib}" product-version="${gettextPEVersionLibGettextLib}" />
+            <include path="bin/gettextlib-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextLib}" product-version="${gettextPEVersionLibGettextLib}" />
             <include path="bin/libgettextpo-*.dll" min-matches="0" max-matches="1" product-name="GNU libgettextpo: public API for PO files" product-version="${gettextPEVersionLibGettextPo}" />
+            <include path="bin/gettextpo-*.dll" min-matches="0" max-matches="1" product-name="GNU libgettextpo: public API for PO files" product-version="${gettextPEVersionLibGettextPo}" />
             <include path="bin/libgettextsrc-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextSrc}" product-version="${gettextPEVersionLibGettextSrc}" />
+            <include path="bin/gettextsrc-*.dll" min-matches="0" max-matches="1" product-name="${gettextPENameLibGettextSrc}" product-version="${gettextPEVersionLibGettextSrc}" />
             <include path="bin/libintl-*.dll" min-matches="0" max-matches="1" product-name="GNU libintl: accessing NLS message catalogs" product-version="${gettextPEVersionLibIntl}" />
+            <include path="bin/intl-*.dll" min-matches="0" max-matches="1" product-name="GNU libintl: accessing NLS message catalogs" product-version="${gettextPEVersionLibIntl}" />
             <include path="bin/libtextstyle-*.dll" min-matches="0" max-matches="1" product-name="GNU libtextstyle: Text styling library" product-version="${gettextPEVersionLibTextStyle}" />
+            <include path="bin/textstyle-*.dll" min-matches="0" max-matches="1" product-name="GNU libtextstyle: Text styling library" product-version="${gettextPEVersionLibTextStyle}" />
             <include path="bin/msgattrib.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/msgcat.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/msgcmp.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
@@ -58,7 +68,7 @@
             <include path="bin/printf_gettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/printf_ngettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/recode-sr-latin.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
-            <include path="bin/spit.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
+            <include path="bin/spit.exe" min-matches="0" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="bin/xgettext.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="libexec/gettext/cldr-plurals.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />
             <include path="libexec/gettext/hostname.exe" min-matches="1" max-matches="1" product-name="GNU gettext utilities" product-version="${gettextPEVersion}" />

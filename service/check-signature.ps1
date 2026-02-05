@@ -15,7 +15,7 @@ param (
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-. "$PSScriptRoot/../service/functions.ps1"
+. "$PSScriptRoot/functions.ps1"
 
 $script:excludedNames = @(
     # Files missing details
@@ -24,6 +24,7 @@ $script:excludedNames = @(
     # - see https://lists.gnu.org/archive/html/bug-gettext/2024-10/msg00058.html
     'GNU.Gettext.dll'
     'libcharset-*.dll'
+    'charset-*.dll'
     'msgfmt.net.exe'
     'msgunfmt.net.exe'
     'csharpexec-test.exe'
@@ -40,8 +41,11 @@ $script:excludedNames = @(
 if ((Compare-Versions $GettextVersion '1.0') -lt 0) {
     $script:excludedNames += @(
         'libgettextlib-*.dll'
+        'gettextlib-*.dll'
         'libgettextpo-*.dll'
+        'gettextpo-*.dll'
         'libgettextsrc-*.dll'
+        'gettextsrc-*.dll'
     )
 }
 

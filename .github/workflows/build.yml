@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/build.yml
-      - build-exe/**
+      - service/**
   push:
     branches:
       - main
@@ -12,7 +12,7 @@ on:
       - "**"
     paths:
       - .github/workflows/build.yml
-      - build-exe/**
+      - service/**
   workflow_dispatch:
     inputs:
       sign:
@@ -79,13 +79,40 @@ jobs:
   test-pwsh-scripts:
     name: Test PowerShell scripts
     runs-on: windows-latest
+    env:
+      PSScriptAnalyzerVersion: 1.24.0
     steps:
-      -
-        name: Install PSScriptAnalyzer
-        run: Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.24.0 -Force -SkipPublisherCheck -Verbose
       -
         name: Checkout
         uses: actions/checkout@v6
+      -
+        name: Create directory structure
+        run: |
+          New-Item -ItemType Directory -Force -ErrorAction Stop -Path @(
+            'downloads'
+            'tmp'
+          ) | Out-Null
+      -
+        name: Restore cache
+        id: restore-cache
+        uses: actions/cache/restore@v5
+        with:
+          key: test-pwsh-scripts
+          path: downloads
+      -
+        name: Download PSScriptAnalyzer module
+        run: >
+          ./service/download-archive.ps1
+          -Url "https://www.powershellgallery.com/api/v2/package/PSScriptAnalyzer/${env:PSScriptAnalyzerVersion}"
+          -LocalFilePath "downloads\psscriptanalyzer.${env:PSScriptAnalyzerVersion}.nupkg"
+      -
+        name: Extract PSScriptAnalyzer
+        working-directory: tmp
+        run: Expand-Archive -Path "..\downloads\psscriptanalyzer.${env:PSScriptAnalyzerVersion}.nupkg" -DestinationPath .\PSScriptAnalyzer
+      -
+        name: Import PSScriptAnalyzer module
+        working-directory: tmp
+        run: Import-Module -Name .\PSScriptAnalyzer\ -Force
       -
         name: Check scripts
         run: |
@@ -106,6 +133,13 @@ jobs:
             }
           }
           exit $rc
+      -
+        name: Persist cache
+        if: always() && steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+          path: downloads
 
   versions:
     name: Resolve versions
@@ -119,11 +153,11 @@ jobs:
       iconv-version-base: ${{ steps.resolve.outputs.iconv-version-base }}
       iconv-tarball-from-commit: ${{ steps.resolve.outputs.iconv-tarball-from-commit }}
       iconv-source-url: ${{ steps.resolve.outputs.iconv-source-url }}
-      curl-version: ${{ steps.resolve.outputs.curl-version }}
-      json-c-version: ${{ steps.resolve.outputs.json-c-version }}
+      curl-version-default: ${{ steps.resolve.outputs.curl-version }}
+      json-c-version-default: ${{ steps.resolve.outputs.json-c-version }}
       gettext-version: ${{ steps.resolve.outputs.gettext-version }}
       gettext-source-url: ${{ steps.resolve.outputs.gettext-source-url }}
-      signpath-signing-policy: ${{ steps.resolve.outputs.signpath-signing-policy }}
+      signpath-signing-policy-default: ${{ steps.resolve.outputs.signpath-signing-policy }}
       signpath-artifactconfiguration-files: ${{ steps.resolve.outputs.signpath-artifactconfiguration-files }}
       signatures-canbeinvalid: ${{ steps.resolve.outputs.signatures-canbeinvalid }}
     runs-on: windows-2022
@@ -138,7 +172,7 @@ jobs:
         id: resolve
         shell: pwsh
         run: >
-          ./build-exe/resolve-versions.ps1
+          ./service/resolve-versions.ps1
           -CLDRVersion '${{ github.event.inputs.cldr-version }}'
           -IconvVersion '${{ github.event.inputs.iconv-version }}'
           -CurlVersion '${{ github.event.inputs.curl-version }}'
@@ -169,7 +203,7 @@ jobs:
           apt-get install -qy --no-install-recommends
           ca-certificates git curl xz-utils make python3 patch autoconf gcc libc6-dev gperf groff gettext
       -
-        name: Install automake 1.18
+        name: Install automake
         if: needs.versions.outputs.iconv-tarball-from-commit
         working-directory: /tmp
         run: |
@@ -218,7 +252,7 @@ jobs:
           retention-days: 1
 
   exe:
-    name: ${{ matrix.bits}}-bit ${{ matrix.link }} executables
+    name: ${{ matrix.bits}}-bit ${{ matrix.link }} w/ ${{ matrix.compiler }}
     needs:
       - versions
       - build-iconv-tarball
@@ -226,12 +260,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bits:
-          - 32
-          - 64
-        link:
-          - shared
-          - static
+        include:
+          - bits: 32
+            link: shared
+            compiler: gcc
+          - bits: 32
+            link: static
+            compiler: gcc
+          - bits: 64
+            link: shared
+            compiler: gcc
+          - bits: 64
+            link: static
+            compiler: gcc
+          - bits: 32
+            link: shared
+            compiler: msvc
+          - bits: 32
+            link: static
+            compiler: msvc
+          - bits: 64
+            link: shared
+            compiler: msvc
+          - bits: 64
+            link: static
+            compiler: msvc
     env:
       CYGWIN_NOWINPATH: 1
       CHERE_INVOKING: 1
@@ -247,27 +300,45 @@ jobs:
         name: Checkout
         uses: actions/checkout@v6
       -
+        name: Create directory structure
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -ErrorAction Stop -Path @(
+            'src/downloads'
+            'installed/bin'
+            'installed/include'
+            'installed/lib'
+            'installed/licenses'
+            'output-exe'
+            'output-dev'
+            'assets'
+          ) | Out-Null
+      -
         name: Restore cache
         id: restore-cache
         uses: actions/cache/restore@v5
         with:
-          key: build-exe-${{ matrix.link }}-${{ matrix.bits }}
+          key: build-${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           path: |
+            src\downloads
             D:\cygwin-packages
       -
         name: Set variables
         id: vars
         shell: pwsh
         run: >
-          ./build-exe/case-vars.ps1
+          ./service/case-vars.ps1
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
+          -Compiler ${{ matrix.compiler }}
           -InstalledPath installed
-          -CLDRVersion ${{ needs.versions.outputs.cldr-version }}
-          -IconvVersion ${{ needs.versions.outputs.iconv-version }}
-          -CurlVersion ${{ needs.versions.outputs.curl-version }}
-          -JsonCVersion ${{ needs.versions.outputs.json-c-version }}
-          -GettextVersion ${{ needs.versions.outputs.gettext-version }}
+          -ToolsPath src\downloads
+          -CLDRVersion '${{ needs.versions.outputs.cldr-version }}'
+          -IconvVersion '${{ needs.versions.outputs.iconv-version }}'
+          -CurlVersionDefault '${{ needs.versions.outputs.curl-version-default }}'
+          -JsonCVersionDefault '${{ needs.versions.outputs.json-c-version-default }}'
+          -GettextVersion '${{ needs.versions.outputs.gettext-version }}'
+          -SignpathSigningPolicyDefault '${{ needs.versions.outputs.signpath-signing-policy-default }}'
       -
         name: Install Cygwin
         uses: cygwin/cygwin-install-action@v6
@@ -283,14 +354,6 @@ jobs:
         run: |
           PATH='${{ steps.vars.outputs.cygwin-path }}'
           cd -- "$(cygpath -ua '${{ github.workspace }}')"
-          mkdir -p src/downloads
-          mkdir -p installed/bin
-          mkdir -p installed/include
-          mkdir -p installed/lib
-          mkdir -p installed/licenses
-          mkdir output-exe
-          mkdir output-dev
-          mkdir assets
           cp ./LICENSE.txt installed/license.txt
           mkdir -p "$HOME"
           printf "\nPATH='${{ steps.vars.outputs.cygwin-path }}'\nexport PATH\n" >>$HOME/.bash_profile
@@ -304,16 +367,28 @@ jobs:
             printf -- '- %s\n' "$p"
           done
       -
-        name: Download CLDR
-        working-directory: src\downloads
+        name: Download FSF ar-lib
+        if: matrix.compiler == 'msvc'
         shell: pwsh
-        run: |
-          if (Test-Path -LiteralPath cldr-${{ needs.versions.outputs.cldr-version }}.zip -PathType Leaf) {
-            Write-Host -Object 'Already downloaded'
-          } else {
-            Invoke-WebRequest -Uri https://unicode.org/Public/cldr/${{ needs.versions.outputs.cldr-version }}/core.zip -OutFile cldr-${{ needs.versions.outputs.cldr-version }}.zip
-            Write-Host -Object 'Downloaded'
-          }
+        run: >
+          ./service/download-archive.ps1
+          -Url 'https://git.savannah.gnu.org/gitweb/?p=automake.git;a=blob_plain;f=lib/ar-lib;hb=HEAD'
+          -LocalFilePath src\downloads\ar-lib
+      -
+        name: Download FSF compile
+        if: matrix.compiler == 'msvc'
+        shell: pwsh
+        run: >
+          ./service/download-archive.ps1
+          -Url 'https://git.savannah.gnu.org/gitweb/?p=automake.git;a=blob_plain;f=lib/compile;hb=HEAD'
+          -LocalFilePath src\downloads\compile
+      -
+        name: Download CLDR
+        shell: pwsh
+        run: >
+          ./service/download-archive.ps1
+          -Url https://unicode.org/Public/cldr/${{ needs.versions.outputs.cldr-version }}/core.zip
+          -LocalFilePath src\downloads\cldr-${{ needs.versions.outputs.cldr-version }}.zip
       -
         name: Download iconv artifact
         if: needs.versions.outputs.iconv-tarball-from-commit
@@ -324,52 +399,37 @@ jobs:
       -
         name: Download iconv
         if: ${{ !needs.versions.outputs.iconv-tarball-from-commit }}
-        working-directory: src\downloads
         shell: pwsh
-        run: |
-          if (Test-Path -LiteralPath libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz -PathType Leaf) {
-            Write-Host -Object 'Already downloaded'
-          } else {
-            Invoke-WebRequest -Uri ${{ needs.versions.outputs.iconv-source-url }} -OutFile libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz
-            Write-Host -Object 'Downloaded'
-          }
+        run: >
+          ./service/download-archive.ps1
+          -Url '${{ needs.versions.outputs.iconv-source-url }}'
+          -LocalFilePath src\downloads\libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz
       -
         name: Download curl
-        if: needs.versions.outputs.curl-version
-        working-directory: src\downloads
+        if: steps.vars.outputs.curl-version
         shell: pwsh
-        run: |
-          if (Test-Path -LiteralPath curl-${{ needs.versions.outputs.curl-version }}.tar.gz -PathType Leaf) {
-            Write-Host -Object 'Already downloaded'
-          } else {
-            Invoke-WebRequest -Uri https://curl.se/download/curl-${{ needs.versions.outputs.curl-version }}.tar.gz -OutFile curl-${{ needs.versions.outputs.curl-version }}.tar.gz
-            Write-Host -Object 'Downloaded'
-          }
+        run: >
+          ./service/download-archive.ps1
+          -Url https://curl.se/download/curl-${{ steps.vars.outputs.curl-version }}.tar.gz
+          -LocalFilePath src\downloads\curl-${{ steps.vars.outputs.curl-version }}.tar.gz
       -
         name: Download JSON-C
-        if: needs.versions.outputs.json-c-version
-        working-directory: src\downloads
+        if: steps.vars.outputs.json-c-version
         shell: pwsh
-        run: |
-          if (Test-Path -LiteralPath json-c-${{ needs.versions.outputs.json-c-version }}.tar.gz -PathType Leaf) {
-            Write-Host -Object 'Already downloaded'
-          } else {
-            Invoke-WebRequest -Uri https://s3.amazonaws.com/json-c_releases/releases/json-c-${{ needs.versions.outputs.json-c-version }}-nodoc.tar.gz -OutFile json-c-${{ needs.versions.outputs.json-c-version }}.tar.gz
-            Write-Host -Object 'Downloaded'
-          }
+        run: >
+          ./service/download-archive.ps1
+          -Url https://s3.amazonaws.com/json-c_releases/releases/json-c-${{ steps.vars.outputs.json-c-version }}-nodoc.tar.gz
+          -LocalFilePath src\downloads\json-c-${{ steps.vars.outputs.json-c-version }}.tar.gz
       -
         name: Download gettext
-        working-directory: src\downloads
         shell: pwsh
-        run: |
-          if (Test-Path -LiteralPath gettext-${{ needs.versions.outputs.gettext-version }}.tar.gz -PathType Leaf) {
-            Write-Host -Object 'Already downloaded'
-          } else {
-            Invoke-WebRequest -Uri ${{ needs.versions.outputs.gettext-source-url }} -OutFile gettext-${{ needs.versions.outputs.gettext-version }}.tar.gz
-            Write-Host -Object 'Downloaded'
-          }
+        run: >
+          ./service/download-archive.ps1
+          -Url '${{ needs.versions.outputs.gettext-source-url }}'
+          -LocalFilePath src\downloads\gettext-${{ needs.versions.outputs.gettext-version }}.tar.gz
       -
         name: Add GCC Runtime license
+        if: matrix.compiler == 'gcc'
         run: |
           cp /usr/share/doc/mingw64-${{ steps.vars.outputs.mingw-architecture }}-gcc/COPYING installed/licenses/gcc.txt
       -
@@ -382,7 +442,7 @@ jobs:
         name: Simplify CLDR plurals.xml
         if: steps.vars.outputs.cldr-simplify-plurals-xml == 'yes'
         shell: pwsh
-        run: ./build-exe/simplify-plurals-xml.ps1 installed/share/gettext/cldr/common/supplemental/plurals.xml
+        run: ./service/simplify-plurals-xml.ps1 installed/share/gettext/cldr/common/supplemental/plurals.xml
       -
         name: Extract iconv
         run: |
@@ -390,16 +450,16 @@ jobs:
           cp src/libiconv-${{ needs.versions.outputs.iconv-version }}/COPYING installed/licenses/iconv.txt
       -
         name: Extract curl
-        if: needs.versions.outputs.curl-version
+        if: steps.vars.outputs.curl-version
         run: |
-          tar x -C src -z -f src/downloads/curl-${{ needs.versions.outputs.curl-version }}.tar.gz
-          cp src/curl-${{ needs.versions.outputs.curl-version }}/COPYING installed/licenses/curl.txt
+          tar x -C src -z -f src/downloads/curl-${{ steps.vars.outputs.curl-version }}.tar.gz
+          cp src/curl-${{ steps.vars.outputs.curl-version }}/COPYING installed/licenses/curl.txt
       -
         name: Extract JSON-C
-        if: needs.versions.outputs.json-c-version
+        if: steps.vars.outputs.json-c-version
         run: |
-          tar x -C src -z -f src/downloads/json-c-${{ needs.versions.outputs.json-c-version }}.tar.gz
-          cp src/json-c-${{ needs.versions.outputs.json-c-version }}/COPYING installed/licenses/json-c.txt
+          tar x -C src -z -f src/downloads/json-c-${{ steps.vars.outputs.json-c-version }}.tar.gz
+          cp src/json-c-${{ steps.vars.outputs.json-c-version }}/COPYING installed/licenses/json-c.txt
       -
         name: Extract gettext
         run: |
@@ -423,6 +483,9 @@ jobs:
         name: Configure iconv (1st time)
         id: iconv-configure
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: |
           mkdir build
           cd build
@@ -430,20 +493,32 @@ jobs:
       -
         name: Compile iconv (1st time)
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc)
       -
         name: Check iconv (1st time)
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc) check
       -
         name: Install iconv (1st time)
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
-        run: make --jobs=$(nproc) install-strip
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
+        run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Configure curl
-        if: needs.versions.outputs.curl-version
+        if: steps.vars.outputs.curl-version
         id: curl-configure
-        working-directory: src\curl-${{ needs.versions.outputs.curl-version }}
+        working-directory: src\curl-${{ steps.vars.outputs.curl-version }}
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: |
           mkdir build
           cd build
@@ -458,18 +533,27 @@ jobs:
           cat "$GITHUB_OUTPUT"
       -
         name: Install curl - libcurl
-        if: needs.versions.outputs.curl-version
-        working-directory: src\curl-${{ needs.versions.outputs.curl-version }}\build\lib
-        run: make --jobs=$(nproc) install-strip
+        if: steps.vars.outputs.curl-version
+        working-directory: src\curl-${{ steps.vars.outputs.curl-version }}\build\lib
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
+        run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Install curl - include
-        if: needs.versions.outputs.curl-version
-        working-directory: src\curl-${{ needs.versions.outputs.curl-version }}\build\include
-        run: make --jobs=$(nproc) install-strip
+        if: steps.vars.outputs.curl-version
+        working-directory: src\curl-${{ steps.vars.outputs.curl-version }}\build\include
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
+        run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Prepare JSON-C
-        if: needs.versions.outputs.json-c-version
-        working-directory: src\json-c-${{ needs.versions.outputs.json-c-version }}
+        if: steps.vars.outputs.json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.json-c-version }}
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: |
           mkdir build
           cd build
@@ -477,18 +561,27 @@ jobs:
             ../
       -
         name: Build JSON-C
-        if: needs.versions.outputs.json-c-version
-        working-directory: src\json-c-${{ needs.versions.outputs.json-c-version }}\build
+        if: steps.vars.outputs.json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.json-c-version }}\build
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc) all
       -
         name: Install JSON-C
-        if: needs.versions.outputs.json-c-version
-        working-directory: src\json-c-${{ needs.versions.outputs.json-c-version }}\build
+        if: steps.vars.outputs.json-c-version
+        working-directory: src\json-c-${{ steps.vars.outputs.json-c-version }}\build
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make install/strip
       -
         name: Configure gettext
         id: gettext-configure
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: |
           mkdir build
           cd build
@@ -502,55 +595,94 @@ jobs:
       -
         name: Compile gettext/gnulib-local
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gnulib-local
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc)
       -
         name: Check gettext/gnulib-local
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gnulib-local
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc) check
       -
         name: Install gettext/gnulib-local
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gnulib-local
-        run: make --jobs=$(nproc) install-strip
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
+        run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Compile gettext/gettext-runtime
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-runtime
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc)
       -
         name: Check gettext/gettext-runtime
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-runtime
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc) check
       -
         name: Install gettext/gettext-runtime
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-runtime
-        run: make --jobs=$(nproc) install-strip
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
+        run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Compile gettext/libtextstyle
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\libtextstyle
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc)
       -
         name: Check gettext/libtextstyle
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\libtextstyle
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc) check
       -
         name: Install gettext/libtextstyle
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\libtextstyle
-        run: make --jobs=$(nproc) install-strip
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
+        run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Compile gettext/gettext-tools
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-tools
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc)
       -
         name: Check gettext/gettext-tools
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-tools
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: XFAIL_TESTS='${{ steps.vars.outputs.gettext-xfail-gettext-tools }}' make --jobs=$(nproc) check
       -
         name: Install gettext/gettext-tools
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-tools
-        run: make --jobs=$(nproc) install-strip
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
+        run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         # We need to rebuild iconv because it depends on gettext's libintl in order to be localizable
         name: Configure iconv (2nd time)
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: |
           rm -rf build
           mkdir build
@@ -560,39 +692,48 @@ jobs:
       -
         name: Compile iconv (2nd time)
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc)
       -
         name: Check iconv (2nd time)
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
         run: make --jobs=$(nproc) check
       -
         name: Install iconv (2nd time)
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
-        run: make --jobs=$(nproc) install-strip
+        env:
+          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
+          LIB: ${{ steps.vars.outputs.lib-env-var }}
+        run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Finalize install dir
         shell: pwsh
         run: >
-          ./build-exe/finalize-installed.ps1
+          ./service/finalize-installed.ps1
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
           -Path installed
-          -MinGWPath D:\cygwin\usr\${{ steps.vars.outputs.mingw-host }}
+          -MinGWPath ${{ matrix.compiler == 'mscv' && '' || format('D:\\cygwin\\usr\\{0}', steps.vars.outputs.mingw-host) }}
       -
         name: Extract version infos
         id: versioninfos
         shell: pwsh
-        run: ./build-exe/extract-versiononfos.ps1 -RootPath installed
+        run: ./service/extract-versiononfos.ps1 -RootPath installed
       -
         name: Check bitness
-        run: ./build-exe/check-bits.sh ${{ matrix.bits }} installed
+        run: ./service/check-bits.sh ${{ matrix.bits }} installed
       -
         name: Upload unsigned files
-        if: needs.versions.outputs.signpath-signing-policy
+        if: steps.vars.outputs.signpath-signing-policy
         id: upload-installed-unsigned
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-installed-unsigned
+          name: ${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}-installed-unsigned
           path: |
             installed/**/*.dll
             installed/**/*.exe
@@ -600,14 +741,14 @@ jobs:
           retention-days: 1
       -
         name: Sign files
-        if: needs.versions.outputs.signpath-signing-policy
+        if: steps.vars.outputs.signpath-signing-policy
         id: sign-files
         uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
           project-slug: gettext-iconv-windows
-          signing-policy-slug: '${{ needs.versions.outputs.signpath-signing-policy }}'
+          signing-policy-slug: '${{ steps.vars.outputs.signpath-signing-policy }}'
           artifact-configuration-slug: ${{ needs.versions.outputs.signpath-artifactconfiguration-files }}
           github-artifact-id: ${{ steps.upload-installed-unsigned.outputs.artifact-id }}
           wait-for-completion: true
@@ -615,33 +756,34 @@ jobs:
           parameters: ${{ steps.versioninfos.outputs.signpath-parameters }}
       -
         name: Check signatures
-        if: needs.versions.outputs.signpath-signing-policy
+        if: steps.vars.outputs.signpath-signing-policy
         shell: pwsh
         run: >
-          ./build-exe/check-signature.ps1
+          ./service/check-signature.ps1
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
           -Path installed
           -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
       -
         name: Copy built developer files
         shell: pwsh
-        run: ./build-exe/copy-output.ps1 -Type dev -From installed -To output-dev
+        run: ./service/copy-output.ps1 -Type dev -From installed -To output-dev
       -
         name: Create developer files archive
         shell: pwsh
         working-directory: output-dev
         run: |
-          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\assets\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}-dev-gcc.zip
+          & 7z.exe a -bd -bt -mx9 -r -sse -tzip ..\assets\gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}-dev-${{ matrix.compiler }}.zip
       -
         name: Copy built executables
         shell: pwsh
-        run: ./build-exe/copy-output.ps1 -Type exe -From installed -To output-exe
+        run: ./service/copy-output.ps1 -Type exe -From installed -To output-exe
       -
         name: Delete unused dependencies
         shell: pwsh
-        run: ./build-exe/delete-unused-dependencies.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -Path output-exe
+        run: ./service/delete-unused-dependencies.ps1 -Bits ${{ matrix.bits }} -Link ${{ matrix.link }} -Path output-exe
       -
         name: Create executable files archive
+        if: steps.vars.outputs.collect-programs == 'yes'
         shell: pwsh
         working-directory: output-exe
         run: |
@@ -649,17 +791,17 @@ jobs:
       -
         name: Prepare build log
         id: prepare-build-log
-        if: (success() || failure()) && steps.iconv-configure.outcome == 'success'
+        if: (success() || failure()) && (steps.iconv-configure.outcome == 'success' || steps.iconv-configure.outcome == 'failure')
         run: |
           mkdir build-log
           if [ -d src/libiconv-${{ needs.versions.outputs.iconv-version }}/build ]; then
             tar c -J -f build-log/iconv.tar.xz src/libiconv-${{ needs.versions.outputs.iconv-version }}/build
           fi
-          if [ -d src/curl-${{ needs.versions.outputs.curl-version }}/build ]; then
-            tar c -J -f build-log/curl.tar.xz src/curl-${{ needs.versions.outputs.curl-version }}/build
+          if [ -d src/curl-${{ steps.vars.outputs.curl-version }}/build ]; then
+            tar c -J -f build-log/curl.tar.xz src/curl-${{ steps.vars.outputs.curl-version }}/build
           fi
-          if [ -d src/json-c-${{ needs.versions.outputs.json-c-version }}/build ]; then
-            tar c -J -f build-log/json-c.tar.xz src/json-c-${{ needs.versions.outputs.json-c-version }}/build
+          if [ -d src/json-c-${{ steps.vars.outputs.json-c-version }}/build ]; then
+            tar c -J -f build-log/json-c.tar.xz src/json-c-${{ steps.vars.outputs.json-c-version }}/build
           fi
           if [ -d src/gettext-${{ needs.versions.outputs.gettext-version }}/build ]; then
             tar c -J -f build-log/gettext.tar.xz src/gettext-${{ needs.versions.outputs.gettext-version }}/build
@@ -745,7 +887,7 @@ jobs:
         id: start-fake-ollama-server
         shell: pwsh
         run: |
-          $process = Start-Process pwsh -ArgumentList '.\build-exe\run-fake-ollama-server.ps1' -WindowStyle Hidden -PassThru
+          $process = Start-Process pwsh -ArgumentList '.\service\run-fake-ollama-server.ps1' -WindowStyle Hidden -PassThru
           Start-Sleep -Seconds 2
           $process.Refresh()
           if ($process.HasExited) {
@@ -786,9 +928,10 @@ jobs:
           }
       -
         name: Create installer
+        if: steps.vars.outputs.collect-programs == 'yes'
         shell: pwsh
         run: >
-          ./build-exe/create-installer.ps1
+          ./service/create-installer.ps1
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
           -SourceDirectory output-exe
@@ -797,38 +940,39 @@ jobs:
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
       -
         name: Check bitness
-        run: ./build-exe/check-bits.sh 32 assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
+        if: steps.vars.outputs.collect-programs == 'yes'
+        run: ./service/check-bits.sh 32 assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
       -
         name: Upload unsigned installer
-        if: needs.versions.outputs.signpath-signing-policy
+        if: steps.vars.outputs.collect-programs == 'yes' && steps.vars.outputs.signpath-signing-policy
         id: upload-installer-unsigned
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-installer-unsigned
+          name: ${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}-installer-unsigned
           path: assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           if-no-files-found: error
           compression-level: 0
           retention-days: 1
       -
         name: Sign installer
-        if: needs.versions.outputs.signpath-signing-policy
+        if: steps.vars.outputs.collect-programs == 'yes' && steps.vars.outputs.signpath-signing-policy
         id: sign-installer
         uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 98c3accc-92c9-4962-b150-ff1f5c6356b8
           project-slug: gettext-iconv-windows
-          signing-policy-slug: '${{ needs.versions.outputs.signpath-signing-policy }}'
+          signing-policy-slug: '${{ steps.vars.outputs.signpath-signing-policy }}'
           artifact-configuration-slug: gh_sign_installer
           github-artifact-id: ${{ steps.upload-installer-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: assets
       -
         name: Check signature
-        if: needs.versions.outputs.signpath-signing-policy
+        if: steps.vars.outputs.collect-programs == 'yes' && steps.vars.outputs.signpath-signing-policy
         shell: pwsh
         run: >
-          ./build-exe/check-signature.ps1
+          ./service/check-signature.ps1
           -GettextVersion ${{ needs.versions.outputs.gettext-version }}
           -Path assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
@@ -836,7 +980,7 @@ jobs:
         name: Upload assets
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}
+          name: ${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           path: assets/*
           if-no-files-found: error
           compression-level: 0
@@ -845,7 +989,7 @@ jobs:
         if: always() && steps.prepare-build-log.outcome == 'success'
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-log
+          name: ${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}-log
           if-no-files-found: ignore
           retention-days: 1
           include-hidden-files: true
@@ -858,4 +1002,5 @@ jobs:
         with:
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
           path: |
+            src\downloads
             D:\cygwin-packages
