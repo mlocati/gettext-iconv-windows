@@ -185,7 +185,11 @@ if ($Compiler -eq 'gcc') {
         "-L$cygwinInstalledPath/lib"
     )
     $makeInstallArgument = 'install'
-    $SignpathSigningPolicy = ''
+    if ($Link -eq 'shared') {
+        $SignpathSigningPolicy = $SignpathSigningPolicyDefault
+    } else {
+        $SignpathSigningPolicy = ''
+    }
     $CollectPrograms = $false
 } else {
     throw "Unsupported compiler '$Compiler'"
