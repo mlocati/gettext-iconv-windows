@@ -66,7 +66,7 @@ This project includes the following third-party components:
   See license in the file licenses/cldr.txt
 '@
 
-$license = Join-Path -Path $Path -ChildPath 'licenses/gcc.txt' 
+$license = Join-Path -Path $Path -ChildPath 'licenses/gcc.txt'
 if (Test-Path -LiteralPath $license -PathType Leaf) {
   if ($binaries.MinGWFilesAdded.Count -gt 0) {
     Add-LicenseText @'
