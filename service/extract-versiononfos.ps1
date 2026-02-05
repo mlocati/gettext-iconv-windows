@@ -28,12 +28,21 @@ foreach ($file in $files) {
         'libiconv-*.dll' {
             $versionParameterName = 'iconvPEVersion'
         }
+        'iconv-*.dll' {
+            $versionParameterName = 'iconvPEVersion'
+        }
         # curl
         'libcurl*.dll' {
             $versionParameterName = 'curlPEVersion'
         }
+        'curl*.dll' {
+            $versionParameterName = 'curlPEVersion'
+        }
         # JSON-C
         'libjson-c*.dll' {
+            $versionParameterName = 'jsonCPEVersion'
+        }
+        'json-c*.dll' {
             $versionParameterName = 'jsonCPEVersion'
         }
         # Gettext
@@ -47,7 +56,15 @@ foreach ($file in $files) {
             $required = $false
             $versionParameterName = 'gettextPEVersionLibAsprintf'
         }
+        'asprintf-*.dll' {
+            $required = $false
+            $versionParameterName = 'gettextPEVersionLibAsprintf'
+        }
         'libgettextlib-*.dll' {
+            $nameParameterName = 'gettextPENameLibGettextLib'
+            $versionParameterName = 'gettextPEVersionLibGettextLib'
+        }
+        'gettextlib-*.dll' {
             $nameParameterName = 'gettextPENameLibGettextLib'
             $versionParameterName = 'gettextPEVersionLibGettextLib'
         }
@@ -55,14 +72,28 @@ foreach ($file in $files) {
             $required = $false
             $versionParameterName = 'gettextPEVersionLibGettextPo'
         }
+        'gettextpo-*.dll' {
+            $required = $false
+            $versionParameterName = 'gettextPEVersionLibGettextPo'
+        }
         'libgettextsrc-*.dll' {
+            $nameParameterName = 'gettextPENameLibGettextSrc'
+            $versionParameterName = 'gettextPEVersionLibGettextSrc'
+        }
+        'gettextsrc-*.dll' {
             $nameParameterName = 'gettextPENameLibGettextSrc'
             $versionParameterName = 'gettextPEVersionLibGettextSrc'
         }
         'libintl-*.dll' {
             $versionParameterName = 'gettextPEVersionLibIntl'
         }
+        'intl-*.dll' {
+            $versionParameterName = 'gettextPEVersionLibIntl'
+        }
         'libtextstyle-*.dll' {
+            $versionParameterName = 'gettextPEVersionLibTextStyle'
+        }
+        'textstyle-*.dll' {
             $versionParameterName = 'gettextPEVersionLibTextStyle'
         }
         'msgattrib.exe' {
@@ -148,6 +179,9 @@ foreach ($file in $files) {
             continue
         }
         'libcharset-*.dll' {
+            continue
+        }
+        'charset-*.dll' {
             continue
         }
         'msgfmt.net.exe' {
