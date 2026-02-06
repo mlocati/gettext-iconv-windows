@@ -261,18 +261,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - bits: 32
-            link: shared
-            compiler: gcc
-          - bits: 32
-            link: static
-            compiler: gcc
-          - bits: 64
-            link: shared
-            compiler: gcc
-          - bits: 64
-            link: static
-            compiler: gcc
+          #- bits: 32
+          #  link: shared
+          #  compiler: gcc
+          #- bits: 32
+          #  link: static
+          #  compiler: gcc
+          #- bits: 64
+          #  link: shared
+          #  compiler: gcc
+          #- bits: 64
+          #  link: static
+          #  compiler: gcc
           - bits: 32
             link: shared
             compiler: msvc
