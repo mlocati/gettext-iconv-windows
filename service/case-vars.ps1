@@ -85,6 +85,9 @@ $cygwinPackages = @(
     'unzip'
     'patch'
 )
+if ($JsonCVersionDefault) {
+    $cygwinPackages += 'cmake'
+}
 $cygwinPath = @(
     "$cygwinInstalledPath/bin"
 )
@@ -99,9 +102,6 @@ if ($Compiler -eq 'gcc') {
         "mingw64-$mingwArchitecture-headers"
         "mingw64-$mingwArchitecture-runtime"
     )
-    if ($JsonCVersionDefault) {
-        $cygwinPackages += 'cmake'
-    }
     $cygwinPath += @(
         "/usr/$mingwHost/bin"
         "/usr/$mingwHost/sys-root/mingw/bin"
@@ -190,7 +190,7 @@ if ($Compiler -eq 'gcc') {
     } else {
         $SignpathSigningPolicy = ''
     }
-    $CollectPrograms = $false
+    $CollectPrograms = $true
 } else {
     throw "Unsupported compiler '$Compiler'"
 }
@@ -257,7 +257,7 @@ switch ($Link) {
 # Curl configuration
 
 $curlConfigureArgs = @()
-if ($CurlVersionDefault -and $Compiler -eq 'gcc') {
+if ($CurlVersionDefault) {
     $CurlVersion = $CurlVersionDefault
     $curlConfigureArgs = @(
         "CC=$cc"
@@ -334,7 +334,7 @@ if ($CurlVersionDefault -and $Compiler -eq 'gcc') {
 # JSON-C configuration
 
 $jsonCCMakeArgs = @()
-if ($JsonCVersionDefault -and $Compiler -eq 'gcc') {
+if ($JsonCVersionDefault) {
     $JsonCVersion = $JsonCVersionDefault
     $jsonCCMakeArgs = @(
         "-DCMAKE_C_COMPILER=$cc"
@@ -379,7 +379,7 @@ if ($JsonCVersionDefault -and $Compiler -eq 'gcc') {
 # Gettext configuration
 
 $gettextCPPFlags = $cppFlags -join ' '
-if ($CurlVersion -and $Link -eq 'static' -and $Compiler -eq 'gcc') {
+if ($CurlVersion -and $Link -eq 'static') {
     $gettextCPPFlags += ' -DCURL_STATICLIB'
 }
 $gettextConfigureArgs = @(
@@ -445,7 +445,7 @@ switch ($Link) {
         )
     }
 }
-$checkSpitExe = $Compiler -eq 'gcc' -and (Compare-Versions $GettextVersion '1.0') -ge 0
+$checkSpitExe = (Compare-Versions $GettextVersion '1.0') -ge 0
 $gettextIgnoreCTests = @()
 # see https://lists.gnu.org/archive/html/bug-gnulib/2024-09/msg00137.html
 $gettextIgnoreCTests += 'gettext-tools/gnulib-tests/test-asyncsafe-spin2.c'
