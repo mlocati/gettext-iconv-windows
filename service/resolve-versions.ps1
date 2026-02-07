@@ -11,7 +11,9 @@ param (
     [string] $JsonCVersion,
     [Parameter(Mandatory = $false)]
     [ValidateSet('', 'no', 'test', 'production')]
-    [string] $Sign
+    [string] $Sign,
+    [Parameter(Mandatory = $true)]
+    [bool] $PublishRelease
 )
 
 $ErrorActionPreference = 'Stop'
@@ -136,7 +138,7 @@ See:
 }
 
 
-# Determine versions
+# Process inputs
 
 if ($CLDRVersion) {
     $CLDRVersion = $CLDRVersion.Trim()
@@ -236,22 +238,28 @@ if ($Sign) {
     }
 }
 
+if ($PublishRelease -and $Sign -ne 'production') {
+    throw 'In order to publish a release, the -Sign argument must be set to "production".'
+}
+
 
 # Determine source URLs
 
+$isPrerelease = $false
 $gnuUrlPrefixer = [GnuUrlPrefixer]::new()
-
-$iconvSourceUrlPrefix = if ($IconvVersion -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
-    $gnuUrlPrefixer.GetAlphaUrlPrefix()
+if ($IconvVersion -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
+    $iconvSourceUrlPrefix = $gnuUrlPrefixer.GetAlphaUrlPrefix()
+    $isPrerelease = $true
 } else {
-    $gnuUrlPrefixer.GetReleaseUrlPrefix()
+    $iconvSourceUrlPrefix = $gnuUrlPrefixer.GetReleaseUrlPrefix()
 }
 $iconvSourceUrl = "$iconvSourceUrlPrefix/libiconv/libiconv-$IconvVersion.tar.gz"
 
-$gettextSourceUrlPrefix = if ($GettextVersion -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
-    $gnuUrlPrefixer.GetAlphaUrlPrefix()
+if ($GettextVersion -match '^\d+(?:\.\d+)+(?:a|-pre\d+)$') {
+    $gettextSourceUrlPrefix = $gnuUrlPrefixer.GetAlphaUrlPrefix()
+    $isPrerelease = $true
 } else {
-    $gnuUrlPrefixer.GetReleaseUrlPrefix()
+    $gettextSourceUrlPrefix = $gnuUrlPrefixer.GetReleaseUrlPrefix()
 }
 $gettextSourceUrl = "$gettextSourceUrlPrefix/gettext/gettext-$GettextVersion.tar.gz"
 
@@ -305,6 +313,27 @@ if ((Compare-Versions $GettextVersion '1.0') -ge 0) {
 }
 
 
+# Determine tag of the release to be published (if any)
+$releaseTag = ''
+if ($PublishRelease) {
+    $rawTags = git ls-remote --tags origin
+    if (-not ($?)) {
+        throw 'Unable to get the list of tags from the origin remote'
+    }
+    $tags = $rawTags | ForEach-Object { $_.Split('refs/tags/')[1] }
+    $releaseTagBase = "v$GettextVersion-v$IconvVersionBase"
+    if (-not($tags -contains $releaseTagBase)) {
+        $releaseTag = $releaseTagBase
+    } else {
+        for ($r = 1; ; $r++) {
+            $releaseTag = "$releaseTagBase-r$r"
+            if (-not($tags -contains $releaseTag)) {
+                break
+            }
+        }
+    }
+}
+
 # Export variables
 
 Add-GithubOutput -Name 'cygwin-mirror' -Value $cygwinMirror
@@ -320,5 +349,8 @@ Add-GithubOutput -Name 'gettext-source-url' -Value $gettextSourceUrl
 Add-GithubOutput -Name 'signpath-signing-policy' -Value $signpathSigningPolicy
 Add-GithubOutput -Name 'signpath-artifactconfiguration-files' -Value $signpathArtifactConfigurationFiles
 Add-GithubOutput -Name 'signatures-canbeinvalid' -Value $(if ($signaturesCanBeInvalid) { 'yes' } else { 'no' })
+Add-GithubOutput -Name 'release-tag' -Value $releaseTag
+Add-GithubOutput -Name 'is-prerelease' -Value $(if ($isPrerelease) { 'yes' } else { 'no' })
+
 Write-Output '## Outputs'
 Get-GitHubOutputs
