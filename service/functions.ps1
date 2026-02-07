@@ -521,3 +521,39 @@ class VCVars
         return $result
     }
 }
+
+function Get-RemoteRepositoryCommitDate
+{
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateLength(1, [int]::MaxValue)]
+        [string] $RepositoryUrl,
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^[0-9a-fA-F]{7,40}$')]
+        [string] $CommitHash
+    )
+    $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
+    New-Item -ItemType Directory -Path $tempDir | Out-Null
+    try {
+        git -C $tempDir init -q | Out-Null
+        if (-not $?) {
+            throw 'git init failed'
+        }
+        git -C $tempDir remote add origin $RepositoryUrl | Out-Null
+        if (-not $?) {
+            throw 'git remote add failed'
+        }
+        git -C $tempDir fetch -q --depth 1 origin $CommitHash | Out-Null
+        if (-not $?) {
+            throw "git fetch failed for commit $CommitHash from $RepositoryUrl"
+        }
+        $date = git -C $tempDir show -s --format=%cd --date=format:%Y%m%d $CommitHash
+        if (-not $?) {
+            throw 'git show failed'
+        }
+        return $date.Trim()
+    } finally {
+        Remove-Item -LiteralPath $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}

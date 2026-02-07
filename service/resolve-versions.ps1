@@ -170,7 +170,10 @@ $IconvTarballFromCommit = ''
 $vo = ConvertTo-VersionObject $IconvVersion
 if ((Compare-Versions $vo '1.18') -eq 0) {
     $IconvTarballFromCommit = '30fc26493e4c6457000172d49b526be0919e34c6'
-    $IconvVersion = "$($vo.Major).$($vo.Minor).$($vo.Build).$((Get-Date).ToUniversalTime().ToString("yyyyMMdd"))"
+}
+if ($IconvTarballFromCommit) {
+    $commitDate = Get-RemoteRepositoryCommitDate https://git.savannah.gnu.org/git/libiconv.git $IconvTarballFromCommit
+    $IconvVersion = "$($vo.Major).$($vo.Minor).$($vo.Build).$commitDate"
 }
 
 if ($GettextVersion) {
