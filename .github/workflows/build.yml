@@ -231,7 +231,7 @@ jobs:
         name: Pull git dependencies
         if: needs.versions.outputs.iconv-tarball-from-commit
         working-directory: libiconv
-        run: ./autopull.sh
+        run: ./autopull.sh --one-time
       -
         name: Autogenerate build system
         if: needs.versions.outputs.iconv-tarball-from-commit
