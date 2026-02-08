@@ -37,6 +37,123 @@ function Get-RelativePath {
     return $AbsolutePath.Substring($RootDirectory.Length).Replace([System.IO.Path]::DirectorySeparatorChar, '/')
 }
 
+function Test-CopyFile {
+    [OutputType([bool], [string])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [ValidateLength(1, [int]::MaxValue)]
+        [string]
+        $SourceRelativePath
+    )
+    if ($SourceRelativePath -eq 'license.txt') {
+        return $true
+    }
+    if ($SourceRelativePath -like 'licenses/*') {
+        if ($Type -eq 'dev' -and (
+            $SourceRelativePath -like '*/cldr.txt' -or
+            $SourceRelativePath -like '*/curl.txt' -or
+            $SourceRelativePath -like '*/json-c.txt'
+        )) {
+            # We don't have CLDR, curl or JSON-C stuff in the developers' packages
+            return $false
+        }
+        return $true
+    }
+    if ($SourceRelativePath -like 'bin/*.txt') {
+        return $true
+    }
+    if ($SourceRelativePath -like 'bin/*.dll') {
+        if ($Type -eq 'dev' -and (
+            $SourceRelativePath -match '/(lib)?curl(-\d+)?\.dll$' -or
+            $SourceRelativePath -match '/(lib)?json-c(-\d+)?\.dll$'
+        )) {
+            # We don't have curl or JSON-C stuff in the developers' packages
+            return $false
+        }
+        return $true
+    }
+    if ($SourceRelativePath -like 'bin/*.exe') {
+        return $Type -eq 'exe'
+    }
+    if ($SourceRelativePath -like 'lib/*.a' -or $SourceRelativePath -like 'lib/*.lib') {
+        if ($Type -eq 'exe') {
+            return $false
+        }
+        if ($SourceRelativePath -match '/(lib)?curl(-\d+)?\.(\.dll)?(a|lib)$' -or
+            $SourceRelativePath -match '/(lib)?json-c(-\d+)?\.(\.dll)?(a|lib)$'
+        ) {
+            # We don't have curl or JSON-C stuff in the developers' packages
+            return $false
+        }
+        return $true
+    }
+    if ($SourceRelativePath -like 'include/*') {
+        if ($Type -eq 'exe') {
+            return $false
+        }
+        if ($SourceRelativePath -match '^include/(curl|json-c)(/|$)') {
+            # We don't have curl or JSON-C stuff in the developers' packages
+            return $false
+        }
+        return $true
+    }
+    if ($SourceRelativePath -like 'lib/*.dll') {
+        return $true
+    }
+    if ($SourceRelativePath -like 'lib/*.exe') {
+        return $Type -eq 'exe'
+    }
+    if ($SourceRelativePath -like 'libexec/*.dll') {
+        return $true
+    }
+    if ($SourceRelativePath -like 'libexec/*.exe') {
+        return $Type -eq 'exe'
+    }
+    if ($SourceRelativePath -like 'share/doc/gettext/examples/*') {
+        # Copied later if Type == dev
+        return $false
+    }
+    if ($SourceRelativePath -like 'share/doc/*.html') {
+        if ($SourceRelativePath -match '^share/doc/.*\.[2-9]\.html' -or
+            $SourceRelativePath -like 'share/doc/*autopoint.1.html' -or
+            $SourceRelativePath -like 'share/doc/*gettextize.1.html' -or
+            $SourceRelativePath -like 'share/doc/gettext/csharpdoc*' -or
+            $SourceRelativePath -like 'share/doc/gettext/javadoc2*' -or
+            $SourceRelativePath -like 'share/doc/libasprintf*' -or
+            $SourceRelativePath -like 'share/doc/libtextstyle*'
+        ) {
+            return $Type -eq 'dev'
+        }
+        if ($Type -ne 'exe') {
+            return $false
+        }
+        if ($SourceRelativePath -like 'share/doc/*.1.html') {
+            return  $SourceRelativePath -replace '\.1\.html$','.html'
+        }
+        return $true
+    }
+    if ($SourceRelativePath -like 'share/gettext*.h' -or
+        $SourceRelativePath -like 'share/iconv*.h'
+    ) {
+        return $Type -eq 'dev'
+    }
+    if ($SourceRelativePath -like 'share/gettext*/cldr/*' -or
+        $SourceRelativePath -like 'share/gettext*/its/*' -or
+        $SourceRelativePath -like 'share/gettext*/schema/*' -or
+        $SourceRelativePath -like 'share/gettext*/styles/*' -or
+        $SourceRelativePath -like 'share/gettext*/*.tcl'
+    ) {
+        if ($Type -eq 'dev') {
+            return $false
+        }
+        return $SourceRelativePath -replace '^share/gettext[^/]*/','share/gettext/'
+    }
+    if ($SourceRelativePath -like 'share/*.class' -or $SourceRelativePath -like 'share/*.m4' -or $SourceRelativePath -like 'share/*.pc') {
+        return $Type -eq 'dev'
+    }
+    return $false
+}
+
 function Copy-SourceFile {
     param (
         [Parameter(Mandatory = $true)]
@@ -48,8 +165,11 @@ function Copy-SourceFile {
         $DestinationRelativePath
     )
     $sourcePath = Join-Path -Path $script:FromDirectory -ChildPath $SourceRelativePath
+    if (-not $DestinationRelativePath) {
+        $DestinationRelativePath = $SourceRelativePath
+    }
     $message = $SourceRelativePath
-    if ($DestinationRelativePath -and $DestinationRelativePath -cne $SourceRelativePath) {
+    if ($DestinationRelativePath -cne $SourceRelativePath) {
         $destinationPath = Join-Path -Path $script:ToDirectory -ChildPath $DestinationRelativePath
         $message += " -> $DestinationRelativePath"
     } else {
@@ -80,15 +200,18 @@ function Copy-SourceDirectory {
         $DestinationRelativePath
     )
     $sourcePath = Join-Path -Path $script:FromDirectory -ChildPath $SourceRelativePath
+    if (-not $DestinationRelativePath) {
+        $DestinationRelativePath = $SourceRelativePath
+    }
     $message = "$SourceRelativePath/"
-    if ($DestinationRelativePath -and $DestinationRelativePath -cne $SourceRelativePath) {
+    if ($DestinationRelativePath -cne $SourceRelativePath) {
         $destinationPath = Join-Path -Path $script:ToDirectory -ChildPath $DestinationRelativePath
         $message += " -> $DestinationRelativePath/"
     } else {
         $destinationPath = Join-Path -Path $script:ToDirectory -ChildPath $SourceRelativePath
     }
     Write-Host $message
-    Copy-Item -LiteralPath $sourcePath -Destination $destinationPath -Recurse -Force -ProgressAction SilentlyContinue
+    Copy-Item -LiteralPath $sourcePath -Destination $destinationPath -Recurse -Force
 }
 
 function Remove-DestinationItem {
@@ -128,205 +251,15 @@ if ($inGithub) {
 }
 Get-ChildItem $script:FromDirectory -File -Recurse | ForEach-Object {
     $relativePath = Get-RelativePath -AbsolutePath $_.FullName
-    switch -Wildcard ($relativePath) {
-        'license*txt' {
-            Copy-SourceFile $relativePath
-            break
-        }
-        'bin/libcurl*.dll' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'bin/curl*.dll' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'bin/libjson-c*.dll' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'bin/json-c*.dll' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'bin/*.dll' {
-            Copy-SourceFile $relativePath
-            break
-        }
-        'bin/*.exe' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'bin/*.lib' {
-            if ($Type -eq 'dev') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'lib/libcurl*.dll.a' {
-            break
-        }
-        'lib/curl*.dll.a' {
-            break
-        }
-        'lib/libcurl*.lib' {
-            break
-        }
-        'lib/curl*.lib' {
-            break
-        }
-        'lib/libjson-c*.dll.a' {
-            break
-        }
-        'lib/json-c*.dll.a' {
-            break
-        }
-        'lib/libjson-c*.lib' {
-            break
-        }
-        'lib/json-c*.lib' {
-            break
-        }
-        'lib/*.dll' {
-            Copy-SourceFile $relativePath
-            break
-        }
-        'lib/*.exe' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'lib/*.lib' {
-            if ($Type -eq 'dev') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'libexec/*.dll' {
-            Copy-SourceFile $relativePath
-            break
-        }
-        'libexec/*.exe' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'libexec/*.lib' {
-            if ($Type -eq 'dev') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'share/doc/gettext/examples/*' {
-            # Copied later if TYPE=dev
-            break
-        }
-        'share/doc/*.html' {
-            if ($relativePath -match '^share/doc/.*\.[2-9]\.html' -or
-                $relativePath -like 'share/doc/*autopoint.1.html' -or
-                $relativePath -like 'share/doc/*gettextize.1.html' -or
-                $relativePath -like 'share/doc/gettext/csharpdoc*' -or
-                $relativePath -like 'share/doc/gettext/javadoc2*' -or
-                $relativePath -like 'share/doc/libasprintf*' -or
-                $relativePath -like 'share/doc/libtextstyle*'
-            ) {
-                if ($Type -eq 'dev') {
-                    Copy-SourceFile $relativePath
-                }
-            } elseif ($relativePath -like 'share/doc/*.1.html') {
-                if ($Type -eq 'exe') {
-                    Copy-SourceFile $relativePath ($relativePath -replace '\.1\.html$','.html')
-                }
-            } elseif ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'share/gettext/cldr/*' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        'share/gettext*/its/*' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath ($relativePath -replace '^share/gettext[^/]*/', 'share/gettext/')
-            }
-            break
-        }
-        'share/gettext*/schema/*' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath ($relativePath -replace '^share/gettext[^/]*/', 'share/gettext/')
-            }
-            break
-        }
-        'share/gettext*/styles/*' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath ($relativePath -replace '^share/gettext[^/]*/', 'share/gettext/')
-            }
-            break
-        }
-        '*.tcl' {
-            if ($Type -eq 'exe') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        '*.a' {
-            if ($Type -eq 'dev') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        '*.h' {
-            if ($Type -eq 'dev') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        '*.class' {
-            if ($Type -eq 'dev') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        '*.cmake' {
-            if ($Type -eq 'dev') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        '*.m4' {
-            if ($Type -eq 'dev') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
-        '*.pc' {
-            if ($Type -eq 'dev') {
-                Copy-SourceFile $relativePath
-            }
-            break
-        }
+    $shouldCopy = Test-CopyFile $relativePath
+    if ($shouldCopy -is [string]) {
+        Copy-SourceFile $relativePath $shouldCopy
+    } elseif ($shouldCopy) {
+        Copy-SourceFile $relativePath
     }
 }
 switch ($Type) {
     'dev' {
-        Copy-SourceDirectory 'include'
-        Remove-DestinationItem 'include/curl'
-        Remove-DestinationItem 'include/json-c'
         Copy-SourceDirectory 'share/doc/gettext/examples'
     }
     'exe' {
