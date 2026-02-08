@@ -223,19 +223,19 @@ jobs:
           fi
       -
         name: Update system
-        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        if: steps.check-tarball.outputs.build == 'yes'
         run: |
           apt-get update -q
           apt-get upgrade -qy
       -
         name: Install system dependencies
-        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        if: steps.check-tarball.outputs.build == 'yes'
         run: >
           apt-get install -qy --no-install-recommends
           ca-certificates git curl xz-utils make python3 patch autoconf gcc libc6-dev gperf groff gettext
       -
         name: Install automake
-        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        if: steps.check-tarball.outputs.build == 'yes'
         working-directory: /tmp
         run: |
           curl -sSL https://ftp.gnu.org/gnu/automake/automake-1.18.1.tar.xz | tar -xJ
@@ -244,40 +244,40 @@ jobs:
           make install
       -
         name: Download iconv source code
-        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        if: steps.check-tarball.outputs.build == 'yes'
         run: git clone https://git.savannah.gnu.org/git/libiconv.git
       -
         name: Checkout commit ${{ needs.versions.outputs.iconv-tarball-from-commit }}
-        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        if: steps.check-tarball.outputs.build == 'yes'
         working-directory: libiconv
         run: git checkout ${{ needs.versions.outputs.iconv-tarball-from-commit }}
       -
         name: Pull git dependencies
-        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        if: steps.check-tarball.outputs.build == 'yes'
         working-directory: libiconv
         run: ./autopull.sh --one-time
       -
         name: Autogenerate build system
-        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        if: steps.check-tarball.outputs.build == 'yes'
         working-directory: libiconv
         run: ./autogen.sh
       -
         name: Configure
-        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        if: steps.check-tarball.outputs.build == 'yes'
         working-directory: libiconv
         run: ./configure
       -
         name: Build tarball
-        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        if: steps.check-tarball.outputs.build == 'yes'
         working-directory: libiconv
         run: make dist VERSION=${{ needs.versions.outputs.iconv-version }}
       -
         name: Copy tarball to output
-        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        if: steps.check-tarball.outputs.build == 'yes'
         run: cp libiconv/libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz output/
       -
         name: Persist cache
-        if: needs.versions.outputs.iconv-tarball-from-commit
+        if: steps.check-tarball.outputs.build == 'yes' && steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
