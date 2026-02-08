@@ -48,7 +48,7 @@ function Copy-SourceFile {
         $DestinationRelativePath
     )
     $sourcePath = Join-Path -Path $script:FromDirectory -ChildPath $SourceRelativePath
-    $message = "- $SourceRelativePath"
+    $message = $SourceRelativePath
     if ($DestinationRelativePath -and $DestinationRelativePath -cne $SourceRelativePath) {
         $destinationPath = Join-Path -Path $script:ToDirectory -ChildPath $DestinationRelativePath
         $message += " -> $DestinationRelativePath"
@@ -80,7 +80,7 @@ function Copy-SourceDirectory {
         $DestinationRelativePath
     )
     $sourcePath = Join-Path -Path $script:FromDirectory -ChildPath $SourceRelativePath
-    $message = "- $SourceRelativePath/"
+    $message = "$SourceRelativePath/"
     if ($DestinationRelativePath -and $DestinationRelativePath -cne $SourceRelativePath) {
         $destinationPath = Join-Path -Path $script:ToDirectory -ChildPath $DestinationRelativePath
         $message += " -> $DestinationRelativePath/"

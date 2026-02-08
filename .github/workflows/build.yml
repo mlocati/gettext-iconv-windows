@@ -43,6 +43,13 @@ on:
         description: Gettext Version
         type: string
         required: false
+      publish-release:
+        description: Publish release after build
+        type: boolean
+        required: false
+
+permissions:
+  contents: write
 
 jobs:
 
@@ -143,9 +150,6 @@ jobs:
 
   versions:
     name: Resolve versions
-    needs:
-      - test-bash-scripts
-      - test-pwsh-scripts
     outputs:
       cygwin-mirror: ${{ steps.resolve.outputs.cygwin-mirror }}
       cldr-version: ${{ steps.resolve.outputs.cldr-version }}
@@ -160,6 +164,8 @@ jobs:
       signpath-signing-policy-default: ${{ steps.resolve.outputs.signpath-signing-policy }}
       signpath-artifactconfiguration-files: ${{ steps.resolve.outputs.signpath-artifactconfiguration-files }}
       signatures-canbeinvalid: ${{ steps.resolve.outputs.signatures-canbeinvalid }}
+      release-tag: ${{ steps.resolve.outputs.release-tag }}
+      is-prerelease: ${{ steps.resolve.outputs.is-prerelease }}
     runs-on: windows-2022
     steps:
       -
@@ -179,6 +185,7 @@ jobs:
           -JsonCVersion '${{ github.event.inputs.json-c-version }}'
           -GettextVersion '${{ github.event.inputs.gettext-version }}'
           -Sign '${{ github.event.inputs.sign }}'
+          -PublishRelease ${{ github.event.inputs.publish-release == 'true' && '$true' || '$false'  }}
 
   build-iconv-tarball:
     name: Build iconv tarball
@@ -191,20 +198,44 @@ jobs:
       image: debian:trixie
     steps:
       -
-        name: Update system
+        name: Create directory structure
         if: needs.versions.outputs.iconv-tarball-from-commit
+        run: mkdir output
+      -
+        name: Restore cache
+        if: needs.versions.outputs.iconv-tarball-from-commit
+        id: restore-cache
+        uses: actions/cache/restore@v5
+        with:
+          key: build-iconv-${{ needs.versions.outputs.iconv-tarball-from-commit }}
+          path: output
+      -
+        name: Check tarball existence
+        if: needs.versions.outputs.iconv-tarball-from-commit
+        id: check-tarball
+        run: |
+          if [ -f output/libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz ]; then
+            echo 'Tarball already exists in cache.'
+            echo 'build=no' >>"$GITHUB_OUTPUT"
+          else
+            echo 'Tarball not found in cache. Will build it.'
+            echo 'build=yes' >>"$GITHUB_OUTPUT"
+          fi
+      -
+        name: Update system
+        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
         run: |
           apt-get update -q
           apt-get upgrade -qy
       -
         name: Install system dependencies
-        if: needs.versions.outputs.iconv-tarball-from-commit
+        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
         run: >
           apt-get install -qy --no-install-recommends
           ca-certificates git curl xz-utils make python3 patch autoconf gcc libc6-dev gperf groff gettext
       -
         name: Install automake
-        if: needs.versions.outputs.iconv-tarball-from-commit
+        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
         working-directory: /tmp
         run: |
           curl -sSL https://ftp.gnu.org/gnu/automake/automake-1.18.1.tar.xz | tar -xJ
@@ -213,47 +244,60 @@ jobs:
           make install
       -
         name: Download iconv source code
-        if: needs.versions.outputs.iconv-tarball-from-commit
+        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
         run: git clone https://git.savannah.gnu.org/git/libiconv.git
       -
         name: Checkout commit ${{ needs.versions.outputs.iconv-tarball-from-commit }}
-        if: needs.versions.outputs.iconv-tarball-from-commit
+        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
         working-directory: libiconv
         run: git checkout ${{ needs.versions.outputs.iconv-tarball-from-commit }}
       -
         name: Pull git dependencies
-        if: needs.versions.outputs.iconv-tarball-from-commit
+        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
         working-directory: libiconv
-        run: ./autopull.sh
+        run: ./autopull.sh --one-time
       -
         name: Autogenerate build system
-        if: needs.versions.outputs.iconv-tarball-from-commit
+        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
         working-directory: libiconv
         run: ./autogen.sh
       -
         name: Configure
-        if: needs.versions.outputs.iconv-tarball-from-commit
+        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
         working-directory: libiconv
         run: ./configure
       -
         name: Build tarball
-        if: needs.versions.outputs.iconv-tarball-from-commit
+        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
         working-directory: libiconv
         run: make dist VERSION=${{ needs.versions.outputs.iconv-version }}
+      -
+        name: Copy tarball to output
+        if: needs.versions.outputs.iconv-tarball-from-commit && steps.check-tarball.outputs.build == 'yes'
+        run: cp libiconv/libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz output/
+      -
+        name: Persist cache
+        if: needs.versions.outputs.iconv-tarball-from-commit
+        uses: actions/cache/save@v5
+        with:
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+          path: output
       -
         name: Upload tarball
         if: needs.versions.outputs.iconv-tarball-from-commit
         id: upload
         uses: actions/upload-artifact@v6
         with:
-          name: iconv-tarball
-          path: libiconv/libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz
+          name: tarball-iconv
+          path: output/libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz
           if-no-files-found: error
           retention-days: 1
 
-  exe:
+  build:
     name: ${{ matrix.bits}}-bit ${{ matrix.link }} w/ ${{ matrix.compiler }}
     needs:
+      - test-bash-scripts
+      - test-pwsh-scripts
       - versions
       - build-iconv-tarball
     runs-on: windows-2022
@@ -733,7 +777,7 @@ jobs:
         id: upload-installed-unsigned
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}-installed-unsigned
+          name: tobesigned-installed-${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           path: |
             installed/**/*.dll
             installed/**/*.exe
@@ -948,7 +992,7 @@ jobs:
         id: upload-installer-unsigned
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}-installer-unsigned
+          name: tobesigned-installer-${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           path: assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
           if-no-files-found: error
           compression-level: 0
@@ -980,7 +1024,7 @@ jobs:
         name: Upload assets
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
+          name: assets-${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           path: assets/*
           if-no-files-found: error
           compression-level: 0
@@ -989,7 +1033,7 @@ jobs:
         if: always() && steps.prepare-build-log.outcome == 'success'
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}-log
+          name: log-${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           if-no-files-found: ignore
           retention-days: 1
           include-hidden-files: true
@@ -1004,3 +1048,41 @@ jobs:
           path: |
             src\downloads
             D:\cygwin-packages
+
+  publish-release:
+    name: Publish release
+    needs:
+      - versions
+      - build
+    if: needs.versions.outputs.release-tag
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Create assets directory
+        run: mkdir -p assets
+      -
+        name: Download assets
+        uses: actions/download-artifact@v7
+        with:
+          path: assets
+          pattern: assets-*
+          merge-multiple: true
+      -
+        name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ needs.versions.outputs.release-tag }}
+          tag_name: ${{ needs.versions.outputs.release-tag }}
+          files: assets/*
+          fail_on_unmatched_files: true
+          prerelease: ${{ needs.versions.outputs.is-prerelease == 'yes' && 'true' || 'false'  }}
+          make_latest: ${{ needs.versions.outputs.is-prerelease == 'yes' && 'false' || 'true'  }}
+          body: |
+            ## Components
+            * gettext ${{ needs.versions.outputs.gettext-version }}
+            * iconv ${{ needs.versions.outputs.iconv-version-base }}
+            * libcurl ${{ needs.versions.outputs.curl-version-default }}
+            * libjson-c ${{ needs.versions.outputs.json-c-version-default }}
+            * CLDR ${{ needs.versions.outputs.cldr-version }}            
+
+          generate_release_notes: true
