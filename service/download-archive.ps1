@@ -142,18 +142,15 @@ if ($dir -and -not (Test-Path -Path $dir -PathType Container)) {
 Write-Host "Downloading archive from $Url to $LocalFilePath..."
 try {
     Invoke-WebRequest -Uri $Url -OutFile $LocalFilePath -MaximumRedirection 10 -UseBasicParsing
-    Write-Host 'Download completed successfully.'
 } catch {
     Write-Error "Failed to download the file from $Url. Error: $_"
     throw
 }
-
 if (-not (Test-Path -Path $LocalFilePath -PathType Leaf)) {
     throw "The file was not downloaded successfully to $LocalFilePath."
 }
 if (Test-IsBrokenArchive -Path $LocalFilePath) {
     Remove-Item -Path $LocalFilePath -Force
     throw 'The downloaded file appears to be corrupted or incomplete.'
-} else {
-    Write-Host 'The downloaded file has been verified successfully.'
 }
+Write-Host 'Download completed successfully.'
