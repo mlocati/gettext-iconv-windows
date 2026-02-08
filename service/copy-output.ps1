@@ -230,6 +230,18 @@ function Remove-DestinationItem {
     }
 }
 
+function Add-LicenseText()
+{
+    param (
+        [Parameter(Mandatory = $true)]
+        [ValidateLength(1, [int]::MaxValue)]
+        [string] $Text
+    )
+    $licenseFilePath = Join-Path -Path $script:ToDirectory -ChildPath 'license.txt'
+    $Text.TrimEnd() + "`n" | Out-File -FilePath $licenseFilePath -Encoding UTF8 -Append -NoNewline
+}
+
+
 $script:FromDirectory = [System.IO.Path]::GetFullPath($From).Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar).TrimEnd([System.IO.Path]::DirectorySeparatorChar)
 $script:ToDirectory = [System.IO.Path]::GetFullPath($To).Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar).TrimEnd([System.IO.Path]::DirectorySeparatorChar)
 
@@ -279,4 +291,40 @@ if ($inGithub) {
         Write-Host $item
     }
     Write-Host '::endgroup::'
+}
+
+
+Add-LicenseText @'
+
+This project includes the following third-party components:
+
+- iconv ( https://www.gnu.org/software/libiconv/ )
+  See license in the file licenses/iconv.txt
+- gettext ( https://www.gnu.org/software/gettext/ )
+  See license in the file licenses/gettext.txt
+'@
+
+if (Test-Path -LiteralPath (Join-Path -Path $script:ToDirectory -ChildPath 'licenses/gcc.txt') -PathType Leaf) {
+    Add-LicenseText @'
+- The GCC ( https://gcc.gnu.org/ ) runtime libraries provided by mingw-w64
+  See license in the file licenses/gcc.txt
+'@
+}
+if (Test-Path -LiteralPath (Join-Path -Path $script:ToDirectory -ChildPath 'licenses/cldr.txt') -PathType Leaf) {
+    Add-LicenseText @'
+- Unicode CLDR ( https://cldr.unicode.org/ )
+  See license in the file licenses/cldr.txt
+'@
+}
+if (Test-Path -LiteralPath (Join-Path -Path $script:ToDirectory -ChildPath 'licenses/curl.txt') -PathType Leaf) {
+        Add-LicenseText @'
+- curl ( https://curl.se/ )
+  See license in the file licenses/curl.txt
+'@
+}
+if (Test-Path -LiteralPath (Join-Path -Path $script:ToDirectory -ChildPath 'licenses/json-c.txt') -PathType Leaf) {
+        Add-LicenseText @'
+- JSON-C ( https://github.com/json-c/json-c )
+  See license in the file licenses/json-c.txt
+'@
 }
