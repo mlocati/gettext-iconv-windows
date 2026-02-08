@@ -91,6 +91,22 @@ function Copy-SourceDirectory {
     Copy-Item -LiteralPath $sourcePath -Destination $destinationPath -Recurse -Force -ProgressAction SilentlyContinue
 }
 
+function Remove-DestinationItem {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]
+        $DestinationRelativePath
+    )
+    $destinationPath = Join-Path -Path $script:ToDirectory -ChildPath $DestinationRelativePath
+    if (Test-Path -LiteralPath $destinationPath -PathType Container) {
+        Write-Host "$DestinationRelativePath/ -> removed"
+        Remove-Item -LiteralPath $destinationPath -Force -Recurse
+    } elseif (Test-Path -LiteralPath $destinationPath -PathType Leaf) {
+        Write-Host "$DestinationRelativePath -> removed"
+        Remove-Item -LiteralPath $destinationPath -Force
+    }
+}
+
 $script:FromDirectory = [System.IO.Path]::GetFullPath($From).Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar).TrimEnd([System.IO.Path]::DirectorySeparatorChar)
 $script:ToDirectory = [System.IO.Path]::GetFullPath($To).Replace([System.IO.Path]::AltDirectorySeparatorChar, [System.IO.Path]::DirectorySeparatorChar).TrimEnd([System.IO.Path]::DirectorySeparatorChar)
 
@@ -117,6 +133,30 @@ Get-ChildItem $script:FromDirectory -File -Recurse | ForEach-Object {
             Copy-SourceFile $relativePath
             break
         }
+        'bin/libcurl*.dll' {
+            if ($Type -eq 'exe') {
+                Copy-SourceFile $relativePath
+            }
+            break
+        }
+        'bin/curl*.dll' {
+            if ($Type -eq 'exe') {
+                Copy-SourceFile $relativePath
+            }
+            break
+        }
+        'bin/libjson-c*.dll' {
+            if ($Type -eq 'exe') {
+                Copy-SourceFile $relativePath
+            }
+            break
+        }
+        'bin/json-c*.dll' {
+            if ($Type -eq 'exe') {
+                Copy-SourceFile $relativePath
+            }
+            break
+        }
         'bin/*.dll' {
             Copy-SourceFile $relativePath
             break
@@ -131,6 +171,30 @@ Get-ChildItem $script:FromDirectory -File -Recurse | ForEach-Object {
             if ($Type -eq 'dev') {
                 Copy-SourceFile $relativePath
             }
+            break
+        }
+        'lib/libcurl*.dll.a' {
+            break
+        }
+        'lib/curl*.dll.a' {
+            break
+        }
+        'lib/libcurl*.lib' {
+            break
+        }
+        'lib/curl*.lib' {
+            break
+        }
+        'lib/libjson-c*.dll.a' {
+            break
+        }
+        'lib/json-c*.dll.a' {
+            break
+        }
+        'lib/libjson-c*.lib' {
+            break
+        }
+        'lib/json-c*.lib' {
             break
         }
         'lib/*.dll' {
@@ -261,6 +325,8 @@ Get-ChildItem $script:FromDirectory -File -Recurse | ForEach-Object {
 switch ($Type) {
     'dev' {
         Copy-SourceDirectory 'include'
+        Remove-DestinationItem 'include/curl'
+        Remove-DestinationItem 'include/json-c'
         Copy-SourceDirectory 'share/doc/gettext/examples'
     }
     'exe' {
