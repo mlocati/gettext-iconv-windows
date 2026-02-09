@@ -1,0 +1,56 @@
+name: VirusTotal
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag - eg v1.0-v1.18-r2 (default: latest)"
+        required: false
+        type: string
+
+env:
+  HAS_VT_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY != '' }}
+
+permissions:
+  contents: write
+
+jobs:
+  scan-release-assets:
+    name: Scan release assets with VirusTotal
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Download release assets (manual run)
+        if: env.HAS_VT_API_KEY == 'true' && github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+          TAG="$(printf '%s' '${{ inputs.release_tag }}' | xargs)"
+          if [ -z "$TAG" ]; then
+            TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName')"
+            printf "No release tag provided, defaulting to latest (%s)\n" "$TAG"
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].url' | while read -r url; do
+            echo "Downloading $url"
+            gh api -H 'Accept: application/octet-stream' "$url" >"$(basename "$url")"
+          done
+          echo 'Assets downloaded:'
+          ls -l
+      -
+        name: Check for VirusTotal API key
+        if: env.HAS_VT_API_KEY == 'true'
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VIRUSTOTAL_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          update_release_body: ${{ github.event_name == 'release' && 'true' || 'false' }}
+          request_rate: 4
+          files: |
+            *.exe
+            *.zip
