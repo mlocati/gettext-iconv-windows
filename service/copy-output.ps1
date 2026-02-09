@@ -79,8 +79,8 @@ function Test-CopyFile {
         if ($Type -eq 'exe') {
             return $false
         }
-        if ($SourceRelativePath -match '/(lib)?curl(-\d+)?\.(\.dll)?(a|lib)$' -or
-            $SourceRelativePath -match '/(lib)?json-c(-\d+)?\.(\.dll)?(a|lib)$'
+        if ($SourceRelativePath -match '/(lib)?curl(-\d+)?(\.dll)?\.(a|lib)$' -or
+            $SourceRelativePath -match '/(lib)?json-c(-\d+)?(\.dll)?\.(a|lib)$'
         ) {
             # We don't have curl or JSON-C stuff in the developers' packages
             return $false
