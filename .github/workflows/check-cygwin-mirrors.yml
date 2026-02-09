@@ -6,7 +6,7 @@ on:
 jobs:
   check-mirrors:
     name: Check Cygwin mirrors
-    runs-on: windows-latest
+    runs-on: windows-2025
     steps:
       -
         name: Check

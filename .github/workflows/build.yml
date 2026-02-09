@@ -85,7 +85,7 @@ jobs:
 
   test-pwsh-scripts:
     name: Test PowerShell scripts
-    runs-on: windows-latest
+    runs-on: windows-2025
     env:
       PSScriptAnalyzerVersion: 1.24.0
     steps:
@@ -166,7 +166,7 @@ jobs:
       signatures-canbeinvalid: ${{ steps.resolve.outputs.signatures-canbeinvalid }}
       release-tag: ${{ steps.resolve.outputs.release-tag }}
       is-prerelease: ${{ steps.resolve.outputs.is-prerelease }}
-    runs-on: windows-2022
+    runs-on: windows-2025
     steps:
       -
         name: Checkout
@@ -300,7 +300,7 @@ jobs:
       - test-pwsh-scripts
       - versions
       - build-iconv-tarball
-    runs-on: windows-2022
+    runs-on: windows-2025
     strategy:
       fail-fast: false
       matrix:
