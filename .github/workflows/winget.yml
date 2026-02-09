@@ -1,0 +1,177 @@
+name: WinGet
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag - eg v1.0-v1.18-r2 (default: latest)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  POWERSHELLYAMLVERSION: 0.4.1
+  WINGETPKGS_ID: mlocati.GetText
+  WINGETPKGS_REPO_UPSTREAM: microsoft/winget-pkgs
+  WINGETPKGS_REPO_HEAD: master
+  WINGETPKGS_REPO_FORK: mlocati-forks/winget-pkgs
+  WINGETPKGS_REPO_FORK_HADEPLOYKEY: ${{ secrets.WINGET_PKGS_FORK_DEPLOYKEY != '' }}
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  winget:
+    name: Submit to WinGet
+    runs-on: windows-2025
+    steps:
+      -
+        name: Checkout
+        if: env.WINGETPKGS_REPO_FORK_HADEPLOYKEY == 'true'
+        uses: actions/checkout@v6
+      -
+        name: Create directory structure
+        if: env.WINGETPKGS_REPO_FORK_HADEPLOYKEY == 'true'
+        run: |
+          New-Item -ItemType Directory -Force -ErrorAction Stop -Path @(
+            'downloads'
+            'tmp'
+          ) | Out-Null
+      -
+        name: Restore cache
+        if: env.WINGETPKGS_REPO_FORK_HADEPLOYKEY == 'true'
+        id: restore-cache
+        uses: actions/cache/restore@v5
+        with:
+          key: winget-prepare
+          path: downloads
+      -
+        name: Retrieve release data
+        if: env.WINGETPKGS_REPO_FORK_HADEPLOYKEY == 'true'
+        id: init
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq 'release') {
+            $tagName = $env:GITHUB_REF_NAME
+          } else {
+            $tagName = '${{ inputs.release_tag }}'.Trim()
+            if ($tagName -eq '') {
+              $tagName = & gh api 'repos/${{ github.repository }}/releases/latest' --jq '.tag_name'
+              if (-not($?)) {
+                throw "Failed to get latest release: $($Error[0])"
+              }
+              $tagName = $tagName.Trim()
+            }
+          }
+          $jsonData = & gh release view --repo=mlocati/gettext-iconv-windows $tagName --json tagName,isPrerelease,publishedAt,assets,url
+          if (-not($?)) {
+            throw "Failed to get release data for tag '$tagName': $($Error[0])"
+          }
+          $releaseData = $jsonData | ConvertFrom-Json
+          if ($releaseData.isPrerelease) {
+            Write-Host -Object "Release '$($releaseData.tagName)' is a pre-release, skipping."
+            'submit=no' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+          } else {
+            $jsonData | Set-Content -LiteralPath tmp/release.json -Encoding utf8
+            'submit=yes' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+          }
+      -
+        name: Download powershell-yaml module
+        if: steps.init.outputs.submit == 'yes'
+        run: >
+          ./service/download-archive.ps1
+          -Url "https://www.powershellgallery.com/api/v2/package/powershell-yaml/${env:POWERSHELLYAMLVERSION}"
+          -LocalFilePath "downloads\powershell-yaml.${env:POWERSHELLYAMLVERSION}.nupkg"
+      -
+        name: Extract powershell-yaml
+        if: steps.init.outputs.submit == 'yes'
+        working-directory: tmp
+        run: Expand-Archive -Path "..\downloads\powershell-yaml.${env:POWERSHELLYAMLVERSION}.nupkg" -DestinationPath .\powershell-yaml
+      -
+        name: Prepare winget-pkgs repository
+        if: steps.init.outputs.submit == 'yes'
+        run: |
+          git init tmp/winget-pkgs
+          git -C tmp/winget-pkgs sparse-checkout init --cone
+          git -C tmp/winget-pkgs sparse-checkout set "manifests/$([char]::ToLower($env:WINGETPKGS_ID[0]))/"
+          git -C tmp/winget-pkgs remote add upstream "https://github.com/$($env:WINGETPKGS_REPO_UPSTREAM).git"
+          git -C tmp/winget-pkgs remote add fork "git@github.com:$($env:WINGETPKGS_REPO_FORK).git"
+          git -C tmp/winget-pkgs fetch upstream $env:WINGETPKGS_REPO_HEAD
+          git -C tmp/winget-pkgs checkout -b "gettext-$(Get-Date -UFormat %s -Millisecond 0)" upstream/$env:WINGETPKGS_REPO_HEAD
+      -
+        name: Create manifest
+        if: steps.init.outputs.submit == 'yes'
+        id: create
+        run: |
+          Import-Module -Name .\tmp\powershell-yaml\ -Force
+          $releaseData = Get-Content -LiteralPath tmp/release.json | ConvertFrom-Json
+          $manifestPath, $packageVersion = ./winget/create-manifest.ps1 ` -PackageIdentifier $env:WINGETPKGS_ID -ReleaseData $releaseData -ManifestsPath tmp/winget-pkgs/manifests
+          Write-Host "Manifest created at: $manifestPath"
+          Get-ChildItem -LiteralPath $manifestPath -Recurse -File | ForEach-Object { $_.FullName }
+          "manifest-path=$manifestPath" | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+          "package-version=$packageVersion" | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+      -
+        name: Validate manifest
+        if: steps.init.outputs.submit == 'yes'
+        run: winget validate --manifest '${{ steps.create.outputs.manifest-path }}'
+      -
+        name: Test installing with winget
+        if: steps.init.outputs.submit == 'yes'
+        run: |
+          winget settings --enable LocalManifestFiles
+          winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --manifest '${{ steps.create.outputs.manifest-path }}'
+      -
+        name: Check changes
+        id: check-changes
+        if: steps.init.outputs.submit == 'yes'
+        working-directory: tmp/winget-pkgs
+        run: |
+          $status = git status --porcelain "manifests/$([char]::ToLower($env:WINGETPKGS_ID[0]))"
+          if (-not $status) {
+            Write-Host 'No changes to commit.'
+            'submit=no' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+          } else {
+            Write-Host 'Changes detected, will commit and push to fork.'
+            'submit=yes' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+          }
+      -
+        name: Save deploy key
+        if: steps.check-changes.outputs.submit == 'yes'
+        run: |
+          $sshDir = "$env:USERPROFILE\.ssh"
+          $keyPath = "$sshDir\id_ed25519"
+          $privateKey = "${{ secrets.WINGET_PKGS_FORK_DEPLOYKEY }}" -replace "`r`n","`n"
+          New-Item -ItemType Directory -Force -Path $sshDir | Out-Null
+          Set-Content -Path $keyPath -Value $privateKey -Encoding utf8NoBOM -NoNewline
+          icacls $keyPath /inheritance:r /grant:r "$($env:USERNAME):(R)"
+          ssh-keygen -l -f $keyPath
+      -
+        name: Push changes to winget-pkgs fork
+        if: steps.check-changes.outputs.submit == 'yes'
+        working-directory: tmp/winget-pkgs
+        run: |
+          $env:GIT_SSH_COMMAND = 'ssh -o StrictHostKeyChecking=no'
+          git config user.name 'GitHub Actions'
+          git config user.email 'actions@github.com'
+          git add -A "manifests/$([char]::ToLower($env:WINGETPKGS_ID[0]))"
+          git commit -m "New version: $($env:WINGETPKGS_ID) version ${{ steps.create.outputs.package-version }}" -m "Commit created by GitHub Action https://github.com/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)"
+          $branchName = & git rev-parse --abbrev-ref HEAD
+          git push fork $branchName
+          if (-not($?)) {
+            throw "Failed to push changes to fork: $($Error[0])"
+          }
+          Write-Host "Open a pull request:`nhttps://github.com/$($env:WINGETPKGS_REPO_UPSTREAM)/compare/$($env:WINGETPKGS_REPO_HEAD)...$($env:WINGETPKGS_REPO_FORK -replace '/',':'):$($branchName)?expand=1"
+      -
+        name: Persist cache
+        if: always() && steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          key: winget-prepare
+          path: downloads
