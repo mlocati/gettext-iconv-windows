@@ -23,33 +23,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
-        name: Download release assets (manual run)
+        name: Setup
+        if: env.HAS_VT_API_KEY == 'true'
+        id: setup
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ '${{ github.event_name }}' = 'workflow_dispatch' ]; then
+            TAG_NAME="$(printf '%s' '${{ inputs.release_tag }}' | xargs)"
+            if [ -z "$TAG_NAME" ]; then
+              TAG_NAME="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName')"
+            fi
+          else
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          fi
+          printf 'Using tag: %s\n' "$TAG_NAME"
+          echo "tag-name=$TAG_NAME" >>"$GITHUB_OUTPUT"
+          BODY="$(gh release view --repo "$GITHUB_REPOSITORY" "$TAG_NAME" --json body -q .body)"
+          if printf '%s' "$BODY" | grep -q 'virustotal\.com'; then
+            echo "Release body already contains VirusTotal report"
+            echo 'update-body=false' >>"$GITHUB_OUTPUT"
+          else
+            echo "Release body does not contain VirusTotal report"
+            echo 'update-body=true' >>"$GITHUB_OUTPUT"
+          fi
+      -
+        name: Download release assets
         if: env.HAS_VT_API_KEY == 'true' && github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -o errexit
-          set -o nounset
-          set -o pipefail
-          TAG="$(printf '%s' '${{ inputs.release_tag }}' | xargs)"
-          if [ -z "$TAG" ]; then
-            TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName')"
-            printf "No release tag provided, defaulting to latest (%s)\n" "$TAG"
-          fi
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].url' | while read -r url; do
+          gh release view "${{ steps.setup.outputs.tag-name }}" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].url' | while read -r url; do
             echo "Downloading $url"
             gh api -H 'Accept: application/octet-stream' "$url" >"$(basename "$url")"
           done
           echo 'Assets downloaded:'
           ls -l
       -
-        name: Check for VirusTotal API key
+        name: Submit to VirusTotal
         if: env.HAS_VT_API_KEY == 'true'
         uses: crazy-max/ghaction-virustotal@v4
         with:
           vt_api_key: ${{ secrets.VIRUSTOTAL_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          update_release_body: ${{ github.event_name == 'release' && 'true' || 'false' }}
+          update_release_body: ${{ steps.setup.outputs.update-body }}
           request_rate: 4
           files: |
             *.exe
