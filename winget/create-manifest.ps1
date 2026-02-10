@@ -72,13 +72,14 @@ $defaultLocale = [ordered]@{
     PublisherUrl = 'https://github.com/mlocati/gettext-iconv-windows'
     PublisherSupportUrl = 'https://github.com/mlocati/gettext-iconv-windows/issues'
     Author = 'Michele Locati'
-    PackageName = 'gettext - iconv'
+    PackageName = 'gettext + iconv'
     PackageUrl = 'https://mlocati.github.io/articles/gettext-iconv-windows.html'
     License = 'MIT'
     LicenseUrl = "https://github.com/mlocati/gettext-iconv-windows/blob/$($ReleaseData.tagName)/LICENSE.txt"
-    Copyright = 'Michele Locati'
+    Copyright = 'Copyright (c) Michele Locati'
+    CopyrightUrl = "https://github.com/mlocati/gettext-iconv-windows/blob/$($ReleaseData.tagName)/LICENSE.txt"
     ShortDescription = 'gettext and iconv tools'
-    Moniker = 'gettext-iconv'
+    Moniker = 'gettext'
     Tags = @(
         'GNU'
         'gettext'
@@ -126,9 +127,22 @@ $defaultLocale = [ordered]@{
 $installer = [ordered]@{
     PackageIdentifier = $PackageIdentifier
     PackageVersion = $packageVersion
+    InstallerLocale = 'en-US'
     MinimumOSVersion = '6.1.7601' # Windows 7
     InstallerType = 'inno'
+    Scope = 'machine'
+    UpgradeBehavior = 'install'
+    ProductCode = 'gettext-iconv_is1'
     ReleaseDate = ([datetime]$ReleaseData.publishedAt).ToUniversalTime().ToString('yyyy\-MM\-dd')
+    AppsAndFeaturesEntries = @(
+        [ordered]@{
+            ProductCode = 'gettext-iconv_is1'
+        }
+    )
+    ElevationRequirement = 'elevatesSelf'
+    InstallationMetadata = [ordered]@{
+        DefaultInstallLocation = '%ProgramFiles%\gettext-iconv'
+    }
     Installers = @(
         New-InstallerEntry -Architecture x86 -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-32.exe"
         New-InstallerEntry -Architecture x64 -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-64.exe"
