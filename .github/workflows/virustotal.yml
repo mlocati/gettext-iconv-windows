@@ -1,9 +1,6 @@
 name: VirusTotal
 
 on:
-  release:
-    types:
-      - published
   workflow_dispatch:
     inputs:
       release_tag:
@@ -29,27 +26,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ '${{ github.event_name }}' = 'workflow_dispatch' ]; then
-            TAG_NAME="$(printf '%s' '${{ inputs.release_tag }}' | xargs)"
-            if [ -z "$TAG_NAME" ]; then
-              TAG_NAME="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName')"
-            fi
-          else
-            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          TAG_NAME="$(printf '%s' '${{ inputs.release_tag }}' | xargs)"
+          if [ -z "$TAG_NAME" ]; then
+            TAG_NAME="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq '.tagName')"
           fi
           printf 'Using tag: %s\n' "$TAG_NAME"
           echo "tag-name=$TAG_NAME" >>"$GITHUB_OUTPUT"
-          BODY="$(gh release view --repo "$GITHUB_REPOSITORY" "$TAG_NAME" --json body -q .body)"
-          if printf '%s' "$BODY" | grep -q 'virustotal\.com'; then
-            echo "Release body already contains VirusTotal report"
-            echo 'update-body=false' >>"$GITHUB_OUTPUT"
-          else
-            echo "Release body does not contain VirusTotal report"
-            echo 'update-body=true' >>"$GITHUB_OUTPUT"
-          fi
       -
         name: Download release assets
-        if: env.HAS_VT_API_KEY == 'true' && github.event_name == 'workflow_dispatch'
+        if: env.HAS_VT_API_KEY == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -62,12 +47,72 @@ jobs:
       -
         name: Submit to VirusTotal
         if: env.HAS_VT_API_KEY == 'true'
+        id: submit
         uses: crazy-max/ghaction-virustotal@v4
         with:
           vt_api_key: ${{ secrets.VIRUSTOTAL_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          update_release_body: ${{ steps.setup.outputs.update-body }}
+          update_release_body: false
           request_rate: 4
           files: |
             *.exe
             *.zip
+      -
+        name: Update release body with VirusTotal report
+        if: steps.submit.outputs.analysis
+        uses: actions/github-script@v8
+        env:
+          TAG_NAME: ${{ steps.setup.outputs.tag-name }}
+          ANALYSIS_RESULT: ${{ steps.submit.outputs.analysis }}
+        with:
+          script: |
+              const tagName = process.env.TAG_NAME;
+              const analysisResult = (process.env.ANALYSIS_RESULT || '').trim();
+              if (analysisResult === '') {
+                core.setFailed('Analysis output is empty');
+                return;
+              }
+              const {owner, repo} = context.repo;
+              const release = await github.rest.repos.getReleaseByTag({
+                owner,
+                repo,
+                tag: tagName,
+              });
+              const originalBody = release.data.body || '';
+              if (originalBody.trim() === '') {
+                core.setFailed('Release body is empty');
+                return;
+              }
+              const SUMMARY = '<summary>VirusTotal analysis</summary>'
+              if (originalBody.includes(SUMMARY)) {
+                core.info('Release body already contains VirusTotal analysis, skipping update.');
+                return;
+              }
+              let detailsLines = [];
+              const analysisLines = analysisResult
+                .split(',')
+                .map(line => line.trim())
+                .filter(line => line !== '')
+              ;
+              analysisLines.forEach(analysisLine => {
+                const match = analysisLine.match(/^\s*(.+?)\s*=\s*(https?:\/\/\S+)\s*$/);
+                if (!match) {
+                  core.warning(`Skipping invalid analysis line: ${analysisLine}`);
+                  return;
+                }
+                const [_, filename, analysisURL] = match;
+                detailsLines.push(`  * [${filename}](${analysisURL})`);
+              });
+              if (detailsLines.length === 0) {
+                core.warning('No valid analysis lines found, skipping update.');
+                return;
+              }
+              const newBody = originalBody + `\n\n<details>\n  ${SUMMARY}\n\n${detailsLines.join('\n')}\n</details>\n`;
+              core.startGroup('New release body');
+              core.info(newBody);
+              core.endGroup();
+              await github.rest.repos.updateRelease({
+                owner,
+                repo,
+                release_id: release.data.id,
+                body: newBody,
+              });
