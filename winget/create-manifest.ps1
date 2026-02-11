@@ -19,7 +19,10 @@ function New-InstallerEntry {
         [string] $Architecture,
         [Parameter(Mandatory = $true)]
         [ValidateLength(1, [int]::MaxValue)]
-        [string] $AssetName
+        [string] $AssetName,
+        [Parameter(Mandatory = $true)]
+        [ValidateLength(1, [int]::MaxValue)]
+        [string] $DisplayName
     )
     $asset = $ReleaseData.assets | Where-Object -Property 'name' -Value $AssetName -EQ
     if (-not $asset) {
@@ -33,6 +36,12 @@ function New-InstallerEntry {
         Architecture = $Architecture
         InstallerUrl = $asset.url
         InstallerSha256 = $sha256
+        AppsAndFeaturesEntries = @(
+            [ordered]@{
+                DisplayName = $DisplayName
+                ProductCode = 'gettext-iconv_is1'
+            }
+        )
     }
 }
 
@@ -78,7 +87,37 @@ $defaultLocale = [ordered]@{
     LicenseUrl = "https://github.com/mlocati/gettext-iconv-windows/blob/$($ReleaseData.tagName)/LICENSE.txt"
     Copyright = 'Copyright (c) Michele Locati'
     CopyrightUrl = "https://github.com/mlocati/gettext-iconv-windows/blob/$($ReleaseData.tagName)/LICENSE.txt"
-    ShortDescription = 'gettext and iconv tools'
+    ShortDescription = 'GNU gettext and GNU iconv tools'
+    Description = @'
+This package provides the GNU gettext and GNU iconv tools for Windows, which are used for internationalization and localization of software applications.
+
+The GNU gettext tools include the following command-line utilities used for managing translation files and generating localized resources:
+
+- gettext: display native language translation of a textual message
+- msgattrib: filters the messages of a translation catalog according to their attributes, and manipulates the attributes
+- msgcat: concatenates and merges the specified PO files
+- msgcmp: compare two Uniforum style .po files to check that both contain the same set of msgid strings
+- msgcomm: find messages which are common to two or more of the specified PO files
+- msgconv: convert a translation catalog to a different character encoding
+- msgen: create an English translation catalog
+- msgexec: apply a command to all translations of a translation catalog
+- msgfilter: apply a filter to all translations of a translation catalog
+- msgfmt: generate binary message catalog from textual translation description.
+- msggrep: extract all messages of a translation catalog that match a given pattern or belong to some given source files
+- msginit: create a new PO file, initializing the meta information with values from the user's environment
+- msgmerge: merge two Uniforum style .po files together
+- msgpre: pretranslate a translation catalog
+- msgunfmt: convert a binary message catalog to Uniforum style .po file
+- msguniq: unify duplicate translations in a translation catalog
+- ngettext: display native language translation of a textual message whose grammatical form depends on a number
+- recode-sr-latin: recode Serbian text from Cyrillic to Latin script
+- spit: pass standard input to a Large Language Model (LLM) instance and prints the response
+- xgettext: extract translatable strings from given input files
+
+The GNU iconv tool is used for converting text between different character encodings.
+
+The package comes with Unicode CLDR data, which is used by msginit to create translation catalogs with the plural rules defined in CLDR (this requires setting the GETTEXTCLDRDIR environment variable to the path of the CLDR data).
+'@
     Moniker = 'gettext'
     Tags = @(
         'GNU'
@@ -118,6 +157,7 @@ $defaultLocale = [ordered]@{
             AgreementUrl = 'https://gcc.gnu.org/onlinedocs/libstdc++/manual/license.html'
         }
     )
+    ReleaseNotes = (($ReleaseData.body.Trim() -replace '\r\n',"`n") -replace '\r',"`n") -replace '\n',[environment]::NewLine
     ReleaseNotesUrl = $ReleaseData.url
     ManifestType = 'defaultLocale'
     ManifestVersion = $manifestVersion
@@ -131,21 +171,21 @@ $installer = [ordered]@{
     MinimumOSVersion = '6.1.7601' # Windows 7
     InstallerType = 'inno'
     Scope = 'machine'
+    InstallModes = @(
+        'interactive'
+        'silent'
+        'silentWithProgress'
+    )
     UpgradeBehavior = 'install'
     ProductCode = 'gettext-iconv_is1'
     ReleaseDate = ([datetime]$ReleaseData.publishedAt).ToUniversalTime().ToString('yyyy\-MM\-dd')
-    AppsAndFeaturesEntries = @(
-        [ordered]@{
-            ProductCode = 'gettext-iconv_is1'
-        }
-    )
     ElevationRequirement = 'elevatesSelf'
     InstallationMetadata = [ordered]@{
         DefaultInstallLocation = '%ProgramFiles%\gettext-iconv'
     }
     Installers = @(
-        New-InstallerEntry -Architecture x86 -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-32.exe"
-        New-InstallerEntry -Architecture x64 -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-64.exe"
+        New-InstallerEntry -Architecture x86 -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-32.exe" -DisplayName "gettext $gettextVersion + iconv $iconvVersion - shared (32 bit)"
+        New-InstallerEntry -Architecture x64 -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-64.exe" -DisplayName "gettext $gettextVersion + iconv $iconvVersion - shared (64 bit)"
     )
     ManifestType = 'installer'
     ManifestVersion = $manifestVersion
@@ -161,11 +201,11 @@ if (Test-Path -LiteralPath $manifestPath -PathType Container) {
 }
 New-Item -Path $manifestPath -ItemType Directory -Force | Out-Null
 
-@("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.version.$manifestVersion.schema.json$([environment]::NewLine)") + (ConvertTo-Yaml $version) |
+@("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.version.$manifestVersion.schema.json$([environment]::NewLine)") + (ConvertTo-Yaml $version ) |
     Out-File -FilePath (Join-Path -Path $manifestPath -ChildPath "$PackageIdentifier.yaml") -Encoding UTF8 -NoNewline
-@("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.defaultLocale.$manifestVersion.schema.json$([environment]::NewLine)") + (ConvertTo-Yaml $defaultLocale) |
+@("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.defaultLocale.$manifestVersion.schema.json$([environment]::NewLine)") + (ConvertTo-Yaml $defaultLocale ) |
     Out-File -FilePath (Join-Path -Path $manifestPath -ChildPath "$PackageIdentifier.locale.$($version['DefaultLocale']).yaml") -Encoding UTF8 -NoNewline
-@("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.$manifestVersion.schema.json$([environment]::NewLine)") + (ConvertTo-Yaml $installer) |
+@("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.$manifestVersion.schema.json$([environment]::NewLine)") + (ConvertTo-Yaml $installer ) |
     Out-File -FilePath (Join-Path -Path $manifestPath -ChildPath "$PackageIdentifier.installer.yaml") -Encoding UTF8 -NoNewline
 
 $manifestPath, $packageVersion

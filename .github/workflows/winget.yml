@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 env:
-  POWERSHELLYAMLVERSION: 0.4.1
+  POWERSHELLYAMLVERSION: 0.4.12
   WINGETPKGS_ID: mlocati.GetText
   WINGETPKGS_REPO_UPSTREAM: microsoft/winget-pkgs
   WINGETPKGS_REPO_HEAD: master
@@ -70,14 +70,15 @@ jobs:
               $tagName = $tagName.Trim()
             }
           }
-          $jsonData = & gh release view --repo=mlocati/gettext-iconv-windows $tagName --json tagName,isPrerelease,publishedAt,assets,url
+          $jsonData = & gh release view --repo=${{ github.repository }} $tagName --json tagName,isDraft,isPrerelease,publishedAt,url,body,assets
           if (-not($?)) {
             throw "Failed to get release data for tag '$tagName': $($Error[0])"
           }
           $releaseData = $jsonData | ConvertFrom-Json
-          if ($releaseData.isPrerelease) {
+          if ($releaseData.isDraft) {
+            Write-Host -Object "Release '$($releaseData.tagName)' is a draft, skipping."
+          } elseif ($releaseData.isPrerelease) {
             Write-Host -Object "Release '$($releaseData.tagName)' is a pre-release, skipping."
-            'submit=no' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
           } else {
             $jsonData | Set-Content -LiteralPath tmp/release.json -Encoding utf8
             'submit=yes' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
@@ -114,7 +115,11 @@ jobs:
           $releaseData = Get-Content -LiteralPath tmp/release.json | ConvertFrom-Json
           $manifestPath, $packageVersion = ./winget/create-manifest.ps1 ` -PackageIdentifier $env:WINGETPKGS_ID -ReleaseData $releaseData -ManifestsPath tmp/winget-pkgs/manifests
           Write-Host "Manifest created at: $manifestPath"
-          Get-ChildItem -LiteralPath $manifestPath -Recurse -File | ForEach-Object { $_.FullName }
+          Get-ChildItem -LiteralPath $manifestPath -Recurse -File | ForEach-Object {
+            Write-Host "::group::$($_.FullName)"
+            Get-Content -LiteralPath $_.FullName | Write-Host
+            Write-Host '::endgroup::'
+          }
           "manifest-path=$manifestPath" | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
           "package-version=$packageVersion" | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
       -
@@ -136,14 +141,13 @@ jobs:
           $status = git status --porcelain "manifests/$($env:WINGETPKGS_ID[0].ToString().ToLower())/$(($env:WINGETPKGS_ID -split '\.')[0])/"
           if (-not $status) {
             Write-Host 'No changes to commit.'
-            'submit=no' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
           } else {
             Write-Host 'Changes detected, will commit and push to fork.'
-            'submit=yes' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+            'commit=yes' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
           }
       -
         name: Save deploy key
-        if: steps.check-changes.outputs.submit == 'yes'
+        if: steps.check-changes.outputs.commit == 'yes'
         run: |
           $sshDir = "$env:USERPROFILE\.ssh"
           $keyPath = "$sshDir\id_ed25519"
@@ -154,7 +158,7 @@ jobs:
           ssh-keygen -l -f $keyPath
       -
         name: Push changes to winget-pkgs fork
-        if: steps.check-changes.outputs.submit == 'yes'
+        if: steps.check-changes.outputs.commit == 'yes'
         working-directory: tmp/winget-pkgs
         run: |
           $env:GIT_SSH_COMMAND = 'ssh -o StrictHostKeyChecking=no'
