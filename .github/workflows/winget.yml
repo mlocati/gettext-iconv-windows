@@ -100,10 +100,10 @@ jobs:
         run: |
           git init tmp/winget-pkgs
           git -C tmp/winget-pkgs sparse-checkout init --cone
-          git -C tmp/winget-pkgs sparse-checkout set "manifests/$([char]::ToLower($env:WINGETPKGS_ID[0]))/"
+          git -C tmp/winget-pkgs sparse-checkout set "manifests/$($env:WINGETPKGS_ID[0].ToString().ToLower())/$(($env:WINGETPKGS_ID -split '\.')[0])/"
           git -C tmp/winget-pkgs remote add upstream "https://github.com/$($env:WINGETPKGS_REPO_UPSTREAM).git"
           git -C tmp/winget-pkgs remote add fork "git@github.com:$($env:WINGETPKGS_REPO_FORK).git"
-          git -C tmp/winget-pkgs fetch upstream $env:WINGETPKGS_REPO_HEAD
+          git -C tmp/winget-pkgs fetch --depth=1 upstream $env:WINGETPKGS_REPO_HEAD
           git -C tmp/winget-pkgs checkout -b "gettext-$(Get-Date -UFormat %s -Millisecond 0)" upstream/$env:WINGETPKGS_REPO_HEAD
       -
         name: Create manifest
@@ -133,7 +133,7 @@ jobs:
         if: steps.init.outputs.submit == 'yes'
         working-directory: tmp/winget-pkgs
         run: |
-          $status = git status --porcelain "manifests/$([char]::ToLower($env:WINGETPKGS_ID[0]))"
+          $status = git status --porcelain "manifests/$($env:WINGETPKGS_ID[0].ToString().ToLower())/$(($env:WINGETPKGS_ID -split '\.')[0])/"
           if (-not $status) {
             Write-Host 'No changes to commit.'
             'submit=no' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
@@ -160,7 +160,7 @@ jobs:
           $env:GIT_SSH_COMMAND = 'ssh -o StrictHostKeyChecking=no'
           git config user.name 'GitHub Actions'
           git config user.email 'actions@github.com'
-          git add -A "manifests/$([char]::ToLower($env:WINGETPKGS_ID[0]))"
+          git add -A "manifests/$($env:WINGETPKGS_ID[0].ToString().ToLower())/$(($env:WINGETPKGS_ID -split '\.')[0])/"
           git commit -m "New version: $($env:WINGETPKGS_ID) version ${{ steps.create.outputs.package-version }}" -m "Commit created by GitHub Action https://github.com/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)"
           $branchName = & git rev-parse --abbrev-ref HEAD
           git push fork $branchName
