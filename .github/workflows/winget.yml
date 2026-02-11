@@ -1,9 +1,6 @@
 name: WinGet
 
 on:
-  release:
-    types:
-      - published
   workflow_dispatch:
     inputs:
       release_tag:
@@ -58,17 +55,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ($env:GITHUB_EVENT_NAME -eq 'release') {
-            $tagName = $env:GITHUB_REF_NAME
-          } else {
-            $tagName = '${{ inputs.release_tag }}'.Trim()
-            if ($tagName -eq '') {
-              $tagName = & gh api 'repos/${{ github.repository }}/releases/latest' --jq '.tag_name'
-              if (-not($?)) {
-                throw "Failed to get latest release: $($Error[0])"
-              }
-              $tagName = $tagName.Trim()
+          $tagName = '${{ inputs.release_tag }}'.Trim()
+          if ($tagName -eq '') {
+            $tagName = & gh api 'repos/${{ github.repository }}/releases/latest' --jq '.tag_name'
+            if (-not($?)) {
+              throw "Failed to get latest release: $($Error[0])"
             }
+            $tagName = $tagName.Trim()
           }
           $jsonData = & gh release view --repo=${{ github.repository }} $tagName --json tagName,isDraft,isPrerelease,publishedAt,url,body,assets
           if (-not($?)) {
