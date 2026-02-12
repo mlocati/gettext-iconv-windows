@@ -65,6 +65,8 @@ jobs:
           ANALYSIS_RESULT: ${{ steps.submit.outputs.analysis }}
         with:
           script: |
+              const MARKER_START = '<!-- virustotal -->';
+              const MARKER_END = '<!-- /virustotal -->';
               const tagName = process.env.TAG_NAME;
               const analysisResult = (process.env.ANALYSIS_RESULT || '').trim();
               if (analysisResult === '') {
@@ -82,11 +84,6 @@ jobs:
                 core.setFailed('Release body is empty');
                 return;
               }
-              const SUMMARY = '<summary>VirusTotal analysis</summary>'
-              if (originalBody.includes(SUMMARY)) {
-                core.info('Release body already contains VirusTotal analysis, skipping update.');
-                return;
-              }
               let detailsLines = [];
               const analysisLines = analysisResult
                 .split(',')
@@ -100,16 +97,20 @@ jobs:
                   return;
                 }
                 const [_, filename, analysisURL] = match;
-                detailsLines.push(`  * [${filename}](${analysisURL})`);
+                detailsLines.push(`* [${filename}](${analysisURL})`);
               });
               if (detailsLines.length === 0) {
                 core.warning('No valid analysis lines found, skipping update.');
                 return;
               }
-              const newBody = originalBody + `\n\n<details>\n  ${SUMMARY}\n\n${detailsLines.join('\n')}\n</details>\n`;
+              const newBody = originalBody.replace(/[\r\n]+$/, '') + `\n\n${MARKER_START}\n## VirusTotal Analysis\n\n${detailsLines.join('\n')}\n\n${MARKER_END}\n`;
               core.startGroup('New release body');
-              core.info(newBody);
+              console.log(newBody);
               core.endGroup();
+              if (originalBody.includes(MARKER_START) && originalBody.includes(MARKER_END)) {
+                core.notice('Release body already contains VirusTotal analysis, skipping update.');
+                return;
+              }
               await github.rest.repos.updateRelease({
                 owner,
                 repo,
