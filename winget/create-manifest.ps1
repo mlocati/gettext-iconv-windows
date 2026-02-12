@@ -12,7 +12,21 @@ param (
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+function Get-ReleaseNotes {
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [psobject] $ReleaseData
+    )
+    $body = $ReleaseData.body.Trim()
+    $body = ($body -replace '\r\n',"`n") -replace '\r',"`n"
+    $body = $body -replace '(?ms)\s*<!--\s*virustotal\s*-->.*?<!--\s*/virustotal\s*-->\s*',"`n"
+
+    return $body -replace '\n',[environment]::NewLine
+}
+
 function New-InstallerEntry {
+    [OutputType([psobject])]
     param(
         [Parameter(Mandatory = $true)]
         [ValidateSet('x86', 'x64', 'arm', 'arm64', 'neutral')]
@@ -157,7 +171,7 @@ The package comes with Unicode CLDR data, which is used by msginit to create tra
             AgreementUrl = 'https://gcc.gnu.org/onlinedocs/libstdc++/manual/license.html'
         }
     )
-    ReleaseNotes = (($ReleaseData.body.Trim() -replace '\r\n',"`n") -replace '\r',"`n") -replace '\n',[environment]::NewLine
+    ReleaseNotes = Get-ReleaseNotes -ReleaseData $ReleaseData
     ReleaseNotesUrl = $ReleaseData.url
     ManifestType = 'defaultLocale'
     ManifestVersion = $manifestVersion
