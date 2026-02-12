@@ -47,6 +47,10 @@ on:
         description: Publish release after build
         type: boolean
         required: false
+      quick:
+        description: Skip checks (not recommended, use only for quick testing)
+        type: boolean
+        required: false
 
 permissions:
   contents: write
@@ -166,6 +170,7 @@ jobs:
       signatures-canbeinvalid: ${{ steps.resolve.outputs.signatures-canbeinvalid }}
       release-tag: ${{ steps.resolve.outputs.release-tag }}
       is-prerelease: ${{ steps.resolve.outputs.is-prerelease }}
+      quick: ${{ steps.resolve.outputs.quick }}
     runs-on: windows-2025
     steps:
       -
@@ -186,6 +191,7 @@ jobs:
           -GettextVersion '${{ github.event.inputs.gettext-version }}'
           -Sign '${{ github.event.inputs.sign }}'
           -PublishRelease ${{ github.event.inputs.publish-release == 'true' && '$true' || '$false'  }}
+          -Quick ${{ github.event.inputs.quick == 'true' && '$true' || '$null'  }}
 
   build-iconv-tarball:
     name: Build iconv tarball
@@ -543,6 +549,7 @@ jobs:
         run: make --jobs=$(nproc)
       -
         name: Check iconv (1st time)
+        if: needs.versions.outputs.quick != 'yes'
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         env:
           INCLUDE: ${{ steps.vars.outputs.include-env-var }}
@@ -645,6 +652,7 @@ jobs:
         run: make --jobs=$(nproc)
       -
         name: Check gettext/gnulib-local
+        if: needs.versions.outputs.quick != 'yes'
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gnulib-local
         env:
           INCLUDE: ${{ steps.vars.outputs.include-env-var }}
@@ -666,6 +674,7 @@ jobs:
         run: make --jobs=$(nproc)
       -
         name: Check gettext/gettext-runtime
+        if: needs.versions.outputs.quick != 'yes'
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-runtime
         env:
           INCLUDE: ${{ steps.vars.outputs.include-env-var }}
@@ -687,6 +696,7 @@ jobs:
         run: make --jobs=$(nproc)
       -
         name: Check gettext/libtextstyle
+        if: needs.versions.outputs.quick != 'yes'
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\libtextstyle
         env:
           INCLUDE: ${{ steps.vars.outputs.include-env-var }}
@@ -708,6 +718,7 @@ jobs:
         run: make --jobs=$(nproc)
       -
         name: Check gettext/gettext-tools
+        if: needs.versions.outputs.quick != 'yes'
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-tools
         env:
           INCLUDE: ${{ steps.vars.outputs.include-env-var }}
@@ -723,6 +734,7 @@ jobs:
       -
         # We need to rebuild iconv because it depends on gettext's libintl in order to be localizable
         name: Configure iconv (2nd time)
+        if: needs.versions.outputs.quick != 'yes'
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}
         env:
           INCLUDE: ${{ steps.vars.outputs.include-env-var }}
@@ -735,6 +747,7 @@ jobs:
             --enable-extra-encodings
       -
         name: Compile iconv (2nd time)
+        if: needs.versions.outputs.quick != 'yes'
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         env:
           INCLUDE: ${{ steps.vars.outputs.include-env-var }}
@@ -742,6 +755,7 @@ jobs:
         run: make --jobs=$(nproc)
       -
         name: Check iconv (2nd time)
+        if: needs.versions.outputs.quick != 'yes'
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         env:
           INCLUDE: ${{ steps.vars.outputs.include-env-var }}
@@ -749,6 +763,7 @@ jobs:
         run: make --jobs=$(nproc) check
       -
         name: Install iconv (2nd time)
+        if: needs.versions.outputs.quick != 'yes'
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         env:
           INCLUDE: ${{ steps.vars.outputs.include-env-var }}
@@ -861,6 +876,7 @@ jobs:
         run: rm -rf installed
       -
         name: Check if iconv program load translations correctly
+        if: needs.versions.outputs.quick != 'yes'
         shell: pwsh
         run: |
           $env:LANGUAGE = 'it'
