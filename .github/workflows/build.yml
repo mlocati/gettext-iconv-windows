@@ -1083,6 +1083,18 @@ jobs:
             * iconv ${{ needs.versions.outputs.iconv-version-base }}
             * libcurl ${{ needs.versions.outputs.curl-version-default }}
             * libjson-c ${{ needs.versions.outputs.json-c-version-default }}
-            * CLDR ${{ needs.versions.outputs.cldr-version }}            
+            * CLDR ${{ needs.versions.outputs.cldr-version }}
 
           generate_release_notes: true
+      -
+        name: Final notes
+        run: |
+          cat >>"$GITHUB_STEP_SUMMARY" <<EOF
+          ### Release ${{ needs.versions.outputs.release-tag }} published
+
+          Next steps:
+
+          * [Submit to VirusTotal](https://github.com/${{ github.repository }}/actions/workflows/virustotal.yml)
+          * [Submit to WinGet](https://github.com/${{ github.repository }}/actions/workflows/winget.yml)
+
+          EOF
