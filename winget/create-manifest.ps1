@@ -198,6 +198,9 @@ $childPaths | ForEach-Object {
 }
 if (Test-Path -LiteralPath $manifestPath -PathType Container) {
     Remove-Item -LiteralPath $manifestPath -Recurse -Force
+    $versionOperation = 'updated'
+} else {
+    $versionOperation = 'created'
 }
 New-Item -Path $manifestPath -ItemType Directory -Force | Out-Null
 
@@ -208,4 +211,4 @@ New-Item -Path $manifestPath -ItemType Directory -Force | Out-Null
 @("# yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.$manifestVersion.schema.json$([environment]::NewLine)") + (ConvertTo-Yaml $installer ) |
     Out-File -FilePath (Join-Path -Path $manifestPath -ChildPath "$PackageIdentifier.installer.yaml") -Encoding UTF8 -NoNewline
 
-$manifestPath, $packageVersion
+$manifestPath, $packageVersion, $versionOperation

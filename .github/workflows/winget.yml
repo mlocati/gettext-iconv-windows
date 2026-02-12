@@ -102,11 +102,11 @@ jobs:
       -
         name: Create manifest
         if: steps.init.outputs.submit == 'yes'
-        id: create
+        id: create-manifest
         run: |
           Import-Module -Name .\tmp\powershell-yaml\ -Force
           $releaseData = Get-Content -LiteralPath tmp/release.json | ConvertFrom-Json
-          $manifestPath, $packageVersion = ./winget/create-manifest.ps1 ` -PackageIdentifier $env:WINGETPKGS_ID -ReleaseData $releaseData -ManifestsPath tmp/winget-pkgs/manifests
+          $manifestPath, $packageVersion, $versionOperation = ./winget/create-manifest.ps1 ` -PackageIdentifier $env:WINGETPKGS_ID -ReleaseData $releaseData -ManifestsPath tmp/winget-pkgs/manifests
           Write-Host "Manifest created at: $manifestPath"
           Get-ChildItem -LiteralPath $manifestPath -Recurse -File | ForEach-Object {
             Write-Host "::group::$($_.FullName)"
@@ -115,16 +115,17 @@ jobs:
           }
           "manifest-path=$manifestPath" | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
           "package-version=$packageVersion" | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+          "version-operation=$versionOperation" | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
       -
         name: Validate manifest
         if: steps.init.outputs.submit == 'yes'
-        run: winget validate --manifest '${{ steps.create.outputs.manifest-path }}'
+        run: winget validate --manifest '${{ steps.create-manifest.outputs.manifest-path }}'
       -
         name: Test installing with winget
         if: steps.init.outputs.submit == 'yes'
         run: |
           winget settings --enable LocalManifestFiles
-          winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --manifest '${{ steps.create.outputs.manifest-path }}'
+          winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --manifest '${{ steps.create-manifest.outputs.manifest-path }}'
       -
         name: Check changes
         id: check-changes
@@ -157,14 +158,45 @@ jobs:
           $env:GIT_SSH_COMMAND = 'ssh -o StrictHostKeyChecking=no'
           git config user.name 'GitHub Actions'
           git config user.email 'actions@github.com'
-          git add -A "manifests/$($env:WINGETPKGS_ID[0].ToString().ToLower())/$(($env:WINGETPKGS_ID -split '\.')[0])/"
-          git commit -m "New version: $($env:WINGETPKGS_ID) version ${{ steps.create.outputs.package-version }}" -m "Commit created by GitHub Action https://github.com/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)"
           $branchName = & git rev-parse --abbrev-ref HEAD
+          if (-not($?)) {
+            throw "Failed to get current branch name: $($Error[0])"
+          }
+          git add -A "manifests/$($env:WINGETPKGS_ID[0].ToString().ToLower())/$(($env:WINGETPKGS_ID -split '\.')[0])/"
+          if (-not($?)) {
+            throw "Failed to stage changes: $($Error[0])"
+          }
+          switch ('${{ steps.create-manifest.outputs.version-operation }}') {
+            'updated' {
+              $commitSubject = "Update version: $($env:WINGETPKGS_ID) version ${{ steps.create-manifest.outputs.package-version }}"
+            }
+            'created' {
+              $commitSubject = "New version: $($env:WINGETPKGS_ID) version ${{ steps.create-manifest.outputs.package-version }}"
+            }
+            default {
+              throw 'Unknown version operation: ${{ steps.create-manifest.outputs.version-operation }}'
+            }
+          }
+          git commit -m $commitSubject -m "Commit created by GitHub Action https://github.com/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)"
+          if (-not($?)) {
+            throw "Failed to commit changes: $($Error[0])"
+          }
           git push fork $branchName
           if (-not($?)) {
             throw "Failed to push changes to fork: $($Error[0])"
           }
-          Write-Host "Open a pull request:`nhttps://github.com/$($env:WINGETPKGS_REPO_UPSTREAM)/compare/$($env:WINGETPKGS_REPO_HEAD)...$($env:WINGETPKGS_REPO_FORK -replace '/',':'):$($branchName)?expand=1"
+          @"
+          ### Changes pushed to fork $($env:WINGETPKGS_REPO_FORK)
+
+          Branch created:
+          $branchName
+
+          View changes in fork:
+          https://github.com/$($env:WINGETPKGS_REPO_FORK)/commits/$branchName
+
+          Open pull request:
+          https://github.com/$($env:WINGETPKGS_REPO_UPSTREAM)/compare/$($env:WINGETPKGS_REPO_HEAD)...$($env:WINGETPKGS_REPO_FORK -replace '/',':'):$($branchName)?expand=1
+          "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY -Encoding utf8
       -
         name: Persist cache
         if: always() && steps.restore-cache.outputs.cache-hit != 'true'
