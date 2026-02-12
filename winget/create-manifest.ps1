@@ -26,8 +26,8 @@ function Get-ReleaseNotes {
     return $body -replace '\n',[environment]::NewLine
 }
 
-function New-InstallerEntry {
-    [OutputType([psobject])]
+function New-InstallerEntries {
+    [OutputType([psobject[]])]
     param(
         [Parameter(Mandatory = $true)]
         [ValidateSet('x86', 'x64', 'arm', 'arm64', 'neutral')]
@@ -47,17 +47,38 @@ function New-InstallerEntry {
         throw "Asset '$AssetName' does not have a valid sha256 digest in release '$($ReleaseData.tagName)'"
     }
     $sha256 = $matches[1]
-    return [ordered]@{
-        Architecture = $Architecture
-        InstallerUrl = $asset.url
-        InstallerSha256 = $sha256
-        AppsAndFeaturesEntries = @(
-            [ordered]@{
-                DisplayName = $DisplayName
-                ProductCode = 'gettext-iconv_is1'
+    return @(
+        [ordered]@{
+            Architecture = $Architecture
+            Scope = 'machine'
+            InstallerUrl = $asset.url
+            InstallerSha256 = $sha256
+            InstallerSwitches = [ordered]@{
+                Custom = '/ALLUSERS'
             }
-        )
-    }
+            AppsAndFeaturesEntries = @(
+                [ordered]@{
+                    DisplayName = $DisplayName
+                    ProductCode = 'gettext-iconv_is1'
+                }
+            )
+        }
+        [ordered]@{
+            Architecture = $Architecture
+            Scope = 'user'
+            InstallerUrl = $asset.url
+            InstallerSha256 = $sha256
+            InstallerSwitches = [ordered]@{
+                Custom = '/CURRENTUSER'
+            }
+            AppsAndFeaturesEntries = @(
+                [ordered]@{
+                    DisplayName = $DisplayName
+                    ProductCode = 'gettext-iconv_is1'
+                }
+            )
+        }
+    )
 }
 
 if ($ReleaseData.isPrerelease) {
@@ -185,7 +206,6 @@ $installer = [ordered]@{
     InstallerLocale = 'en-US'
     MinimumOSVersion = '6.1.7601' # Windows 7
     InstallerType = 'inno'
-    Scope = 'machine'
     InstallModes = @(
         'interactive'
         'silent'
@@ -198,10 +218,17 @@ $installer = [ordered]@{
     InstallationMetadata = [ordered]@{
         DefaultInstallLocation = '%ProgramFiles%\gettext-iconv'
     }
+    RepairBehavior = 'installer'
     Installers = @(
-        New-InstallerEntry -Architecture x86 -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-32.exe" -DisplayName "gettext $gettextVersion + iconv $iconvVersion - shared (32 bit)"
-        New-InstallerEntry -Architecture x64 -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-64.exe" -DisplayName "gettext $gettextVersion + iconv $iconvVersion - shared (64 bit)"
-    )
+        New-InstallerEntries `
+            -Architecture x86 `
+            -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-32.exe" `
+            -DisplayName "gettext $gettextVersion + iconv $iconvVersion - shared (32 bit)"
+        New-InstallerEntries `
+            -Architecture x64 `
+            -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-64.exe" `
+            -DisplayName "gettext $gettextVersion + iconv $iconvVersion - shared (64 bit)"
+    ).ForEach({ $_ })
     ManifestType = 'installer'
     ManifestVersion = $manifestVersion
 }

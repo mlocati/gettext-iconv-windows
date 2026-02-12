@@ -13,7 +13,9 @@ param (
     [ValidateSet('', 'no', 'test', 'production')]
     [string] $Sign,
     [Parameter(Mandatory = $true)]
-    [bool] $PublishRelease
+    [bool] $PublishRelease,
+    [Parameter(Mandatory = $false)]
+    [Nullable[bool]] $Quick = $null
 )
 
 $ErrorActionPreference = 'Stop'
@@ -33,6 +35,9 @@ function Get-OptionFromPullRequestCommitMessages()
     if (-not($OptionName -match '^[A-Za-z0-9\-_]+$')) {
         throw "Invalid OptionName: '$OptionName'"
     }
+    if ($env:GITHUB_EVENT_NAME -ne 'pull_request') {
+        return ''
+    }
     $searchOptionNames = @(
         $OptionName
         ($OptionName -replace '-', '')
@@ -40,23 +45,21 @@ function Get-OptionFromPullRequestCommitMessages()
     )
     if ($null -eq $script:pullRequestCommitMessages) {
         $script:pullRequestCommitMessages = @()
-        if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
-            if (-not(Test-Path -LiteralPath $env:GITHUB_WORKSPACE -PathType Container)) {
-                throw "The GitHub Action path '$env:GITHUB_WORKSPACE' does not exist"
-            }
-            $baseRef = $env:GITHUB_BASE_REF
-            $headRef = $env:GITHUB_HEAD_REF
-            if (-not $baseRef -or -not $headRef) {
-                throw "Invalid GitHub Action refs: base='$baseRef', head='$headRef'"
-            }
-            $mergeBase = git -C "$env:GITHUB_WORKSPACE" merge-base "origin/$baseRef" "origin/$headRef"
-            if (-not $mergeBase) {
-                throw "Unable to find the merge base between 'origin/$baseRef' and 'origin/$headRef'"
-            }
-            $script:pullRequestCommitMessages = git -C "$env:GITHUB_WORKSPACE" log "$mergeBase..origin/$headRef" --pretty=format:'%s%n%b%n'
-            if (-not $script:pullRequestCommitMessages) {
-                throw "Unable to get the commit messages between '$mergeBase' and 'origin/$headRef'"
-            }
+        if (-not(Test-Path -LiteralPath $env:GITHUB_WORKSPACE -PathType Container)) {
+            throw "The GitHub Action path '$env:GITHUB_WORKSPACE' does not exist"
+        }
+        $baseRef = $env:GITHUB_BASE_REF
+        $headRef = $env:GITHUB_HEAD_REF
+        if (-not $baseRef -or -not $headRef) {
+            throw "Invalid GitHub Action refs: base='$baseRef', head='$headRef'"
+        }
+        $mergeBase = git -C "$env:GITHUB_WORKSPACE" merge-base "origin/$baseRef" "origin/$headRef"
+        if (-not $mergeBase) {
+            throw "Unable to find the merge base between 'origin/$baseRef' and 'origin/$headRef'"
+        }
+        $script:pullRequestCommitMessages = git -C "$env:GITHUB_WORKSPACE" log "$mergeBase..origin/$headRef" --pretty=format:'%s%n%b%n'
+        if (-not $script:pullRequestCommitMessages) {
+            throw "Unable to get the commit messages between '$mergeBase' and 'origin/$headRef'"
         }
     }
     foreach ($message in $script:pullRequestCommitMessages) {
@@ -71,6 +74,26 @@ function Get-OptionFromPullRequestCommitMessages()
         }
     }
     return ''
+}
+
+function Get-BoolOptionFromPullRequestCommitMessages()
+{
+    [OutputType([Nullable[bool]])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $OptionName
+    )
+    $value = Get-OptionFromPullRequestCommitMessages -OptionName $OptionName
+    if ($value -eq '') {
+        return $null
+    }
+    if ($value -match '^(true|yes|y|on|1)$') {
+        return $true
+    }
+    if ($value -match '^(false|no|n|off|0)$') {
+        return $false
+    }
+    throw "Invalid boolean value for option '$OptionName': '$value'"
 }
 
 class GnuUrlPrefixer
@@ -244,6 +267,15 @@ if ($Sign) {
 if ($PublishRelease -and $Sign -ne 'production') {
     throw 'In order to publish a release, the -Sign argument must be set to "production".'
 }
+if ($null -eq $Quick) {
+    $Quick = Get-BoolOptionFromPullRequestCommitMessages -OptionName 'quick'
+    if ($null -eq $Quick) {
+        $Quick = $false
+    }
+}
+if ($Quick -and $PublishRelease) {
+    throw 'The -Quick option cannot be used when publishing a release.'
+}
 
 
 # Determine source URLs
@@ -354,6 +386,7 @@ Add-GithubOutput -Name 'signpath-artifactconfiguration-files' -Value $signpathAr
 Add-GithubOutput -Name 'signatures-canbeinvalid' -Value $(if ($signaturesCanBeInvalid) { 'yes' } else { 'no' })
 Add-GithubOutput -Name 'release-tag' -Value $releaseTag
 Add-GithubOutput -Name 'is-prerelease' -Value $(if ($isPrerelease) { 'yes' } else { 'no' })
+Add-GithubOutput -Name 'quick' -Value $(if ($Quick) { 'yes' } else { 'no' })
 
 Write-Output '## Outputs'
 Get-GitHubOutputs

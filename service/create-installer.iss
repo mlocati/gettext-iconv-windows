@@ -1,38 +1,49 @@
-// Template file used by the create-installer.ps1 script
+// File used by the create-installer.ps1 script
 
+#include "create-installer.isi"
+// Must have:
 // #define MyVersionShownName "<shared|static> (<32|64> bit)"
 // #define MyVersionCodeName "<shared|static>-<32|64>"
 // #define MyIs64bit <true|false>
 // #define MyGettextVer "<gettext version>"
 // #define MyIconvVer "<iconv version>"
 // #define MyCompiledFolderPath "<path>"
+// #define MyOutputFolderPath "<path>"
+// #define MyLanguages "Entries of the [Languages] section"
 
 [Setup]
 AppId=gettext-iconv
 AppName="gettext + iconv"
 AppVerName="gettext {#MyGettextVer} + iconv {#MyIconvVer} - {#MyVersionShownName}"
-DefaultDirName={commonpf}\gettext-iconv
+WizardStyle=modern dynamic
+DefaultDirName={autopf}\gettext-iconv
 AppPublisher=Michele Locati
 AppPublisherURL=https://github.com/mlocati
-AppSupportURL=https://github.com/mlocati/gettext-iconv-windows
+AppSupportURL=https://github.com/mlocati/gettext-iconv-windows/issues
 AppUpdatesURL=https://github.com/mlocati/gettext-iconv-windows/releases
 #if MyIs64bit
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 #endif
-ChangesEnvironment=yes
+ChangesEnvironment=WizardIsTaskSelected('modifypath') or WizardIsTaskSelected('setenvcldr')
+PrivilegesRequiredOverridesAllowed=commandline dialog
 Compression=lzma2/max
 LicenseFile={#MyCompiledFolderPath}\license.txt
-OutputDir=setup
+OutputDir={#MyOutputFolderPath}
 OutputBaseFilename=gettext{#MyGettextVer}-iconv{#MyIconvVer}-{#MyVersionCodeName}
 VersionInfoProductTextVersion=1.0
+ShowLanguageDialog=auto
 
 [Files]
 Source: "{#MyCompiledFolderPath}\*.*"; DestDir: "{app}"; Flags: recursesubdirs
 
 [Tasks]
-Name: modifypath; Description: &Add application directory to your environmental &PATH
-Name: setenvcldr; Description: Set GETTEXTCLDRDIR environment variable (useful for msginit)
+Name: modifypath; Description: "{cm:ModifyPath}"
+Name: setenvcldr; Description: "{cm:SetEnvCLDR}"
+
+[Languages]
+{#MyLanguages}
+
 
 [Code]
 #ifdef UNICODE
@@ -46,7 +57,6 @@ const
 	TASK_SETENVCLDR = 'setenvcldr';
 	TASK_MODPATH_TYPE = 'system';
 	TASK_SETENVCLDR_NAME = 'GETTEXTCLDRDIR';
-	TASK_SETENVCLDR_TYPE = 'system';
 
 function SetEnvironmentVariable(lpName: string; lpValue: string): BOOL;
 	external 'SetEnvironmentVariable{#AW}@kernel32.dll stdcall';
@@ -74,7 +84,7 @@ var
 	regroot:	Integer;
 	regpath:	String;
 begin
-	if TASK_SETENVCLDR_TYPE = 'system' then begin
+	if IsAdminInstallMode then begin
 		regroot := HKEY_LOCAL_MACHINE;
 		regpath := 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
 	end else begin
@@ -97,8 +107,6 @@ var
 	newpath:	String;
 	updatepath:	Boolean;
 	pathArr:	TArrayOfString;
-	aExecFile:	String;
-	aExecArr:	TArrayOfString;
 	i, d:		Integer;
 	pathdir:	TArrayOfString;
 	regroot:	Integer;
@@ -106,8 +114,7 @@ var
 
 begin
 	// Get constants from main script and adjust behavior accordingly
-	// TASK_MODPATH_TYPE MUST be 'system' or 'user'; force 'user' if invalid
-	if TASK_MODPATH_TYPE = 'system' then begin
+	if IsAdminInstallMode then begin
 		regroot := HKEY_LOCAL_MACHINE;
 		regpath := 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
 	end else begin
@@ -120,78 +127,41 @@ begin
 	for d := 0 to GetArrayLength(pathdir)-1 do begin
 		updatepath := true;
 
-		// Modify WinNT path
-		if UsingWinNT() = true then begin
+    // Get current path, split into an array
+    RegQueryStringValue(regroot, regpath, 'Path', oldpath);
+    oldpath := oldpath + ';';
+    i := 0;
 
-			// Get current path, split into an array
-			RegQueryStringValue(regroot, regpath, 'Path', oldpath);
-			oldpath := oldpath + ';';
-			i := 0;
+    while (Pos(';', oldpath) > 0) do begin
+      SetArrayLength(pathArr, i+1);
+      pathArr[i] := Copy(oldpath, 0, Pos(';', oldpath)-1);
+      oldpath := Copy(oldpath, Pos(';', oldpath)+1, Length(oldpath));
+      i := i + 1;
 
-			while (Pos(';', oldpath) > 0) do begin
-				SetArrayLength(pathArr, i+1);
-				pathArr[i] := Copy(oldpath, 0, Pos(';', oldpath)-1);
-				oldpath := Copy(oldpath, Pos(';', oldpath)+1, Length(oldpath));
-				i := i + 1;
+      // Check if current directory matches app dir
+      if pathdir[d] = pathArr[i-1] then begin
+        // if uninstalling, remove dir from path
+        if IsUninstaller() = true then begin
+          continue;
+        // if installing, flag that dir already exists in path
+        end else begin
+          updatepath := false;
+        end;
+      end;
 
-				// Check if current directory matches app dir
-				if pathdir[d] = pathArr[i-1] then begin
-					// if uninstalling, remove dir from path
-					if IsUninstaller() = true then begin
-						continue;
-					// if installing, flag that dir already exists in path
-					end else begin
-						updatepath := false;
-					end;
-				end;
+      // Add current directory to new path
+      if i = 1 then begin
+        newpath := pathArr[i-1];
+      end else begin
+        newpath := newpath + ';' + pathArr[i-1];
+      end;
+    end;
 
-				// Add current directory to new path
-				if i = 1 then begin
-					newpath := pathArr[i-1];
-				end else begin
-					newpath := newpath + ';' + pathArr[i-1];
-				end;
-			end;
-
-			// Append app dir to path if not already included
-			if (IsUninstaller() = false) AND (updatepath = true) then
-				newpath := newpath + ';' + pathdir[d];
-			// Write new path
-			RegWriteStringValue(regroot, regpath, 'Path', newpath);
-
-		// Modify Win9x path
-		end else begin
-
-			// Convert to shortened dirname
-			pathdir[d] := GetShortName(pathdir[d]);
-
-			// If autoexec.bat exists, check if app dir already exists in path
-			aExecFile := 'C:\AUTOEXEC.BAT';
-			if FileExists(aExecFile) then begin
-				LoadStringsFromFile(aExecFile, aExecArr);
-				for i := 0 to GetArrayLength(aExecArr)-1 do begin
-					if IsUninstaller() = false then begin
-						// If app dir already exists while installing, skip add
-						if (Pos(pathdir[d], aExecArr[i]) > 0) then
-							updatepath := false;
-							break;
-					end else begin
-						// If app dir exists and = what we originally set, then delete at uninstall
-						if aExecArr[i] = 'SET PATH=%PATH%;' + pathdir[d] then
-							aExecArr[i] := '';
-					end;
-				end;
-			end;
-
-			// If app dir not found, or autoexec.bat didn't exist, then (create and) append to current path
-			if (IsUninstaller() = false) AND (updatepath = true) then begin
-				SaveStringToFile(aExecFile, #13#10 + 'SET PATH=%PATH%;' + pathdir[d], True);
-
-			// If uninstalling, write the full autoexec out
-			end else begin
-				SaveStringsToFile(aExecFile, aExecArr, False);
-			end;
-		end;
+    // Append app dir to path if not already included
+    if (IsUninstaller() = false) AND (updatepath = true) then
+      newpath := newpath + ';' + pathdir[d];
+    // Write new path
+    RegWriteStringValue(regroot, regpath, 'Path', newpath);
 	end;
 end;
 
@@ -254,14 +224,5 @@ begin
 				end;
 			end;
 		end;
-	end;
-end;
-
-function NeedRestart(): Boolean;
-begin
-	if (WizardIsTaskSelected(TASK_MODPATH) or WizardIsTaskSelected(TASK_SETENVCLDR)) and not UsingWinNT() then begin
-		Result := True;
-	end else begin
-		Result := False;
 	end;
 end;
