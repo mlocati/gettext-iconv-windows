@@ -9,6 +9,7 @@
 // #define MyIconvVer "<iconv version>"
 // #define MyCompiledFolderPath "<path>"
 // #define MyOutputFolderPath "<path>"
+// #define MyLanguages "Entries of the [Languages] section"
 
 [Setup]
 AppId=gettext-iconv
@@ -31,13 +32,18 @@ LicenseFile={#MyCompiledFolderPath}\license.txt
 OutputDir={#MyOutputFolderPath}
 OutputBaseFilename=gettext{#MyGettextVer}-iconv{#MyIconvVer}-{#MyVersionCodeName}
 VersionInfoProductTextVersion=1.0
+ShowLanguageDialog=auto
 
 [Files]
 Source: "{#MyCompiledFolderPath}\*.*"; DestDir: "{app}"; Flags: recursesubdirs
 
 [Tasks]
-Name: modifypath; Description: &Add application directory to the &PATH environment variable
-Name: setenvcldr; Description: Set GETTEXTCLDRDIR environment variable (useful for msginit)
+Name: modifypath; Description: "{cm:ModifyPath}"
+Name: setenvcldr; Description: "{cm:SetEnvCLDR}"
+
+[Languages]
+{#MyLanguages}
+
 
 [Code]
 #ifdef UNICODE

@@ -35,6 +35,23 @@ function GetIssSourceFile()
     $PSCommandPath -replace '\.[^.]+$','.iss'
 }
 
+function Format-IssLanguageFile {
+    [OutputType([string])]
+    param (
+        [Parameter(Mandatory = $true)]
+        [System.IO.FileInfo] $LanguageFile
+    )
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($LanguageFile.Name)
+    if ($baseName -eq 'default') {
+        $languageCode = 'default'
+        $InnosetupLanguagefile = 'compiler:Default.isl'
+    } else {
+        $languageCode, $InnosetupLanguagefile = $baseName -split '\.',2
+        $InnosetupLanguagefile = "compiler:Languages\$InnosetupLanguagefile.isl"
+    }
+    return "  + NewLine + `"Name: `"`"$languageCode`"`"; MessagesFile: `"`"$InnosetupLanguagefile,$($LanguageFile.FullName)`"`"`" \"
+}
+
 function Initialize-Iss()
 {
     [OutputType([string])]
@@ -52,6 +69,20 @@ function Initialize-Iss()
     "#define MyIconvVer `"$IconvVersion`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
     "#define MyCompiledFolderPath `"$SourceDirectory`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
     "#define MyOutputFolderPath `"$OutputDirectory`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
+    '#define MyLanguages "" \' | Add-Content -LiteralPath $includeFile -Encoding utf8
+    $languageFiles = Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath "create-installer\*.isl") -File
+    $defaultLanguageFile = $languageFiles | Where-Object -Property Name -EQ 'default.isl'
+    if (-not $defaultLanguageFile) {
+        throw "Default language file not found"
+    }
+    Format-IssLanguageFile -LanguageFile $defaultLanguageFile | Add-Content -LiteralPath $includeFile -Encoding utf8
+    foreach ($languageFile in $languageFiles) {
+        if ($languageFile -ne $defaultLanguageFile) {
+            Format-IssLanguageFile -LanguageFile $languageFile | Add-Content -LiteralPath $includeFile -Encoding utf8
+        }
+    }
+    '  + ""' | Add-Content -LiteralPath $includeFile -Encoding utf8
+
     return $templateFile
 }
 
