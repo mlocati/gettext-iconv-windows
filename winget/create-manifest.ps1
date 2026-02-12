@@ -20,7 +20,8 @@ function Get-ReleaseNotes {
     )
     $body = $ReleaseData.body.Trim()
     $body = ($body -replace '\r\n',"`n") -replace '\r',"`n"
-    $body = $body -replace '(?ms)\s*<!--\s*virustotal\s*-->.*?<!--\s*/virustotal\s*-->\s*',"`n"
+    $body = $body -replace '(?ms)\s*<!--\s*virustotal\s*-->.*?<!--\s*/virustotal\s*-->\s*',"`n`n"
+    $body = $body.TrimEnd() + "`n"
 
     return $body -replace '\n',[environment]::NewLine
 }

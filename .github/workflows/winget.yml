@@ -109,8 +109,8 @@ jobs:
           $manifestPath, $packageVersion, $versionOperation = ./winget/create-manifest.ps1 ` -PackageIdentifier $env:WINGETPKGS_ID -ReleaseData $releaseData -ManifestsPath tmp/winget-pkgs/manifests
           Write-Host "Manifest created at: $manifestPath"
           Get-ChildItem -LiteralPath $manifestPath -Recurse -File | ForEach-Object {
-            Write-Host "::group::$($_.FullName)"
-            Get-Content -LiteralPath $_.FullName | Write-Host
+            Write-Host "::group::$($_.Name)"
+            Get-Content -LiteralPath $_.FullName -Raw | Write-Host
             Write-Host '::endgroup::'
           }
           "manifest-path=$manifestPath" | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
