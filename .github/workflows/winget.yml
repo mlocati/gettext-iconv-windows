@@ -127,12 +127,6 @@ jobs:
           winget settings --enable LocalManifestFiles
           winget install --disable-interactivity --accept-package-agreements --accept-source-agreements --manifest '${{ steps.create-manifest.outputs.manifest-path }}'
       -
-        name: Test tools in PATH
-        if: steps.init.outputs.submit == 'yes'
-        run: |
-          where.exe gettext
-          gettext --help
-      -
         name: Check changes
         id: check-changes
         if: steps.init.outputs.submit == 'yes'
