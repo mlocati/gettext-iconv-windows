@@ -181,6 +181,10 @@ jobs:
           if (-not($?)) {
             throw "Failed to commit changes: $($Error[0])"
           }
+          $commitHash = git rev-parse HEAD
+          if (-not($?)) {
+            throw "Failed to get commit hash: $($Error[0])"
+          }
           git push fork $branchName
           if (-not($?)) {
             throw "Failed to push changes to fork: $($Error[0])"
@@ -190,6 +194,9 @@ jobs:
 
           Branch created:
           $branchName
+
+          Commit hash:
+          $commitHash
 
           View changes in fork:
           https://github.com/$($env:WINGETPKGS_REPO_FORK)/commits/$branchName
