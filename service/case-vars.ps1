@@ -29,7 +29,9 @@ param (
     [ValidateLength(1, [int]::MaxValue)]
     [string] $GettextVersion,
     [Parameter(Mandatory = $false)]
-    [string] $SignpathSigningPolicyDefault
+    [string] $SignpathSigningPolicyDefault,
+    [Parameter(Mandatory = $false)]
+    [string] $VCPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -88,9 +90,6 @@ $cygwinPackages = @(
 $cygwinPath = @(
     "$cygwinInstalledPath/bin"
 )
-
-$includeEnvVar = ''
-$libEnvVar = ''
 
 if ($Compiler -eq 'gcc') {
     $cygwinPackages += @(
@@ -152,17 +151,13 @@ if ($Compiler -eq 'gcc') {
     $SignpathSigningPolicy = $SignpathSigningPolicyDefault
     $CollectPrograms = $true
 } elseif ($Compiler -eq 'msvc') {
-    $vcvars = [VCVars]::new($Bits)
     $cygwinPackages += @(
         "mingw64-$mingwArchitecture-binutils" # iconv requires windres
         "mingw64-$mingwArchitecture-gcc-core" # windres requires gcc
     )
-
-    foreach ($p in $vcvars.GetPathDirs()) {
+    foreach ($p in ($VCPath -split ';')) {
         $cygwinPath += ConvertTo-CygwinPath -WindowsPath $p
     }
-    $includeEnvVar = $vcvars.GetIncludeDirs() -join ';'
-    $libEnvVar = $vcvars.GetLibDirs() -join ';'
     $cc = "'$cygwinToolsPath/compile cl -nologo'"
     $cxx = "'$cygwinToolsPath/compile cl -nologo'"
     $ld = 'link'
@@ -468,8 +463,6 @@ Add-GithubOutput -Name 'mingw-architecture' -Value $mingwArchitecture
 Add-GithubOutput -Name 'mingw-host' -Value $mingwHost
 Add-GithubOutput -Name 'cldr-plural-works' -Value $(if ($cldrPluralWorks) { 'yes' } else { 'no' })
 Add-GithubOutput -Name 'cldr-simplify-plurals-xml' -Value $(if ($cldrSimplifyPluralsXml) { 'yes' } else { 'no' })
-Add-GithubOutput -Name 'include-env-var' -Value $includeEnvVar
-Add-GithubOutput -Name 'lib-env-var' -Value $libEnvVar
 Add-GithubOutput -Name 'make-install-argument' -Value $makeInstallArgument
 Add-GithubOutput -Name 'iconv-configure-args' -Value $(Join-Arguments $iconvConfigureArgs)
 Add-GithubOutput -Name 'curl-version' -Value $CurlVersion

@@ -350,6 +350,17 @@ jobs:
         name: Checkout
         uses: actions/checkout@v6
       -
+        name: Detect Visual Studio
+        if: matrix.compiler == 'msvc'
+        id: vcvars
+        uses: mlocati/inspect-visualstudio@v1
+        with:
+          architecture: ${{ matrix.bits }}
+          windows-paths: |
+            INCLUDE
+            LIB
+            PATH
+      -
         name: Create directory structure
         shell: pwsh
         run: |
@@ -376,6 +387,8 @@ jobs:
         name: Set variables
         id: vars
         shell: pwsh
+        env:
+          VC_PATH: ${{ steps.vcvars.outputs.path }}
         run: >
           ./service/case-vars.ps1
           -Bits ${{ matrix.bits }}
@@ -389,6 +402,7 @@ jobs:
           -JsonCVersionDefault '${{ needs.versions.outputs.json-c-version-default }}'
           -GettextVersion '${{ needs.versions.outputs.gettext-version }}'
           -SignpathSigningPolicyDefault '${{ needs.versions.outputs.signpath-signing-policy-default }}'
+          -VCPath $env:VC_PATH
       -
         name: Install Cygwin
         uses: cygwin/cygwin-install-action@v6
@@ -534,8 +548,8 @@ jobs:
         id: iconv-configure
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: |
           mkdir build
           cd build
@@ -544,23 +558,23 @@ jobs:
         name: Compile iconv (1st time)
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc)
       -
         name: Check iconv (1st time)
         if: needs.versions.outputs.quick != 'yes'
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) check
       -
         name: Install iconv (1st time)
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Configure curl
@@ -568,8 +582,8 @@ jobs:
         id: curl-configure
         working-directory: src\curl-${{ steps.vars.outputs.curl-version }}
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: |
           mkdir build
           cd build
@@ -587,24 +601,24 @@ jobs:
         if: steps.vars.outputs.curl-version
         working-directory: src\curl-${{ steps.vars.outputs.curl-version }}\build\lib
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Install curl - include
         if: steps.vars.outputs.curl-version
         working-directory: src\curl-${{ steps.vars.outputs.curl-version }}\build\include
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Prepare JSON-C
         if: steps.vars.outputs.json-c-version
         working-directory: src\json-c-${{ steps.vars.outputs.json-c-version }}
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: |
           mkdir build
           cd build
@@ -615,24 +629,24 @@ jobs:
         if: steps.vars.outputs.json-c-version
         working-directory: src\json-c-${{ steps.vars.outputs.json-c-version }}\build
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) all
       -
         name: Install JSON-C
         if: steps.vars.outputs.json-c-version
         working-directory: src\json-c-${{ steps.vars.outputs.json-c-version }}\build
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make install/strip
       -
         name: Configure gettext
         id: gettext-configure
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: |
           mkdir build
           cd build
@@ -647,89 +661,89 @@ jobs:
         name: Compile gettext/gnulib-local
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gnulib-local
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc)
       -
         name: Check gettext/gnulib-local
         if: needs.versions.outputs.quick != 'yes'
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gnulib-local
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) check
       -
         name: Install gettext/gnulib-local
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gnulib-local
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Compile gettext/gettext-runtime
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-runtime
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc)
       -
         name: Check gettext/gettext-runtime
         if: needs.versions.outputs.quick != 'yes'
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-runtime
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) check
       -
         name: Install gettext/gettext-runtime
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-runtime
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Compile gettext/libtextstyle
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\libtextstyle
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc)
       -
         name: Check gettext/libtextstyle
         if: needs.versions.outputs.quick != 'yes'
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\libtextstyle
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) check
       -
         name: Install gettext/libtextstyle
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\libtextstyle
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Compile gettext/gettext-tools
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-tools
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc)
       -
         name: Check gettext/gettext-tools
         if: needs.versions.outputs.quick != 'yes'
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-tools
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: XFAIL_TESTS='${{ steps.vars.outputs.gettext-xfail-gettext-tools }}' make --jobs=$(nproc) check
       -
         name: Install gettext/gettext-tools
         working-directory: src\gettext-${{ needs.versions.outputs.gettext-version }}\build\gettext-tools
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         # We need to rebuild iconv because it depends on gettext's libintl in order to be localizable
@@ -737,8 +751,8 @@ jobs:
         if: needs.versions.outputs.quick != 'yes'
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: |
           rm -rf build
           mkdir build
@@ -750,24 +764,24 @@ jobs:
         if: needs.versions.outputs.quick != 'yes'
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc)
       -
         name: Check iconv (2nd time)
         if: needs.versions.outputs.quick != 'yes'
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) check
       -
         name: Install iconv (2nd time)
         if: needs.versions.outputs.quick != 'yes'
         working-directory: src\libiconv-${{ needs.versions.outputs.iconv-version }}\build
         env:
-          INCLUDE: ${{ steps.vars.outputs.include-env-var }}
-          LIB: ${{ steps.vars.outputs.lib-env-var }}
+          INCLUDE: ${{ steps.vcvars.outputs.include }}
+          LIB: ${{ steps.vcvars.outputs.lib }}
         run: make --jobs=$(nproc) ${{ steps.vars.outputs.make-install-argument }}
       -
         name: Finalize install dir
