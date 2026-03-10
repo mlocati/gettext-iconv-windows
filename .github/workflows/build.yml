@@ -1037,6 +1037,7 @@ jobs:
           name: ${{ needs.versions.outputs.release-tag }}
           tag_name: ${{ needs.versions.outputs.release-tag }}
           files: ${{ steps.build-assets-list.outputs.assets }}
+          preserve_order: true
           fail_on_unmatched_files: true
           prerelease: ${{ needs.versions.outputs.is-prerelease == 'yes' && 'true' || 'false'  }}
           make_latest: ${{ needs.versions.outputs.is-prerelease == 'yes' && 'false' || 'true'  }}
