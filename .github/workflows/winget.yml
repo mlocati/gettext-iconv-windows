@@ -106,7 +106,7 @@ jobs:
         run: |
           Import-Module -Name .\tmp\powershell-yaml\ -Force
           $releaseData = Get-Content -LiteralPath tmp/release.json | ConvertFrom-Json
-          $manifestPath, $packageVersion, $versionOperation = ./winget/create-manifest.ps1 ` -PackageIdentifier $env:WINGETPKGS_ID -ReleaseData $releaseData -ManifestsPath tmp/winget-pkgs/manifests
+          $manifestPath, $packageVersion, $versionOperation = ./service/create-winget-manifest.ps1 ` -PackageIdentifier $env:WINGETPKGS_ID -ReleaseData $releaseData -ManifestsPath tmp/winget-pkgs/manifests
           Write-Host "Manifest created at: $manifestPath"
           Get-ChildItem -LiteralPath $manifestPath -Recurse -File | ForEach-Object {
             Write-Host "::group::$($_.Name)"
