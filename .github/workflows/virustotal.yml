@@ -33,8 +33,17 @@ jobs:
           printf 'Using tag: %s\n' "$TAG_NAME"
           echo "tag-name=$TAG_NAME" >>"$GITHUB_OUTPUT"
       -
+        name: Checkout
+        if: env.HAS_VT_API_KEY == 'true'
+        uses: actions/checkout@v6
+      -
+        name: Create assets directory
+        if: env.HAS_VT_API_KEY == 'true'
+        run: mkdir release-assets
+      -
         name: Download release assets
         if: env.HAS_VT_API_KEY == 'true'
+        working-directory: release-assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -45,6 +54,15 @@ jobs:
           echo 'Assets downloaded:'
           ls -l
       -
+        name: Build assets list
+        if: env.HAS_VT_API_KEY == 'true'
+        id: build-assets-list
+        run: |
+          printf 'assets<<EOF\n' >>"$GITHUB_OUTPUT"
+          ./service/list-assets.sh release-assets >>"$GITHUB_OUTPUT"
+          printf 'EOF\n' >>"$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+      -
         name: Submit to VirusTotal
         if: env.HAS_VT_API_KEY == 'true'
         id: submit
@@ -53,9 +71,7 @@ jobs:
           vt_api_key: ${{ secrets.VIRUSTOTAL_API_KEY }}
           update_release_body: false
           request_rate: 4
-          files: |
-            *.exe
-            *.zip
+          files: ${{ steps.build-assets-list.outputs.assets }}
       -
         name: Update release body with VirusTotal report
         if: steps.submit.outputs.analysis

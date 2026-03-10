@@ -1088,22 +1088,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
+        name: Checkout
+        uses: actions/checkout@v6
+      -
         name: Create assets directory
-        run: mkdir -p assets
+        run: mkdir release-assets
       -
         name: Download assets
         uses: actions/download-artifact@v7
         with:
-          path: assets
+          path: release-assets
           pattern: assets-*
           merge-multiple: true
+      -
+        name: Build assets list
+        id: build-assets-list
+        run: |
+          printf 'assets<<EOF\n' >>"$GITHUB_OUTPUT"
+          ./service/list-assets.sh release-assets >>"$GITHUB_OUTPUT"
+          printf 'EOF\n' >>"$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
       -
         name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ needs.versions.outputs.release-tag }}
           tag_name: ${{ needs.versions.outputs.release-tag }}
-          files: assets/*
+          files: ${{ steps.build-assets-list.outputs.assets }}
           fail_on_unmatched_files: true
           prerelease: ${{ needs.versions.outputs.is-prerelease == 'yes' && 'true' || 'false'  }}
           make_latest: ${{ needs.versions.outputs.is-prerelease == 'yes' && 'false' || 'true'  }}
