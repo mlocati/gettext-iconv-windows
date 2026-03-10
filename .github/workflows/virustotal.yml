@@ -112,7 +112,8 @@ jobs:
                   core.warning(`Skipping invalid analysis line: ${analysisLine}`);
                   return;
                 }
-                const [_, filename, analysisURL] = match;
+                const [_, absoluteFilePath, analysisURL] = match;
+                const filename = absoluteFilePath.split(/[/\\]/).pop();
                 detailsLines.push(`* [${filename}](${analysisURL})`);
               });
               if (detailsLines.length === 0) {
