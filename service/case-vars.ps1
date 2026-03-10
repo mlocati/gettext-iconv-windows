@@ -31,7 +31,7 @@ param (
     [Parameter(Mandatory = $false)]
     [string] $SignpathSigningPolicyDefault,
     [Parameter(Mandatory = $false)]
-    [string] $VCPath
+    [string] $MSVCPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -155,7 +155,7 @@ if ($Compiler -eq 'gcc') {
         "mingw64-$mingwArchitecture-binutils" # iconv requires windres
         "mingw64-$mingwArchitecture-gcc-core" # windres requires gcc
     )
-    foreach ($p in ($VCPath -split ';')) {
+    foreach ($p in ($MSVCPath -split ';')) {
         $cygwinPath += ConvertTo-CygwinPath -WindowsPath $p
     }
     $cc = "'$cygwinToolsPath/compile cl -nologo'"
