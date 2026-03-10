@@ -119,7 +119,10 @@ jobs:
       -
         name: Validate manifest
         if: steps.init.outputs.submit == 'yes'
-        run: winget validate --manifest '${{ steps.create-manifest.outputs.manifest-path }}'
+        # We need --ignore-warnings because winget validate doesn't yet support the new 1.12.0 manifest version: we have these warnings:
+        # Manifest validation succeeded with warnings.
+        # Manifest Warning: The schema header URL does not match the expected pattern. Value: # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json Line: 1, Column: 25 File: mlocati.GetText.installer.yaml
+        run: winget validate --manifest '${{ steps.create-manifest.outputs.manifest-path }}' --ignore-warnings --disable-interactivity
       -
         name: Test installing with winget
         if: steps.init.outputs.submit == 'yes'

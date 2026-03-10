@@ -85,7 +85,7 @@ if ($ReleaseData.isPrerelease) {
     throw "Release '$($ReleaseData.tagName)' is a pre-release!"
 }
 
-$manifestVersion = '1.10.0'
+$manifestVersion = '1.12.0'
 
 if (-not($ReleaseData.tagName -match '^v(\d.+?)-v(\d.+?)(-r(\d+))?$')) {
     throw "Invalid tag name: $($ReleaseData.tagName)"
@@ -99,7 +99,7 @@ if ($null -ne $revision) {
     $packageVersion += "+r$revision"
 }
 
-# https://aka.ms/winget-manifest.version.1.10.0.schema.json
+# https://aka.ms/winget-manifest.version.1.12.0.schema.json
 $version = [ordered]@{
     PackageIdentifier = $PackageIdentifier
     PackageVersion = $packageVersion
@@ -108,7 +108,7 @@ $version = [ordered]@{
     ManifestVersion = $manifestVersion
 }
 
-# https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+# https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
 $defaultLocale = [ordered]@{
     PackageIdentifier = $PackageIdentifier
     PackageVersion = $packageVersion
@@ -199,7 +199,7 @@ The package comes with Unicode CLDR data, which is used by msginit to create tra
     ManifestVersion = $manifestVersion
 }
 
-# https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+# https://aka.ms/winget-manifest.installer.1.12.0.schema.json
 $installer = [ordered]@{
     PackageIdentifier = $PackageIdentifier
     PackageVersion = $packageVersion
