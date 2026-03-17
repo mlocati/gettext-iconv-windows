@@ -13,11 +13,11 @@ permissions:
 
 env:
   POWERSHELLYAMLVERSION: 0.4.12
-  WINGETPKGS_ID: mlocati.GetText
-  WINGETPKGS_REPO_UPSTREAM: microsoft/winget-pkgs
-  WINGETPKGS_REPO_HEAD: master
-  WINGETPKGS_REPO_FORK: mlocati-forks/winget-pkgs
-  WINGETPKGS_REPO_FORK_HADEPLOYKEY: ${{ secrets.WINGET_PKGS_FORK_DEPLOYKEY != '' }}
+  WINGET_PKGS_PACKAGE_ID: mlocati.GetText
+  WINGET_PKGS_REPO_UPSTREAM: microsoft/winget-pkgs
+  WINGET_PKGS_REPO_HEAD: master
+  WINGET_PKGS_REPO_FORK: mlocati-forks/winget-pkgs
+  WINGET_PKGS_REPO_FORK_HAS_DEPLOYKEY: ${{ secrets.WINGET_PKGS_FORK_DEPLOYKEY != '' }}
 
 defaults:
   run:
@@ -30,11 +30,11 @@ jobs:
     steps:
       -
         name: Checkout
-        if: env.WINGETPKGS_REPO_FORK_HADEPLOYKEY == 'true'
+        if: env.WINGET_PKGS_REPO_FORK_HAS_DEPLOYKEY == 'true'
         uses: actions/checkout@v6
       -
         name: Create directory structure
-        if: env.WINGETPKGS_REPO_FORK_HADEPLOYKEY == 'true'
+        if: env.WINGET_PKGS_REPO_FORK_HAS_DEPLOYKEY == 'true'
         run: |
           New-Item -ItemType Directory -Force -ErrorAction Stop -Path @(
             'downloads'
@@ -42,7 +42,7 @@ jobs:
           ) | Out-Null
       -
         name: Restore cache
-        if: env.WINGETPKGS_REPO_FORK_HADEPLOYKEY == 'true'
+        if: env.WINGET_PKGS_REPO_FORK_HAS_DEPLOYKEY == 'true'
         id: restore-cache
         uses: actions/cache/restore@v5
         with:
@@ -50,7 +50,7 @@ jobs:
           path: downloads
       -
         name: Retrieve release data
-        if: env.WINGETPKGS_REPO_FORK_HADEPLOYKEY == 'true'
+        if: env.WINGET_PKGS_REPO_FORK_HAS_DEPLOYKEY == 'true'
         id: init
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -94,11 +94,11 @@ jobs:
         run: |
           git init tmp/winget-pkgs
           git -C tmp/winget-pkgs sparse-checkout init --cone
-          git -C tmp/winget-pkgs sparse-checkout set "manifests/$($env:WINGETPKGS_ID[0].ToString().ToLower())/$(($env:WINGETPKGS_ID -split '\.')[0])/"
-          git -C tmp/winget-pkgs remote add upstream "https://github.com/$($env:WINGETPKGS_REPO_UPSTREAM).git"
-          git -C tmp/winget-pkgs remote add fork "git@github.com:$($env:WINGETPKGS_REPO_FORK).git"
-          git -C tmp/winget-pkgs fetch --depth=1 upstream $env:WINGETPKGS_REPO_HEAD
-          git -C tmp/winget-pkgs checkout -b "gettext-$(Get-Date -UFormat %s -Millisecond 0)" upstream/$env:WINGETPKGS_REPO_HEAD
+          git -C tmp/winget-pkgs sparse-checkout set "manifests/$($env:WINGET_PKGS_PACKAGE_ID[0].ToString().ToLower())/$(($env:WINGET_PKGS_PACKAGE_ID -split '\.')[0])/"
+          git -C tmp/winget-pkgs remote add upstream "https://github.com/$($env:WINGET_PKGS_REPO_UPSTREAM).git"
+          git -C tmp/winget-pkgs remote add fork "git@github.com:$($env:WINGET_PKGS_REPO_FORK).git"
+          git -C tmp/winget-pkgs fetch --depth=1 upstream $env:WINGET_PKGS_REPO_HEAD
+          git -C tmp/winget-pkgs checkout -b "gettext-$(Get-Date -UFormat %s -Millisecond 0)" upstream/$env:WINGET_PKGS_REPO_HEAD
       -
         name: Create manifest
         if: steps.init.outputs.submit == 'yes'
@@ -106,7 +106,7 @@ jobs:
         run: |
           Import-Module -Name .\tmp\powershell-yaml\ -Force
           $releaseData = Get-Content -LiteralPath tmp/release.json | ConvertFrom-Json
-          $manifestPath, $packageVersion, $versionOperation = ./service/create-winget-manifest.ps1 ` -PackageIdentifier $env:WINGETPKGS_ID -ReleaseData $releaseData -ManifestsPath tmp/winget-pkgs/manifests
+          $manifestPath, $packageVersion, $versionOperation = ./service/create-winget-manifest.ps1 ` -PackageIdentifier $env:WINGET_PKGS_PACKAGE_ID -ReleaseData $releaseData -ManifestsPath tmp/winget-pkgs/manifests
           Write-Host "Manifest created at: $manifestPath"
           Get-ChildItem -LiteralPath $manifestPath -Recurse -File | ForEach-Object {
             Write-Host "::group::$($_.Name)"
@@ -135,7 +135,7 @@ jobs:
         if: steps.init.outputs.submit == 'yes'
         working-directory: tmp/winget-pkgs
         run: |
-          $status = git status --porcelain "manifests/$($env:WINGETPKGS_ID[0].ToString().ToLower())/$(($env:WINGETPKGS_ID -split '\.')[0])/"
+          $status = git status --porcelain "manifests/$($env:WINGET_PKGS_PACKAGE_ID[0].ToString().ToLower())/$(($env:WINGET_PKGS_PACKAGE_ID -split '\.')[0])/"
           if (-not $status) {
             Write-Host 'No changes to commit.'
           } else {
@@ -165,16 +165,16 @@ jobs:
           if (-not($?)) {
             throw "Failed to get current branch name: $($Error[0])"
           }
-          git add -A "manifests/$($env:WINGETPKGS_ID[0].ToString().ToLower())/$(($env:WINGETPKGS_ID -split '\.')[0])/"
+          git add -A "manifests/$($env:WINGET_PKGS_PACKAGE_ID[0].ToString().ToLower())/$(($env:WINGET_PKGS_PACKAGE_ID -split '\.')[0])/"
           if (-not($?)) {
             throw "Failed to stage changes: $($Error[0])"
           }
           switch ('${{ steps.create-manifest.outputs.version-operation }}') {
             'updated' {
-              $commitSubject = "Update version: $($env:WINGETPKGS_ID) version ${{ steps.create-manifest.outputs.package-version }}"
+              $commitSubject = "Update version: $($env:WINGET_PKGS_PACKAGE_ID) version ${{ steps.create-manifest.outputs.package-version }}"
             }
             'created' {
-              $commitSubject = "New version: $($env:WINGETPKGS_ID) version ${{ steps.create-manifest.outputs.package-version }}"
+              $commitSubject = "New version: $($env:WINGET_PKGS_PACKAGE_ID) version ${{ steps.create-manifest.outputs.package-version }}"
             }
             default {
               throw 'Unknown version operation: ${{ steps.create-manifest.outputs.version-operation }}'
@@ -193,7 +193,7 @@ jobs:
             throw "Failed to push changes to fork: $($Error[0])"
           }
           @"
-          ### Changes pushed to fork $($env:WINGETPKGS_REPO_FORK)
+          ### Changes pushed to fork $($env:WINGET_PKGS_REPO_FORK)
 
           Branch created:
           $branchName
@@ -202,10 +202,10 @@ jobs:
           $commitHash
 
           View changes in fork:
-          https://github.com/$($env:WINGETPKGS_REPO_FORK)/commits/$branchName
+          https://github.com/$($env:WINGET_PKGS_REPO_FORK)/commits/$branchName
 
           Open pull request:
-          https://github.com/$($env:WINGETPKGS_REPO_UPSTREAM)/compare/$($env:WINGETPKGS_REPO_HEAD)...$($env:WINGETPKGS_REPO_FORK -replace '/',':'):$($branchName)?expand=1
+          https://github.com/$($env:WINGET_PKGS_REPO_UPSTREAM)/compare/$($env:WINGET_PKGS_REPO_HEAD)...$($env:WINGET_PKGS_REPO_FORK -replace '/',':'):$($branchName)?expand=1
           "@ | Add-Content -Path $env:GITHUB_STEP_SUMMARY -Encoding utf8
       -
         name: Persist cache
