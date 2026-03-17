@@ -29,6 +29,39 @@ jobs:
     runs-on: windows-2025
     steps:
       -
+        name: Show winget version
+        id: check-winget-version
+        run: |
+          $v = (winget --version).TrimStart('v')
+          Write-Host "v$v"
+          $wingetMinVersion = '1.12.0'
+          if ([version]$v -lt [version]$wingetMinVersion) {
+            Write-Host "winget version is less than $wingetMinVersion, will attempt to update winget before proceeding."
+            'upgrade=yes' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+          } else {
+            Write-Host "winget version is 1.12.0 or greater, proceeding without upgrading."
+          }
+      -
+        name: Update winget
+        if: steps.check-winget-version.outputs.upgrade == 'yes'
+        run: |
+          winget upgrade Microsoft.AppInstaller `
+            --source winget `
+            --disable-interactivity `
+            --accept-package-agreements `
+            --accept-source-agreements
+          $exitCode = $LASTEXITCODE
+          if ($exitCode -eq 0 -or [int32]$exitCode -eq 0x80004004) { # 0x80004004 is E_ABORT, which winget returns when it needs to restart to complete the upgrade
+              Write-Host ("Upgraded successfully (exit code: 0x{0:X})." -f $exitCode)
+              exit 0
+          } else {
+              throw ("winget upgrade failed with exit code 0x{0:X}" -f $exitCode)
+          }
+      -
+        name: Show winget version
+        if: steps.check-winget-version.outputs.upgrade == 'yes'
+        run: winget --version
+      -
         name: Checkout
         if: env.WINGET_PKGS_REPO_FORK_HAS_DEPLOYKEY == 'true'
         uses: actions/checkout@v6
@@ -119,10 +152,7 @@ jobs:
       -
         name: Validate manifest
         if: steps.init.outputs.submit == 'yes'
-        # We need --ignore-warnings because winget validate doesn't yet support the new 1.12.0 manifest version: we have these warnings:
-        # Manifest validation succeeded with warnings.
-        # Manifest Warning: The schema header URL does not match the expected pattern. Value: # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json Line: 1, Column: 25 File: mlocati.GetText.installer.yaml
-        run: winget validate --manifest '${{ steps.create-manifest.outputs.manifest-path }}' --ignore-warnings --disable-interactivity
+        run: winget validate --manifest '${{ steps.create-manifest.outputs.manifest-path }}' --disable-interactivity
       -
         name: Test installing with winget
         if: steps.init.outputs.submit == 'yes'
@@ -137,7 +167,7 @@ jobs:
         run: |
           $status = git status --porcelain "manifests/$($env:WINGET_PKGS_PACKAGE_ID[0].ToString().ToLower())/$(($env:WINGET_PKGS_PACKAGE_ID -split '\.')[0])/"
           if (-not $status) {
-            Write-Host 'No changes to commit.'
+            'No changes to commit' | Add-Content -Path $env:GITHUB_STEP_SUMMARY -Encoding utf8
           } else {
             Write-Host 'Changes detected, will commit and push to fork.'
             'commit=yes' | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
