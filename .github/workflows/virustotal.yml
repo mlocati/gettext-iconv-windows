@@ -120,7 +120,16 @@ jobs:
                 core.warning('No valid analysis lines found, skipping update.');
                 return;
               }
-              const newBody = originalBody.replace(/[\r\n]+$/, '') + `\n\n${MARKER_START}\n## VirusTotal Analysis\n\n${detailsLines.join('\n')}\n\n${MARKER_END}\n`;
+              const newBody = originalBody.replace(/[\r\n]+$/, '') + '\n\n' + [
+                MARKER_START,
+                '<details>',
+                '<summary>VirusTotal Analysis</summary>',
+                '',
+                detailsLines.join('\n'),
+                '</details>',
+                MARKER_END,
+                ''
+              ].join('\n');
               core.startGroup('New release body');
               console.log(newBody);
               core.endGroup();
