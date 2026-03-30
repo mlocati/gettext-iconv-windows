@@ -306,7 +306,7 @@ jobs:
       - test-pwsh-scripts
       - versions
       - build-iconv-tarball
-    runs-on: windows-2025
+    runs-on: ${{ matrix.os}}
     strategy:
       fail-fast: false
       matrix:
@@ -314,27 +314,51 @@ jobs:
           - bits: 32
             link: shared
             compiler: gcc
+            os: windows-2025
           - bits: 32
             link: static
             compiler: gcc
+            os: windows-2025
           - bits: 64
             link: shared
             compiler: gcc
+            os: windows-2025
           - bits: 64
             link: static
             compiler: gcc
+            os: windows-2025
+          - bits: arm64
+            link: shared
+            compiler: gcc
+            os: windows-11-arm
+          - bits: arm64
+            link: static
+            compiler: gcc
+            os: windows-11-arm
           - bits: 32
             link: shared
             compiler: msvc
+            os: windows-2025
           - bits: 32
             link: static
             compiler: msvc
+            os: windows-2025
           - bits: 64
             link: shared
             compiler: msvc
+            os: windows-2025
           - bits: 64
             link: static
             compiler: msvc
+            os: windows-2025
+          - bits: arm64
+            link: shared
+            compiler: msvc
+            os: windows-11-arm
+          - bits: arm64
+            link: static
+            compiler: msvc
+            os: windows-11-arm
     env:
       CYGWIN_NOWINPATH: 1
       CHERE_INVOKING: 1

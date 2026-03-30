@@ -2,8 +2,8 @@
 
 param (
     [Parameter(Mandatory = $true)]
-    [ValidateSet(32, 64)]
-    [int] $Bits,
+    [ValidateSet('32', '64', 'arm64')]
+    [string] $Bits,
     [Parameter(Mandatory = $true)]
     [ValidateSet('shared', 'static')]
     [string] $Link,
@@ -58,12 +58,22 @@ function Initialize-Iss()
     $includeFile = $PSCommandPath -replace '\.[^.]+$','.isi'
     $templateFile = $PSCommandPath -replace '\.[^.]+$','.iss'
     Remove-Item -LiteralPath $includeFile -ErrorAction SilentlyContinue
-    "#define MyVersionShownName `"$Link ($Bits bit)`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
-    "#define MyVersionCodeName `"$Link-$Bits`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
-    if ($Bits -eq 64) {
-    "#define MyIs64bit true" | Add-Content -LiteralPath $includeFile -Encoding utf8
+    if ($Bits -eq 'arm64') {
+        "#define MyVersionShownName `"$Link ($Bits)`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
     } else {
-        "#define MyIs64bit false" | Add-Content -LiteralPath $includeFile -Encoding utf8
+        "#define MyVersionShownName `"$Link ($Bits bit)`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
+    }    
+    "#define MyVersionCodeName `"$Link-$Bits`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
+    if ($Bits -eq 'arm64') {
+        "#define MyIsArm true" | Add-Content -LiteralPath $includeFile -Encoding utf8
+        "#define MyIs64bit true" | Add-Content -LiteralPath $includeFile -Encoding utf8
+    } else {
+        "#define MyIsArm false" | Add-Content -LiteralPath $includeFile -Encoding utf8
+        if ($Bits -eq 64) {
+            "#define MyIs64bit true" | Add-Content -LiteralPath $includeFile -Encoding utf8
+        } else {
+            "#define MyIs64bit false" | Add-Content -LiteralPath $includeFile -Encoding utf8
+        }
     }
     "#define MyGettextVer `"$GettextVersion`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
     "#define MyIconvVer `"$IconvVersion`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
