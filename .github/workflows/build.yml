@@ -300,7 +300,7 @@ jobs:
           retention-days: 1
 
   build:
-    name: ${{ matrix.bits}}-bit ${{ matrix.link }} w/ ${{ matrix.compiler }}
+    name: ${{ matrix.bits}} ${{ matrix.link }} w/ ${{ matrix.compiler }}
     needs:
       - test-bash-scripts
       - test-pwsh-scripts

@@ -92,6 +92,8 @@ function Initialize-Iss()
         }
     }
     '  + ""' | Add-Content -LiteralPath $includeFile -Encoding utf8
+    Write-Host -Object "Configuration file $includeFile has been created:"
+    Get-Content -LiteralPath $includeFile | Write-Host
 
     return $templateFile
 }
