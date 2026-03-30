@@ -62,7 +62,7 @@ function Initialize-Iss()
         "#define MyVersionShownName `"$Link ($Bits)`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
     } else {
         "#define MyVersionShownName `"$Link ($Bits bit)`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
-    }    
+    }
     "#define MyVersionCodeName `"$Link-$Bits`"" | Add-Content -LiteralPath $includeFile -Encoding utf8
     if ($Bits -eq 'arm64') {
         "#define MyIsArm true" | Add-Content -LiteralPath $includeFile -Encoding utf8
