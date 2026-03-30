@@ -300,13 +300,13 @@ jobs:
           retention-days: 1
 
   build:
-    name: ${{ matrix.bits}}-bit ${{ matrix.link }} w/ ${{ matrix.compiler }}
+    name: ${{ matrix.bits}} ${{ matrix.link }} w/ ${{ matrix.compiler }}
     needs:
       - test-bash-scripts
       - test-pwsh-scripts
       - versions
       - build-iconv-tarball
-    runs-on: windows-2025
+    runs-on: ${{ matrix.os}}
     strategy:
       fail-fast: false
       matrix:
@@ -314,33 +314,69 @@ jobs:
           - bits: 32
             link: shared
             compiler: gcc
+            os: windows-2025
+            working-drive-letter: D
           - bits: 32
             link: static
             compiler: gcc
+            os: windows-2025
+            working-drive-letter: D
           - bits: 64
             link: shared
             compiler: gcc
+            os: windows-2025
+            working-drive-letter: D
           - bits: 64
             link: static
             compiler: gcc
+            os: windows-2025
+            working-drive-letter: D
+          - bits: arm64
+            link: shared
+            compiler: gcc
+            os: windows-11-arm
+            working-drive-letter: C
+          - bits: arm64
+            link: static
+            compiler: gcc
+            os: windows-11-arm
+            working-drive-letter: C
           - bits: 32
             link: shared
             compiler: msvc
+            os: windows-2025
+            working-drive-letter: D
           - bits: 32
             link: static
             compiler: msvc
+            os: windows-2025
+            working-drive-letter: D
           - bits: 64
             link: shared
             compiler: msvc
+            os: windows-2025
+            working-drive-letter: D
           - bits: 64
             link: static
             compiler: msvc
+            os: windows-2025
+            working-drive-letter: D
+          - bits: arm64
+            link: shared
+            compiler: msvc
+            os: windows-11-arm
+            working-drive-letter: C
+          - bits: arm64
+            link: static
+            compiler: msvc
+            os: windows-11-arm
+            working-drive-letter: C
     env:
       CYGWIN_NOWINPATH: 1
       CHERE_INVOKING: 1
     defaults:
       run:
-        shell: D:\cygwin\bin\bash.exe --login -o igncr -o errexit -o pipefail {0}
+        shell: ${{ matrix.working-drive-letter }}:\cygwin\bin\bash.exe --login -o igncr -o errexit -o pipefail {0}
     steps:
       -
         name: Configure git
@@ -381,7 +417,7 @@ jobs:
           key: build-${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           path: |
             src\downloads
-            D:\cygwin-packages
+            ${{ matrix.working-drive-letter }}:\cygwin-packages
       -
         name: Set variables
         id: vars
@@ -408,8 +444,8 @@ jobs:
         timeout-minutes: 60
         with:
           packages: ${{ steps.vars.outputs.cygwin-packages }}
-          install-dir: D:\cygwin
-          work-vol: 'D:'
+          install-dir: ${{ matrix.working-drive-letter }}:\cygwin
+          work-vol: '${{ matrix.working-drive-letter }}:'
           site: ${{ needs.versions.outputs.cygwin-mirror }}
           add-to-path: false
       -
@@ -713,7 +749,7 @@ jobs:
           -Bits ${{ matrix.bits }}
           -Link ${{ matrix.link }}
           -Path installed
-          -MinGWPath ${{ matrix.compiler == 'mscv' && '' || format('D:\\cygwin\\usr\\{0}', steps.vars.outputs.mingw-host) }}
+          -MinGWPath ${{ matrix.compiler == 'mscv' && '' || format('${{ matrix.working-drive-letter }}:\\cygwin\\usr\\{0}', steps.vars.outputs.mingw-host) }}
       -
         name: Extract version infos
         id: versioninfos
@@ -999,7 +1035,7 @@ jobs:
           key: ${{ steps.restore-cache.outputs.cache-primary-key }}
           path: |
             src\downloads
-            D:\cygwin-packages
+            ${{ matrix.working-drive-letter }}:\cygwin-packages
 
   publish-release:
     name: Publish release

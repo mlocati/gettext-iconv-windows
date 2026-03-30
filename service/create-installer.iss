@@ -2,8 +2,9 @@
 
 #include "create-installer.isi"
 // Must have:
-// #define MyVersionShownName "<shared|static> (<32|64> bit)"
-// #define MyVersionCodeName "<shared|static>-<32|64>"
+// #define MyVersionShownName "<shared|static> (<32 bit|64 bit|arm64>)"
+// #define MyVersionCodeName "<shared|static>-<32|64|arm64>"
+// #define MyIsArm <true|false>
 // #define MyIs64bit <true|false>
 // #define MyGettextVer "<gettext version>"
 // #define MyIconvVer "<iconv version>"
@@ -22,8 +23,13 @@ AppPublisherURL=https://github.com/mlocati
 AppSupportURL=https://github.com/mlocati/gettext-iconv-windows/issues
 AppUpdatesURL=https://github.com/mlocati/gettext-iconv-windows/releases
 #if MyIs64bit
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+	#if MyIsArm
+		ArchitecturesAllowed=arm64
+		ArchitecturesInstallIn64BitMode=arm64
+	#else
+		ArchitecturesAllowed=x64
+		ArchitecturesInstallIn64BitMode=x64
+	#endif
 #endif
 ChangesEnvironment=WizardIsTaskSelected('modifypath') or WizardIsTaskSelected('setenvcldr')
 PrivilegesRequiredOverridesAllowed=commandline dialog
