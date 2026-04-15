@@ -292,7 +292,7 @@ jobs:
         name: Upload tarball
         if: needs.versions.outputs.iconv-tarball-from-commit
         id: upload
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tarball-iconv
           path: output/libiconv-${{ needs.versions.outputs.iconv-version }}.tar.gz
@@ -459,7 +459,7 @@ jobs:
       -
         name: Download iconv artifact
         if: needs.versions.outputs.iconv-tarball-from-commit
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           artifact-ids: ${{ needs.build-iconv-tarball.outputs.artifact-id }}
           path: src/downloads/
@@ -726,7 +726,7 @@ jobs:
         name: Upload unsigned files
         if: steps.vars.outputs.signpath-signing-policy
         id: upload-installed-unsigned
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tobesigned-installed-${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           path: |
@@ -942,7 +942,7 @@ jobs:
         name: Upload unsigned installer
         if: steps.vars.outputs.collect-programs == 'yes' && steps.vars.outputs.signpath-signing-policy
         id: upload-installer-unsigned
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tobesigned-installer-${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           path: assets/gettext${{ needs.versions.outputs.gettext-version }}-iconv${{ needs.versions.outputs.iconv-version-base }}-${{ matrix.link }}-${{ matrix.bits }}.exe
@@ -974,7 +974,7 @@ jobs:
           -CanBeInvalid ${{ needs.versions.outputs.signatures-canbeinvalid == 'yes' && '$true' || '$false'  }}
       -
         name: Upload assets
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: assets-${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           path: assets/*
@@ -983,7 +983,7 @@ jobs:
       -
         name: Upload build log
         if: always() && steps.prepare-build-log.outcome == 'success'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: log-${{ matrix.link }}-${{ matrix.bits }}-${{ matrix.compiler }}
           if-no-files-found: ignore
@@ -1032,7 +1032,7 @@ jobs:
           cat "$GITHUB_OUTPUT"
       -
         name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: ${{ needs.versions.outputs.release-tag }}
           tag_name: ${{ needs.versions.outputs.release-tag }}

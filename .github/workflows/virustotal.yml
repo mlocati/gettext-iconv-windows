@@ -66,7 +66,7 @@ jobs:
         name: Submit to VirusTotal
         if: env.HAS_VT_API_KEY == 'true'
         id: submit
-        uses: crazy-max/ghaction-virustotal@v4
+        uses: crazy-max/ghaction-virustotal@v5
         with:
           vt_api_key: ${{ secrets.VIRUSTOTAL_API_KEY }}
           update_release_body: false
@@ -75,7 +75,7 @@ jobs:
       -
         name: Update release body with VirusTotal report
         if: steps.submit.outputs.analysis
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           TAG_NAME: ${{ steps.setup.outputs.tag-name }}
           ANALYSIS_RESULT: ${{ steps.submit.outputs.analysis }}
