@@ -1,8 +1,8 @@
 [Diagnostics.CodeAnalysis.SuppressMessage('PSReviewUnusedParameter', 'Link', Justification = 'Unused at the moment, but may be used in the future')]
 param (
     [Parameter(Mandatory = $true)]
-    [ValidateSet(32, 64)]
-    [int] $Bits,
+    [ValidateSet('32', '64', 'arm64')]
+    [string] $Bits,
     [Parameter(Mandatory = $true)]
     [ValidateSet('shared', 'static')]
     [string] $Link,

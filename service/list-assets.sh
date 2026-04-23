@@ -33,41 +33,65 @@ find "$dir" -type f -print0 | while IFS= read -r -d '' f; do
         *shared-64.zip)
             p=04
             ;;
-        *static-32.exe)
+        *shared-arm64.exe)
             p=05
             ;;
-        *static-32.zip)
+        *shared-arm64.zip)
             p=06
             ;;
-        *static-64.exe)
+        *static-32.exe)
             p=07
             ;;
-        *static-64.zip)
+        *static-32.zip)
             p=08
             ;;
-        *shared-32-dev-gcc.zip)
+        *static-64.exe)
             p=09
             ;;
-        *shared-32-dev-msvc.zip)
+        *static-64.zip)
             p=10
             ;;
-        *shared-64-dev-gcc.zip)
+        *static-arm64.exe)
             p=11
             ;;
-        *shared-64-dev-msvc.zip)
+        *static-arm64.zip)
             p=12
             ;;
-        *static-32-dev-gcc.zip)
+        *shared-32-dev-gcc.zip)
             p=13
             ;;
-        *static-32-dev-msvc.zip)
+        *shared-32-dev-msvc.zip)
             p=14
             ;;
-        *static-64-dev-gcc.zip)
+        *shared-64-dev-gcc.zip)
             p=15
             ;;
-        *static-64-dev-msvc.zip)
+        *shared-64-dev-msvc.zip)
             p=16
+            ;;
+        *shared-arm64-dev-gcc.zip)
+            p=17
+            ;;
+        *shared-arm64-dev-msvc.zip)
+            p=18
+            ;;
+        *static-32-dev-gcc.zip)
+            p=19
+            ;;
+        *static-32-dev-msvc.zip)
+            p=20
+            ;;
+        *static-64-dev-gcc.zip)
+            p=21
+            ;;
+        *static-64-dev-msvc.zip)
+            p=22
+            ;;
+        *static-arm64-dev-gcc.zip)
+            p=23
+            ;;
+        *static-arm64-dev-msvc.zip)
+            p=24
             ;;
         *)
             p=99
