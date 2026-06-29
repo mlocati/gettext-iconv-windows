@@ -226,7 +226,7 @@ if ((Compare-Versions $GettextVersion '1.0') -lt 0) {
             throw "Invalid curl version: '$CurlVersion'"
         }
     } else {
-        $CurlVersion = '8.18.0'
+        $CurlVersion = '8.21.0'
     }
 }
 
