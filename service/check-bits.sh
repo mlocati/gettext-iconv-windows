@@ -4,7 +4,7 @@
 # have the correct bitness
 #
 # Arguments:
-# $1: the number of bits (32, 64)
+# $1: the number of bits (32, 64, arm64)
 # $2: the directory to be checked, or the path to a file
 #
 
@@ -14,7 +14,7 @@ set -o pipefail
 
 BITS="${1:-}"
 case "$BITS" in
-    32 | 64) ;;
+    32 | 64 | arm64) ;;
     '')
         echo 'Missing bitness'
         exit 1
@@ -49,6 +49,9 @@ checkBits()
     local info="$(file -bEh -- "$checkMe" | head -n1)"
     local detectedBits
     case "$info" in
+        *[Aa]arch64*)
+            detectedBits=arm64
+            ;;
         *PE32+*)
             detectedBits=64
             ;;
@@ -82,7 +85,7 @@ checkBits()
             ;;
     esac
     printf '%s-bit %s (%s): ' "$detectedBits" "$detectedKind" "$detectedType"
-    if [ $detectedBits -ne $expectedBits ]; then
+    if [ "$detectedBits" != "$expectedBits" ]; then
         echo 'INVALID'
         return 1
     fi

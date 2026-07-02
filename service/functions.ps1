@@ -105,8 +105,8 @@ function Find-DumpbinPath
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true)]
-        [ValidateSet(32, 64)]
-        [int] $Bits
+        [ValidateSet('32', '64', 'arm64')]
+        [string] $Bits
     )
     $vsPath = & vswhere.exe -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
     if (-not($?)) {
@@ -117,11 +117,14 @@ function Find-DumpbinPath
     }
     $vcToolsVersion = Get-Content -LiteralPath "$vsPath\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" -TotalCount 1
     switch ($Bits) {
-        32 {
+        '32' {
             $result = "$vsPath\VC\Tools\MSVC\$vcToolsVersion\bin\Hostx86\x86\dumpbin.exe"
         }
-        64 {
+        '64' {
             $result = "$vsPath\VC\Tools\MSVC\$vcToolsVersion\bin\Hostx64\x64\dumpbin.exe"
+        }
+        'arm64' {
+            $result = "$vsPath\VC\Tools\MSVC\$vcToolsVersion\bin\HostARM64\ARM64\dumpbin.exe"
         }
     }
     if (-not(Test-Path -LiteralPath $result -PathType Leaf)) {

@@ -7,7 +7,7 @@ The tools are built by the [`build` GitHub Action](https://github.com/mlocati/ge
 
 In addition to the Windows executables (msginit, xgettext, msgfmt, ...), this project also provides development files for MinGW/gcc and Microsoft Visual C (`.h`, `.a`, `.dll.a`, `.lib`, `.dll.lib` files).
 
-For example, you have ready-to-use static libraries `libasprintf.a`, `libcharset.a`, `libgettextpo.a`, `libiconv.a`, `libintl.a`, `libtextstyle.a` (for MinGW-w64/gcc) and `asprintf.lib`, `charset.lib`, `gettextpo.lib`, `iconv.lib`, `intl.lib`, `textstyle.lib` (for MSVC) 2-bit and 64-bit systems.
+For example, you have ready-to-use static libraries `libasprintf.a`, `libcharset.a`, `libgettextpo.a`, `libiconv.a`, `libintl.a`, `libtextstyle.a` (for MinGW-w64/gcc) and `asprintf.lib`, `charset.lib`, `gettextpo.lib`, `iconv.lib`, `intl.lib`, `textstyle.lib` (for MSVC) 32-bit, 64-bit, and arm64 systems.
 
 You can download them from [the releases page](https://github.com/mlocati/gettext-iconv-windows/releases) or from the [project homepage](https://mlocati.github.io/articles/gettext-iconv-windows.html).
 

@@ -1,8 +1,8 @@
 [Diagnostics.CodeAnalysis.SuppressMessage('PSReviewUnusedParameter', 'IconvVersion', Justification = 'Not used at this time, but it is passed for future use')]
 param (
     [Parameter(Mandatory = $true)]
-    [ValidateSet(32, 64)]
-    [int] $Bits,
+    [ValidateSet('32', '64', 'arm64')]
+    [string] $Bits,
     [Parameter(Mandatory = $true)]
     [ValidateSet('shared', 'static')]
     [string] $Link,
@@ -72,11 +72,14 @@ if (-not(Select-String -InputObject $absoluteToolsPath -Pattern '^([A-Za-z]):(\\
 $cygwinToolsPath = ConvertTo-CygwinPath -WindowsPath $absoluteToolsPath.TrimEnd('\')
 
 switch ($Bits) {
-    32 {
+    '32' {
         $mingwArchitecture = 'i686'
     }
-    64 {
+    '64' {
         $mingwArchitecture = 'x86_64'
+    }
+    'arm64' {
+        $mingwArchitecture = 'aarch64'
     }
 }
 $mingwHost = "$mingwArchitecture-w64-mingw32"
@@ -144,7 +147,7 @@ if ($Compiler -eq 'gcc') {
         # see https://lists.gnu.org/archive/html/bug-gettext/2025-07/msg00019.html
         $cxxFlags += '-fno-threadsafe-statics'
     }
-    if ($Bits -eq 32 -and $Link -eq 'shared') {
+    if ($Bits -eq '32' -and $Link -eq 'shared') {
         $ldFlags += ' -static-libgcc'
     }
     $makeInstallArgument = 'install-strip'

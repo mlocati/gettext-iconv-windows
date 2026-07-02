@@ -228,6 +228,10 @@ $installer = [ordered]@{
             -Architecture x64 `
             -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-64.exe" `
             -DisplayName "gettext $gettextVersion + iconv $iconvVersion - shared (64 bit)"
+        New-InstallerEntries `
+            -Architecture arm64 `
+            -AssetName "gettext$gettextVersion-iconv$iconvVersion-shared-arm64.exe" `
+            -DisplayName "gettext $gettextVersion + iconv $iconvVersion - shared (arm64)"
     ).ForEach({ $_ })
     ManifestType = 'installer'
     ManifestVersion = $manifestVersion
